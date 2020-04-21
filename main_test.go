@@ -15,10 +15,9 @@ func Test_computePodIsolation(t *testing.T) {
 		networkPolicies *networkingv1.NetworkPolicyList
 	}
 	tests := []struct {
-		name                    string
-		args                    args
-		expectedIsolatedPods    []corev1.Pod
-		expectedNonIsolatedPods []corev1.Pod
+		name                  string
+		args                  args
+		expectedPodIsolations []PodIsolation
 	}{
 		{
 			name: "nothing with no pods",
@@ -26,11 +25,10 @@ func Test_computePodIsolation(t *testing.T) {
 				pods:            podList(),
 				networkPolicies: networkPolicyList(),
 			},
-			expectedIsolatedPods:    []corev1.Pod{},
-			expectedNonIsolatedPods: []corev1.Pod{},
+			expectedPodIsolations: []PodIsolation{},
 		},
 		{
-			name: "all pods nonIsolated with no policies",
+			name: "all pods non isolated with no policies",
 			args: args{
 				pods: podList(
 					podBuilder().name("Pod1").build(),
@@ -38,10 +36,17 @@ func Test_computePodIsolation(t *testing.T) {
 				),
 				networkPolicies: networkPolicyList(),
 			},
-			expectedIsolatedPods: []corev1.Pod{},
-			expectedNonIsolatedPods: []corev1.Pod{
-				podBuilder().name("Pod1").build(),
-				podBuilder().name("Pod2").build(),
+			expectedPodIsolations: []PodIsolation{
+				{
+					Pod:             podBuilder().name("Pod1").build(),
+					IngressPolicies: []networkingv1.NetworkPolicy{},
+					EgressPolicies:  []networkingv1.NetworkPolicy{},
+				},
+				{
+					Pod:             podBuilder().name("Pod2").build(),
+					IngressPolicies: []networkingv1.NetworkPolicy{},
+					EgressPolicies:  []networkingv1.NetworkPolicy{},
+				},
 			},
 		},
 		{
@@ -52,14 +57,24 @@ func Test_computePodIsolation(t *testing.T) {
 					podBuilder().name("Pod2").build(),
 				),
 				networkPolicies: networkPolicyList(
-					networkPolicyBuilder().podSelector(labelSelectorBuilder().matchLabel("app", "foo").build()).build(),
+					networkPolicyBuilder().types("Ingress", "Egress").podSelector(labelSelectorBuilder().matchLabel("app", "foo").build()).build(),
 				),
 			},
-			expectedIsolatedPods: []corev1.Pod{
-				podBuilder().name("Pod1").label("app", "foo").build(),
-			},
-			expectedNonIsolatedPods: []corev1.Pod{
-				podBuilder().name("Pod2").build(),
+			expectedPodIsolations: []PodIsolation{
+				{
+					Pod: podBuilder().name("Pod1").label("app", "foo").build(),
+					IngressPolicies: []networkingv1.NetworkPolicy{
+						networkPolicyBuilder().types("Ingress", "Egress").podSelector(labelSelectorBuilder().matchLabel("app", "foo").build()).build(),
+					},
+					EgressPolicies: []networkingv1.NetworkPolicy{
+						networkPolicyBuilder().types("Ingress", "Egress").podSelector(labelSelectorBuilder().matchLabel("app", "foo").build()).build(),
+					},
+				},
+				{
+					Pod:             podBuilder().name("Pod2").build(),
+					IngressPolicies: []networkingv1.NetworkPolicy{},
+					EgressPolicies:  []networkingv1.NetworkPolicy{},
+				},
 			},
 		},
 		{
@@ -70,45 +85,87 @@ func Test_computePodIsolation(t *testing.T) {
 					podBuilder().name("Pod2").build(),
 				),
 				networkPolicies: networkPolicyList(
-					networkPolicyBuilder().podSelector(labelSelectorBuilder().build()).build(),
+					networkPolicyBuilder().types("Ingress", "Egress").podSelector(labelSelectorBuilder().build()).build(),
 				),
 			},
-			expectedIsolatedPods: []corev1.Pod{
-				podBuilder().name("Pod1").label("app", "foo").build(),
-				podBuilder().name("Pod2").build(),
+			expectedPodIsolations: []PodIsolation{
+				{
+					Pod: podBuilder().name("Pod1").label("app", "foo").build(),
+					IngressPolicies: []networkingv1.NetworkPolicy{
+						networkPolicyBuilder().types("Ingress", "Egress").podSelector(labelSelectorBuilder().build()).build(),
+					},
+					EgressPolicies: []networkingv1.NetworkPolicy{
+						networkPolicyBuilder().types("Ingress", "Egress").podSelector(labelSelectorBuilder().build()).build(),
+					},
+				},
+				{
+					Pod: podBuilder().name("Pod2").build(),
+					IngressPolicies: []networkingv1.NetworkPolicy{
+						networkPolicyBuilder().types("Ingress", "Egress").podSelector(labelSelectorBuilder().build()).build(),
+					},
+					EgressPolicies: []networkingv1.NetworkPolicy{
+						networkPolicyBuilder().types("Ingress", "Egress").podSelector(labelSelectorBuilder().build()).build(),
+					},
+				},
 			},
-			expectedNonIsolatedPods: []corev1.Pod{},
 		},
 		{
-			name: "pods with matching labels in other namespace nonIsolated",
+			name: "pods with matching labels only isolated when in same namespace",
 			args: args{
 				pods: podList(
 					podBuilder().name("Pod1").namespace("ns").label("app", "foo").build(),
 					podBuilder().name("Pod2").namespace("other").label("app", "foo").build(),
 				),
 				networkPolicies: networkPolicyList(
-					networkPolicyBuilder().
-						namespace("ns").
-						podSelector(labelSelectorBuilder().matchLabel("app", "foo").build()).
-						build(),
+					networkPolicyBuilder().types("Ingress", "Egress").namespace("ns").podSelector(labelSelectorBuilder().matchLabel("app", "foo").build()).build(),
 				),
 			},
-			expectedIsolatedPods: []corev1.Pod{
-				podBuilder().name("Pod1").namespace("ns").label("app", "foo").build(),
+			expectedPodIsolations: []PodIsolation{
+				{
+					Pod: podBuilder().name("Pod1").namespace("ns").label("app", "foo").build(),
+					IngressPolicies: []networkingv1.NetworkPolicy{
+						networkPolicyBuilder().types("Ingress", "Egress").namespace("ns").podSelector(labelSelectorBuilder().matchLabel("app", "foo").build()).build(),
+					},
+					EgressPolicies: []networkingv1.NetworkPolicy{
+						networkPolicyBuilder().types("Ingress", "Egress").namespace("ns").podSelector(labelSelectorBuilder().matchLabel("app", "foo").build()).build(),
+					},
+				},
+				{
+					Pod:             podBuilder().name("Pod2").namespace("other").label("app", "foo").build(),
+					IngressPolicies: []networkingv1.NetworkPolicy{},
+					EgressPolicies:  []networkingv1.NetworkPolicy{},
+				},
 			},
-			expectedNonIsolatedPods: []corev1.Pod{
-				podBuilder().name("Pod2").namespace("other").label("app", "foo").build(),
+		},
+		{
+			name: "ingress and egress isolation are independent",
+			args: args{
+				pods: podList(
+					podBuilder().name("Pod1").build(),
+				),
+				networkPolicies: networkPolicyList(
+					networkPolicyBuilder().types("Ingress").podSelector(labelSelectorBuilder().build()).build(),
+					networkPolicyBuilder().types("Egress").podSelector(labelSelectorBuilder().build()).build(),
+				),
+			},
+			expectedPodIsolations: []PodIsolation{
+				{
+					Pod: podBuilder().name("Pod1").build(),
+					IngressPolicies: []networkingv1.NetworkPolicy{
+						networkPolicyBuilder().types("Ingress").podSelector(labelSelectorBuilder().build()).build(),
+					},
+					EgressPolicies: []networkingv1.NetworkPolicy{
+						networkPolicyBuilder().types("Egress").podSelector(labelSelectorBuilder().build()).build(),
+					},
+				},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			isolatedPods, nonIsolatedPods := computePodIsolation(tt.args.pods, tt.args.networkPolicies)
-			if diff := cmp.Diff(tt.expectedIsolatedPods, isolatedPods); diff != "" {
-				t.Errorf("computePodIsolation() isolatedPods mismatch (-want +got):\n%s", diff)
-			}
-			if diff := cmp.Diff(tt.expectedNonIsolatedPods, nonIsolatedPods); diff != "" {
-				t.Errorf("computePodIsolation() nonIsolatedPods mismatch (-want +got):\n%s", diff)
+			podIsolations := computePodIsolation(tt.args.pods, tt.args.networkPolicies)
+			if diff := cmp.Diff(tt.expectedPodIsolations, podIsolations); diff != "" {
+				t.Errorf("computePodIsolation() result mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -166,6 +223,7 @@ func (podBuilder *PodBuilder) build() corev1.Pod {
 type NetworkPolicyBuilder struct {
 	Namespace   string
 	PodSelector metav1.LabelSelector
+	Types       []networkingv1.PolicyType
 }
 
 func networkPolicyBuilder() *NetworkPolicyBuilder {
@@ -182,6 +240,11 @@ func (networkPolicyBuilder *NetworkPolicyBuilder) podSelector(podSelecor metav1.
 	return networkPolicyBuilder
 }
 
+func (networkPolicyBuilder *NetworkPolicyBuilder) types(types ...networkingv1.PolicyType) *NetworkPolicyBuilder {
+	networkPolicyBuilder.Types = types
+	return networkPolicyBuilder
+}
+
 func (networkPolicyBuilder *NetworkPolicyBuilder) build() networkingv1.NetworkPolicy {
 	return networkingv1.NetworkPolicy{
 		ObjectMeta: metav1.ObjectMeta{
@@ -189,6 +252,7 @@ func (networkPolicyBuilder *NetworkPolicyBuilder) build() networkingv1.NetworkPo
 		},
 		Spec: networkingv1.NetworkPolicySpec{
 			PodSelector: networkPolicyBuilder.PodSelector,
+			PolicyTypes: networkPolicyBuilder.Types,
 		},
 	}
 }
