@@ -88,7 +88,7 @@ func main() {
 
 	allowedCommunications := computeAllowedCommunications(podIsolations, namespaces.Items)
 	for _, allowedCommunication := range allowedCommunications {
-		fmt.Printf("Allowed communication: %v\n", allowedCommunication)
+		fmt.Printf("Allowed communication: %v -> %v\n", allowedCommunication.From.Name, allowedCommunication.To.Name)
 	}
 }
 
@@ -197,15 +197,16 @@ func computeAllowedCommunications(podIsolations []PodIsolation, namespaces []cor
 	return allowedCommunications
 }
 
-func computeAllowedCommunication(sourcePodIsolation *PodIsolation, targetPortIsolation *PodIsolation, namespaces []corev1.Namespace) *AllowedCommunication {
-	sourceAllowsEgress := !sourcePodIsolation.isEgressIsolated()
-	targetAllowsIngress := !targetPortIsolation.isIngressIsolated() ||
-		anyPolicyAllowsIngress(&sourcePodIsolation.Pod, targetPortIsolation, namespaces)
+func computeAllowedCommunication(sourcePodIsolation *PodIsolation, targetPodIsolation *PodIsolation, namespaces []corev1.Namespace) *AllowedCommunication {
+	sourceAllowsEgress := !sourcePodIsolation.isEgressIsolated() ||
+		anyPolicyAllowsEgress(&targetPodIsolation.Pod, sourcePodIsolation, namespaces)
+	targetAllowsIngress := !targetPodIsolation.isIngressIsolated() ||
+		anyPolicyAllowsIngress(&sourcePodIsolation.Pod, targetPodIsolation, namespaces)
 	if sourceAllowsEgress && targetAllowsIngress {
 		return &AllowedCommunication{
 			From:            sourcePodIsolation.Pod,
 			EgressPolicies:  nil,
-			To:              targetPortIsolation.Pod,
+			To:              targetPodIsolation.Pod,
 			IngressPolicies: nil,
 		}
 	} else {
@@ -213,8 +214,8 @@ func computeAllowedCommunication(sourcePodIsolation *PodIsolation, targetPortIso
 	}
 }
 
-func anyPolicyAllowsIngress(sourcePod *corev1.Pod, targetPortIsolation *PodIsolation, namespaces []corev1.Namespace) bool {
-	for _, ingressPolicy := range targetPortIsolation.IngressPolicies {
+func anyPolicyAllowsIngress(sourcePod *corev1.Pod, targetPodIsolation *PodIsolation, namespaces []corev1.Namespace) bool {
+	for _, ingressPolicy := range targetPodIsolation.IngressPolicies {
 		if policyAllowsIngress(sourcePod, ingressPolicy, namespaces) {
 			return true
 		}
@@ -233,14 +234,41 @@ func policyAllowsIngress(sourcePod *corev1.Pod, ingressPolicy networkingv1.Netwo
 
 func ingressRuleAllows(sourcePod *corev1.Pod, ingressRule *networkingv1.NetworkPolicyIngressRule, namespaces []corev1.Namespace) bool {
 	for _, policyPeer := range ingressRule.From {
-		if ingressRuleFromMatches(sourcePod, &policyPeer, namespaces) {
+		if networkRuleMatches(sourcePod, &policyPeer, namespaces) {
 			return true
 		}
 	}
 	return false
 }
 
-func ingressRuleFromMatches(pod *corev1.Pod, policyPeer *networkingv1.NetworkPolicyPeer, namespaces []corev1.Namespace) bool {
+func anyPolicyAllowsEgress(targetPod *corev1.Pod, sourcePodIsolation *PodIsolation, namespaces []corev1.Namespace) bool {
+	for _, egressPolicy := range sourcePodIsolation.EgressPolicies {
+		if policyAllowsEgress(targetPod, egressPolicy, namespaces) {
+			return true
+		}
+	}
+	return false
+}
+
+func policyAllowsEgress(targetPod *corev1.Pod, egressPolicy networkingv1.NetworkPolicy, namespaces []corev1.Namespace) bool {
+	for _, egressRule := range egressPolicy.Spec.Egress {
+		if egressRuleAllows(targetPod, &egressRule, namespaces) {
+			return true
+		}
+	}
+	return false
+}
+
+func egressRuleAllows(targetPod *corev1.Pod, egressRule *networkingv1.NetworkPolicyEgressRule, namespaces []corev1.Namespace) bool {
+	for _, policyPeer := range egressRule.To {
+		if networkRuleMatches(targetPod, &policyPeer, namespaces) {
+			return true
+		}
+	}
+	return false
+}
+
+func networkRuleMatches(pod *corev1.Pod, policyPeer *networkingv1.NetworkPolicyPeer, namespaces []corev1.Namespace) bool {
 	namespaceMatches := policyPeer.NamespaceSelector == nil || namespaceLabelsMatches(pod.Namespace, namespaces, policyPeer.NamespaceSelector)
 	selectorMatches := policyPeer.PodSelector == nil || selectorMatches(pod.Labels, policyPeer.PodSelector)
 	return selectorMatches && namespaceMatches
