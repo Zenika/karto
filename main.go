@@ -45,39 +45,32 @@ func (podIsolation *PodIsolation) addEgressPolicy(egressPolicy networkingv1.Netw
 	podIsolation.EgressPolicies = append(podIsolation.EgressPolicies, egressPolicy)
 }
 
+type AllowedCommunication struct {
+	From            corev1.Pod
+	EgressPolicies  []networkingv1.NetworkPolicy
+	To              corev1.Pod
+	IngressPolicies []networkingv1.NetworkPolicy
+}
+
 func main() {
 	kubeClient := initialize()
 
 	pods := getPodsAllNamespaces(kubeClient)
 	for _, pod := range pods.Items {
 		fmt.Printf("Pod: %v:\n", pod.Name)
-		//fmt.Printf("    Namespace: %v\n", pod.Namespace)
-		//fmt.Printf("    Labels:\n")
-		//for key, value := range pod.Labels { // TODO Annotations
-		//	fmt.Printf("        %v: %v\n", key, value)
-		//}
-		//fmt.Printf("    IP: %v\n", pod.Status.PodIP)
 	}
 
 	policies := getNetworkPoliciesAllNamespaces(kubeClient)
 	for _, policy := range policies.Items {
 		fmt.Printf("Network Policy: %v:\n", policy.Name)
-		//fmt.Printf("    Namespace: %v\n", policy.Namespace)
-		//fmt.Printf("    Labels:\n")
-		//for key, value := range policy.Labels {
-		//	fmt.Printf("        %v: %v\n", key, value)
-		//}
-		//fmt.Printf("    Pod Selector:\n")
-		//for key, value := range policy.Spec.PodSelector.MatchLabels { //
-		//	fmt.Printf("        %v: %v\n", key, value)
-		//}
-		//fmt.Printf("    Policy Type:\n")
-		//for _, policyType := range policy.Spec.PolicyTypes {
-		//	fmt.Printf("        %v\n", policyType)
-		//}
 	}
 
-	podIsolations := computePodIsolation(pods, policies)
+	namespaces := getNamespaces(kubeClient)
+	for _, namespace := range namespaces.Items {
+		fmt.Printf("Namespace: %v:\n", namespace.Name)
+	}
+
+	podIsolations := computePodIsolations(pods, policies)
 	for _, podIsolation := range podIsolations {
 		if podIsolation.isIngressIsolated() {
 			fmt.Printf("Pod %v ingress isolated\n", podIsolation.Pod.Name)
@@ -91,6 +84,11 @@ func main() {
 		} else {
 			fmt.Printf("Pod %v not egress isolated\n", podIsolation.Pod.Name)
 		}
+	}
+
+	allowedCommunications := computeAllowedCommunications(podIsolations, namespaces.Items)
+	for _, allowedCommunication := range allowedCommunications {
+		fmt.Printf("Allowed communication: %v\n", allowedCommunication)
 	}
 }
 
@@ -135,41 +133,39 @@ func getNetworkPoliciesAllNamespaces(kubeClient *kubernetes.Clientset) *networki
 	return policies
 }
 
-func computePodIsolation(pods *corev1.PodList, policies *networkingv1.NetworkPolicyList) []PodIsolation {
-	podIsolations := make([]PodIsolation, 0)
+func getNamespaces(kubeClient *kubernetes.Clientset) *corev1.NamespaceList {
+	namespaces, err := kubeClient.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		panic(err.Error())
+	}
+	return namespaces
+}
 
+func computePodIsolations(pods *corev1.PodList, policies *networkingv1.NetworkPolicyList) []PodIsolation {
+	podIsolations := make([]PodIsolation, 0)
 	for _, pod := range pods.Items {
-		podIsolation := NewPodIsolation(pod)
-		for _, policy := range policies.Items {
-			namespaceMatches := namespaceMatches(&pod, &policy)
-			selectorMatches := selectorMatches(&pod, &policy)
-			if namespaceMatches && selectorMatches {
-				isIngress, isEgress := policyTypes(&policy)
-				if isIngress {
-					podIsolation.addIngressPolicy(policy)
-				}
-				if isEgress {
-					podIsolation.addEgressPolicy(policy)
-				}
-			}
-		}
+		podIsolation := computePodIsolation(&pod, policies)
 		podIsolations = append(podIsolations, *podIsolation)
 	}
 	return podIsolations
 }
 
-func namespaceMatches(pod *corev1.Pod, policy *networkingv1.NetworkPolicy) bool {
-	return pod.Namespace == policy.Namespace
-}
-
-func selectorMatches(pod *corev1.Pod, policy *networkingv1.NetworkPolicy) bool {
-	podSelector := policy.Spec.PodSelector
-	selector, err := metav1.LabelSelectorAsSelector(&podSelector)
-	if err != nil {
-		fmt.Printf("Could not parse PodSelector of NetworkPolicy %v\n", policy)
-		return false
+func computePodIsolation(pod *corev1.Pod, policies *networkingv1.NetworkPolicyList) *PodIsolation {
+	podIsolation := NewPodIsolation(*pod)
+	for _, policy := range policies.Items {
+		namespaceMatches := namespaceMatches(pod, &policy)
+		selectorMatches := selectorMatches(pod.Labels, &policy.Spec.PodSelector)
+		if namespaceMatches && selectorMatches {
+			isIngress, isEgress := policyTypes(&policy)
+			if isIngress {
+				podIsolation.addIngressPolicy(policy)
+			}
+			if isEgress {
+				podIsolation.addEgressPolicy(policy)
+			}
+		}
 	}
-	return selector.Matches(labels.Set(pod.Labels))
+	return podIsolation
 }
 
 func policyTypes(policy *networkingv1.NetworkPolicy) (bool, bool) {
@@ -182,4 +178,94 @@ func policyTypes(policy *networkingv1.NetworkPolicy) (bool, bool) {
 		}
 	}
 	return isIngress, isEgress
+}
+
+func computeAllowedCommunications(podIsolations []PodIsolation, namespaces []corev1.Namespace) []AllowedCommunication {
+	allowedCommunications := make([]AllowedCommunication, 0)
+	for i, sourcePodIsolation := range podIsolations {
+		for j, targetPodIsolation := range podIsolations {
+			if i == j {
+				// Ignore communication to itself
+				continue
+			}
+			allowedCommunication := computeAllowedCommunication(&sourcePodIsolation, &targetPodIsolation, namespaces)
+			if allowedCommunication != nil {
+				allowedCommunications = append(allowedCommunications, *allowedCommunication)
+			}
+		}
+	}
+	return allowedCommunications
+}
+
+func computeAllowedCommunication(sourcePodIsolation *PodIsolation, targetPortIsolation *PodIsolation, namespaces []corev1.Namespace) *AllowedCommunication {
+	sourceAllowsEgress := !sourcePodIsolation.isEgressIsolated()
+	targetAllowsIngress := !targetPortIsolation.isIngressIsolated() ||
+		anyPolicyAllowsIngress(&sourcePodIsolation.Pod, targetPortIsolation, namespaces)
+	if sourceAllowsEgress && targetAllowsIngress {
+		return &AllowedCommunication{
+			From:            sourcePodIsolation.Pod,
+			EgressPolicies:  nil,
+			To:              targetPortIsolation.Pod,
+			IngressPolicies: nil,
+		}
+	} else {
+		return nil
+	}
+}
+
+func anyPolicyAllowsIngress(sourcePod *corev1.Pod, targetPortIsolation *PodIsolation, namespaces []corev1.Namespace) bool {
+	for _, ingressPolicy := range targetPortIsolation.IngressPolicies {
+		if policyAllowsIngress(sourcePod, ingressPolicy, namespaces) {
+			return true
+		}
+	}
+	return false
+}
+
+func policyAllowsIngress(sourcePod *corev1.Pod, ingressPolicy networkingv1.NetworkPolicy, namespaces []corev1.Namespace) bool {
+	for _, ingressRule := range ingressPolicy.Spec.Ingress {
+		if ingressRuleAllows(sourcePod, &ingressRule, namespaces) {
+			return true
+		}
+	}
+	return false
+}
+
+func ingressRuleAllows(sourcePod *corev1.Pod, ingressRule *networkingv1.NetworkPolicyIngressRule, namespaces []corev1.Namespace) bool {
+	for _, policyPeer := range ingressRule.From {
+		if ingressRuleFromMatches(sourcePod, &policyPeer, namespaces) {
+			return true
+		}
+	}
+	return false
+}
+
+func ingressRuleFromMatches(pod *corev1.Pod, policyPeer *networkingv1.NetworkPolicyPeer, namespaces []corev1.Namespace) bool {
+	namespaceMatches := policyPeer.NamespaceSelector == nil || namespaceLabelsMatches(pod.Namespace, namespaces, policyPeer.NamespaceSelector)
+	selectorMatches := policyPeer.PodSelector == nil || selectorMatches(pod.Labels, policyPeer.PodSelector)
+	return selectorMatches && namespaceMatches
+}
+
+func namespaceLabelsMatches(namespaceName string, namespaces []corev1.Namespace, selector *metav1.LabelSelector) bool {
+	var namespace corev1.Namespace
+	for _, candidateNamespace := range namespaces {
+		if candidateNamespace.Name == namespaceName {
+			namespace = candidateNamespace
+			break
+		}
+	}
+	return selectorMatches(namespace.Labels, selector)
+}
+
+func namespaceMatches(pod *corev1.Pod, policy *networkingv1.NetworkPolicy) bool {
+	return pod.Namespace == policy.Namespace
+}
+
+func selectorMatches(objectLabels map[string]string, labelSelector *metav1.LabelSelector) bool {
+	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	if err != nil {
+		fmt.Printf("Could not parse LabelSelector %v\n", labelSelector)
+		return false
+	}
+	return selector.Matches(labels.Set(objectLabels))
 }
