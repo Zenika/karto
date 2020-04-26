@@ -52,7 +52,7 @@ func AnalyzeEverySeconds(k8sConfigPath string, resultsChannel chan<- types.Analy
 		namespaces := getNamespaces(k8sClient)
 		podIsolations := computePodIsolations(pods, policies)
 		allAllowedTraffic := computeAllAllowedTraffic(podIsolations, namespaces.Items)
-		fmt.Printf("Finished analysis, found %d pods and computed %d instances of pod-to-pod allowed traffic\n", len(podIsolations), len(allAllowedTraffic))
+		fmt.Printf("Finished analysis, found %d pods and %d allowed pod-to-pod routes\n", len(podIsolations), len(allAllowedTraffic))
 		resultsChannel <- types.AnalysisResult{
 			Pods:           fromK8sPodIsolations(podIsolations),
 			AllowedTraffic: allAllowedTraffic,
