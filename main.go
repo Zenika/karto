@@ -10,9 +10,9 @@ import (
 )
 
 func main() {
-	kubernetesConfigPath := parseCmd()
+	k8sConfigPath := parseCmd()
 	analysisResultsChannel := make(chan types.AnalysisResult)
-	go trafficanalyzer.AnalyzeEverySeconds(kubernetesConfigPath, analysisResultsChannel, 5)
+	go trafficanalyzer.AnalyzeEverySeconds(k8sConfigPath, analysisResultsChannel, 5)
 	api.Expose(analysisResultsChannel)
 }
 
@@ -21,13 +21,13 @@ func parseCmd() string {
 	if home == "" {
 		home = os.Getenv("USERPROFILE")
 	}
-	var kubernetesConfigPath *string
+	var k8sConfigPath *string
 	if home != "" {
-		kubernetesConfigPath = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+		k8sConfigPath = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
 	} else {
-		kubernetesConfigPath = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+		k8sConfigPath = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 	}
 	flag.Parse()
 
-	return *kubernetesConfigPath
+	return *k8sConfigPath
 }
