@@ -18,7 +18,7 @@ func Test_computePodIsolation(t *testing.T) {
 	tests := []struct {
 		name                 string
 		args                 args
-		expectedPodIsolation podIsolation
+		expectedPodIsolation types.PodIsolation
 	}{
 		{
 			name: "a pod is not isolated by default",
@@ -26,7 +26,7 @@ func Test_computePodIsolation(t *testing.T) {
 				pod:             *podBuilder().name("Pod1").build(),
 				networkPolicies: *networkPolicyList(),
 			},
-			expectedPodIsolation: podIsolation{
+			expectedPodIsolation: types.PodIsolation{
 				Pod:             *podBuilder().name("Pod1").build(),
 				IngressPolicies: []networkingv1.NetworkPolicy{},
 				EgressPolicies:  []networkingv1.NetworkPolicy{},
@@ -40,7 +40,7 @@ func Test_computePodIsolation(t *testing.T) {
 					*networkPolicyBuilder().types("Ingress", "Egress").podSelector(*labelSelectorBuilder().matchLabel("app", "foo").build()).build(),
 				),
 			},
-			expectedPodIsolation: podIsolation{
+			expectedPodIsolation: types.PodIsolation{
 				Pod: *podBuilder().name("Pod1").label("app", "foo").build(),
 				IngressPolicies: []networkingv1.NetworkPolicy{
 					*networkPolicyBuilder().types("Ingress", "Egress").podSelector(*labelSelectorBuilder().matchLabel("app", "foo").build()).build(),
@@ -58,7 +58,7 @@ func Test_computePodIsolation(t *testing.T) {
 					*networkPolicyBuilder().types("Ingress", "Egress").podSelector(*labelSelectorBuilder().matchLabel("app", "bar").build()).build(),
 				),
 			},
-			expectedPodIsolation: podIsolation{
+			expectedPodIsolation: types.PodIsolation{
 				Pod:             *podBuilder().name("Pod1").label("app", "foo").build(),
 				IngressPolicies: []networkingv1.NetworkPolicy{},
 				EgressPolicies:  []networkingv1.NetworkPolicy{},
@@ -72,7 +72,7 @@ func Test_computePodIsolation(t *testing.T) {
 					*networkPolicyBuilder().types("Ingress", "Egress").podSelector(*labelSelectorBuilder().build()).build(),
 				),
 			},
-			expectedPodIsolation: podIsolation{
+			expectedPodIsolation: types.PodIsolation{
 				Pod: *podBuilder().name("Pod1").label("app", "foo").build(),
 				IngressPolicies: []networkingv1.NetworkPolicy{
 					*networkPolicyBuilder().types("Ingress", "Egress").podSelector(*labelSelectorBuilder().build()).build(),
@@ -90,7 +90,7 @@ func Test_computePodIsolation(t *testing.T) {
 					*networkPolicyBuilder().types("Ingress", "Egress").namespace("other").build(),
 				),
 			},
-			expectedPodIsolation: podIsolation{
+			expectedPodIsolation: types.PodIsolation{
 				Pod:             *podBuilder().name("Pod1").namespace("ns").build(),
 				IngressPolicies: []networkingv1.NetworkPolicy{},
 				EgressPolicies:  []networkingv1.NetworkPolicy{},
@@ -104,7 +104,7 @@ func Test_computePodIsolation(t *testing.T) {
 					*networkPolicyBuilder().types("Ingress").podSelector(*labelSelectorBuilder().build()).build(),
 				),
 			},
-			expectedPodIsolation: podIsolation{
+			expectedPodIsolation: types.PodIsolation{
 				Pod: *podBuilder().name("Pod1").build(),
 				IngressPolicies: []networkingv1.NetworkPolicy{
 					*networkPolicyBuilder().types("Ingress").podSelector(*labelSelectorBuilder().build()).build(),
@@ -120,7 +120,7 @@ func Test_computePodIsolation(t *testing.T) {
 					*networkPolicyBuilder().types("Egress").podSelector(*labelSelectorBuilder().build()).build(),
 				),
 			},
-			expectedPodIsolation: podIsolation{
+			expectedPodIsolation: types.PodIsolation{
 				Pod:             *podBuilder().name("Pod1").build(),
 				IngressPolicies: []networkingv1.NetworkPolicy{},
 				EgressPolicies: []networkingv1.NetworkPolicy{
@@ -139,28 +139,28 @@ func Test_computePodIsolation(t *testing.T) {
 	}
 }
 
-func Test_computeAllowedCommunication(t *testing.T) {
+func Test_computeAllowedTraffic(t *testing.T) {
 	type args struct {
-		sourcePodIsolation podIsolation
-		targetPodIsolation podIsolation
+		sourcePodIsolation types.PodIsolation
+		targetPodIsolation types.PodIsolation
 		namespaces         []corev1.Namespace
 	}
 	tests := []struct {
-		name                         string
-		args                         args
-		expectedAllowedCommunication *types.AllowedTraffic
+		name                   string
+		args                   args
+		expectedAllowedTraffic *types.AllowedTraffic
 	}{
 		{
 			name: "a non isolated pod can send traffic to non isolated pod",
 			args: args{
-				sourcePodIsolation: podIsolation{
+				sourcePodIsolation: types.PodIsolation{
 					Pod: *podBuilder().name("Pod1").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{
 						*networkPolicyBuilder().types("Ingress").podSelector(*labelSelectorBuilder().build()).build(),
 					},
 					EgressPolicies: []networkingv1.NetworkPolicy{},
 				},
-				targetPodIsolation: podIsolation{
+				targetPodIsolation: types.PodIsolation{
 					Pod:             *podBuilder().name("Pod2").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{},
 					EgressPolicies: []networkingv1.NetworkPolicy{
@@ -171,7 +171,7 @@ func Test_computeAllowedCommunication(t *testing.T) {
 					*namespaceBuilder().name("default").build(),
 				},
 			},
-			expectedAllowedCommunication: &types.AllowedTraffic{
+			expectedAllowedTraffic: &types.AllowedTraffic{
 				From:            *podBuilder().name("Pod1").build(),
 				EgressPolicies:  nil,
 				To:              *podBuilder().name("Pod2").build(),
@@ -181,12 +181,12 @@ func Test_computeAllowedCommunication(t *testing.T) {
 		{
 			name: "a non isolated pod can send traffic to pod accepting its labels",
 			args: args{
-				sourcePodIsolation: podIsolation{
+				sourcePodIsolation: types.PodIsolation{
 					Pod:             *podBuilder().name("Pod1").label("app", "foo").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{},
 					EgressPolicies:  []networkingv1.NetworkPolicy{},
 				},
-				targetPodIsolation: podIsolation{
+				targetPodIsolation: types.PodIsolation{
 					Pod: *podBuilder().name("Pod2").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{
 						*networkPolicyBuilder().types("Ingress").ingressRule(networkingv1.NetworkPolicyIngressRule{
@@ -203,7 +203,7 @@ func Test_computeAllowedCommunication(t *testing.T) {
 					*namespaceBuilder().name("default").build(),
 				},
 			},
-			expectedAllowedCommunication: &types.AllowedTraffic{
+			expectedAllowedTraffic: &types.AllowedTraffic{
 				From:            *podBuilder().name("Pod1").label("app", "foo").build(),
 				EgressPolicies:  nil,
 				To:              *podBuilder().name("Pod2").build(),
@@ -213,12 +213,12 @@ func Test_computeAllowedCommunication(t *testing.T) {
 		{
 			name: "a non isolated pod cannot send traffic to pod rejecting its labels",
 			args: args{
-				sourcePodIsolation: podIsolation{
+				sourcePodIsolation: types.PodIsolation{
 					Pod:             *podBuilder().name("Pod1").label("app", "foo").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{},
 					EgressPolicies:  []networkingv1.NetworkPolicy{},
 				},
-				targetPodIsolation: podIsolation{
+				targetPodIsolation: types.PodIsolation{
 					Pod: *podBuilder().name("Pod2").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{
 						*networkPolicyBuilder().types("Ingress").ingressRule(networkingv1.NetworkPolicyIngressRule{
@@ -235,17 +235,17 @@ func Test_computeAllowedCommunication(t *testing.T) {
 					*namespaceBuilder().name("default").build(),
 				},
 			},
-			expectedAllowedCommunication: nil,
+			expectedAllowedTraffic: nil,
 		},
 		{
 			name: "a non isolated pod can send traffic to pod accepting its namespace",
 			args: args{
-				sourcePodIsolation: podIsolation{
+				sourcePodIsolation: types.PodIsolation{
 					Pod:             *podBuilder().name("Pod1").namespace("ns").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{},
 					EgressPolicies:  []networkingv1.NetworkPolicy{},
 				},
-				targetPodIsolation: podIsolation{
+				targetPodIsolation: types.PodIsolation{
 					Pod: *podBuilder().name("Pod2").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{
 						*networkPolicyBuilder().types("Ingress").ingressRule(networkingv1.NetworkPolicyIngressRule{
@@ -262,7 +262,7 @@ func Test_computeAllowedCommunication(t *testing.T) {
 					*namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
-			expectedAllowedCommunication: &types.AllowedTraffic{
+			expectedAllowedTraffic: &types.AllowedTraffic{
 				From:            *podBuilder().name("Pod1").namespace("ns").build(),
 				EgressPolicies:  nil,
 				To:              *podBuilder().name("Pod2").build(),
@@ -272,12 +272,12 @@ func Test_computeAllowedCommunication(t *testing.T) {
 		{
 			name: "a non isolated pod cannot send traffic to pod rejecting its namespace",
 			args: args{
-				sourcePodIsolation: podIsolation{
+				sourcePodIsolation: types.PodIsolation{
 					Pod:             *podBuilder().name("Pod1").namespace("ns").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{},
 					EgressPolicies:  []networkingv1.NetworkPolicy{},
 				},
-				targetPodIsolation: podIsolation{
+				targetPodIsolation: types.PodIsolation{
 					Pod: *podBuilder().name("Pod2").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{
 						*networkPolicyBuilder().types("Ingress").ingressRule(networkingv1.NetworkPolicyIngressRule{
@@ -294,17 +294,17 @@ func Test_computeAllowedCommunication(t *testing.T) {
 					*namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
-			expectedAllowedCommunication: nil,
+			expectedAllowedTraffic: nil,
 		},
 		{
 			name: "a non isolated pod can send traffic to pod accepting both its labels and namespace",
 			args: args{
-				sourcePodIsolation: podIsolation{
+				sourcePodIsolation: types.PodIsolation{
 					Pod:             *podBuilder().name("Pod1").namespace("ns").label("app", "foo").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{},
 					EgressPolicies:  []networkingv1.NetworkPolicy{},
 				},
-				targetPodIsolation: podIsolation{
+				targetPodIsolation: types.PodIsolation{
 					Pod: *podBuilder().name("Pod2").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{
 						*networkPolicyBuilder().types("Ingress").ingressRule(networkingv1.NetworkPolicyIngressRule{
@@ -322,7 +322,7 @@ func Test_computeAllowedCommunication(t *testing.T) {
 					*namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
-			expectedAllowedCommunication: &types.AllowedTraffic{
+			expectedAllowedTraffic: &types.AllowedTraffic{
 				From:            *podBuilder().name("Pod1").namespace("ns").label("app", "foo").build(),
 				EgressPolicies:  nil,
 				To:              *podBuilder().name("Pod2").build(),
@@ -332,12 +332,12 @@ func Test_computeAllowedCommunication(t *testing.T) {
 		{
 			name: "a non isolated pod cannot send traffic to pod accepting its labels but not its namespace",
 			args: args{
-				sourcePodIsolation: podIsolation{
+				sourcePodIsolation: types.PodIsolation{
 					Pod:             *podBuilder().name("Pod1").namespace("ns").label("app", "foo").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{},
 					EgressPolicies:  []networkingv1.NetworkPolicy{},
 				},
-				targetPodIsolation: podIsolation{
+				targetPodIsolation: types.PodIsolation{
 					Pod: *podBuilder().name("Pod2").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{
 						*networkPolicyBuilder().types("Ingress").ingressRule(networkingv1.NetworkPolicyIngressRule{
@@ -355,17 +355,17 @@ func Test_computeAllowedCommunication(t *testing.T) {
 					*namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
-			expectedAllowedCommunication: nil,
+			expectedAllowedTraffic: nil,
 		},
 		{
 			name: "a non isolated pod cannot send traffic to pod accepting its namespace but not its labels",
 			args: args{
-				sourcePodIsolation: podIsolation{
+				sourcePodIsolation: types.PodIsolation{
 					Pod:             *podBuilder().name("Pod1").namespace("ns").label("app", "foo").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{},
 					EgressPolicies:  []networkingv1.NetworkPolicy{},
 				},
-				targetPodIsolation: podIsolation{
+				targetPodIsolation: types.PodIsolation{
 					Pod: *podBuilder().name("Pod2").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{
 						*networkPolicyBuilder().types("Ingress").ingressRule(networkingv1.NetworkPolicyIngressRule{
@@ -383,12 +383,12 @@ func Test_computeAllowedCommunication(t *testing.T) {
 					*namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
-			expectedAllowedCommunication: nil,
+			expectedAllowedTraffic: nil,
 		},
 		{
 			name: "a non isolated pod can receive traffic from pod accepting its labels",
 			args: args{
-				sourcePodIsolation: podIsolation{
+				sourcePodIsolation: types.PodIsolation{
 					Pod:             *podBuilder().name("Pod1").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{},
 					EgressPolicies: []networkingv1.NetworkPolicy{
@@ -401,7 +401,7 @@ func Test_computeAllowedCommunication(t *testing.T) {
 						}).build(),
 					},
 				},
-				targetPodIsolation: podIsolation{
+				targetPodIsolation: types.PodIsolation{
 					Pod:             *podBuilder().name("Pod2").label("app", "foo").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{},
 					EgressPolicies:  []networkingv1.NetworkPolicy{},
@@ -410,7 +410,7 @@ func Test_computeAllowedCommunication(t *testing.T) {
 					*namespaceBuilder().name("default").build(),
 				},
 			},
-			expectedAllowedCommunication: &types.AllowedTraffic{
+			expectedAllowedTraffic: &types.AllowedTraffic{
 				From:            *podBuilder().name("Pod1").build(),
 				EgressPolicies:  nil,
 				To:              *podBuilder().name("Pod2").label("app", "foo").build(),
@@ -420,7 +420,7 @@ func Test_computeAllowedCommunication(t *testing.T) {
 		{
 			name: "a non isolated pod cannot receive traffic from pod rejecting its labels",
 			args: args{
-				sourcePodIsolation: podIsolation{
+				sourcePodIsolation: types.PodIsolation{
 					Pod:             *podBuilder().name("Pod1").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{},
 					EgressPolicies: []networkingv1.NetworkPolicy{
@@ -433,7 +433,7 @@ func Test_computeAllowedCommunication(t *testing.T) {
 						}).build(),
 					},
 				},
-				targetPodIsolation: podIsolation{
+				targetPodIsolation: types.PodIsolation{
 					Pod:             *podBuilder().name("Pod2").label("app", "foo").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{},
 					EgressPolicies:  []networkingv1.NetworkPolicy{},
@@ -442,12 +442,12 @@ func Test_computeAllowedCommunication(t *testing.T) {
 					*namespaceBuilder().name("default").build(),
 				},
 			},
-			expectedAllowedCommunication: nil,
+			expectedAllowedTraffic: nil,
 		},
 		{
 			name: "a non isolated pod can receive traffic from pod accepting its namespace",
 			args: args{
-				sourcePodIsolation: podIsolation{
+				sourcePodIsolation: types.PodIsolation{
 					Pod:             *podBuilder().name("Pod1").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{},
 					EgressPolicies: []networkingv1.NetworkPolicy{
@@ -460,7 +460,7 @@ func Test_computeAllowedCommunication(t *testing.T) {
 						}).build(),
 					},
 				},
-				targetPodIsolation: podIsolation{
+				targetPodIsolation: types.PodIsolation{
 					Pod:             *podBuilder().name("Pod2").namespace("ns").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{},
 					EgressPolicies:  []networkingv1.NetworkPolicy{},
@@ -469,7 +469,7 @@ func Test_computeAllowedCommunication(t *testing.T) {
 					*namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
-			expectedAllowedCommunication: &types.AllowedTraffic{
+			expectedAllowedTraffic: &types.AllowedTraffic{
 				From:            *podBuilder().name("Pod1").build(),
 				EgressPolicies:  nil,
 				To:              *podBuilder().name("Pod2").namespace("ns").build(),
@@ -479,7 +479,7 @@ func Test_computeAllowedCommunication(t *testing.T) {
 		{
 			name: "a non isolated pod cannot receive traffic from pod rejecting its namespace",
 			args: args{
-				sourcePodIsolation: podIsolation{
+				sourcePodIsolation: types.PodIsolation{
 					Pod:             *podBuilder().name("Pod1").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{},
 					EgressPolicies: []networkingv1.NetworkPolicy{
@@ -492,7 +492,7 @@ func Test_computeAllowedCommunication(t *testing.T) {
 						}).build(),
 					},
 				},
-				targetPodIsolation: podIsolation{
+				targetPodIsolation: types.PodIsolation{
 					Pod:             *podBuilder().name("Pod2").name("ns").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{},
 					EgressPolicies:  []networkingv1.NetworkPolicy{},
@@ -501,12 +501,12 @@ func Test_computeAllowedCommunication(t *testing.T) {
 					*namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
-			expectedAllowedCommunication: nil,
+			expectedAllowedTraffic: nil,
 		},
 		{
 			name: "a non isolated pod can receive traffic from pod accepting both its labels and namespace",
 			args: args{
-				sourcePodIsolation: podIsolation{
+				sourcePodIsolation: types.PodIsolation{
 					Pod:             *podBuilder().name("Pod1").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{},
 					EgressPolicies: []networkingv1.NetworkPolicy{
@@ -520,7 +520,7 @@ func Test_computeAllowedCommunication(t *testing.T) {
 						}).build(),
 					},
 				},
-				targetPodIsolation: podIsolation{
+				targetPodIsolation: types.PodIsolation{
 					Pod:             *podBuilder().name("Pod2").namespace("ns").label("app", "foo").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{},
 					EgressPolicies:  []networkingv1.NetworkPolicy{},
@@ -529,7 +529,7 @@ func Test_computeAllowedCommunication(t *testing.T) {
 					*namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
-			expectedAllowedCommunication: &types.AllowedTraffic{
+			expectedAllowedTraffic: &types.AllowedTraffic{
 				From:            *podBuilder().name("Pod1").build(),
 				EgressPolicies:  nil,
 				To:              *podBuilder().name("Pod2").namespace("ns").label("app", "foo").build(),
@@ -539,7 +539,7 @@ func Test_computeAllowedCommunication(t *testing.T) {
 		{
 			name: "a non isolated pod cannot receive traffic from pod accepting its labels but not its namespace",
 			args: args{
-				sourcePodIsolation: podIsolation{
+				sourcePodIsolation: types.PodIsolation{
 					Pod:             *podBuilder().name("Pod1").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{},
 					EgressPolicies: []networkingv1.NetworkPolicy{
@@ -553,7 +553,7 @@ func Test_computeAllowedCommunication(t *testing.T) {
 						}).build(),
 					},
 				},
-				targetPodIsolation: podIsolation{
+				targetPodIsolation: types.PodIsolation{
 					Pod:             *podBuilder().name("Pod2").namespace("ns").label("app", "foo").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{},
 					EgressPolicies:  []networkingv1.NetworkPolicy{},
@@ -562,12 +562,12 @@ func Test_computeAllowedCommunication(t *testing.T) {
 					*namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
-			expectedAllowedCommunication: nil,
+			expectedAllowedTraffic: nil,
 		},
 		{
 			name: "a non isolated pod cannot receive traffic from pod accepting its namespace but not its labels",
 			args: args{
-				sourcePodIsolation: podIsolation{
+				sourcePodIsolation: types.PodIsolation{
 					Pod:             *podBuilder().name("Pod1").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{},
 					EgressPolicies: []networkingv1.NetworkPolicy{
@@ -581,7 +581,7 @@ func Test_computeAllowedCommunication(t *testing.T) {
 						}).build(),
 					},
 				},
-				targetPodIsolation: podIsolation{
+				targetPodIsolation: types.PodIsolation{
 					Pod:             *podBuilder().name("Pod2").namespace("ns").label("app", "foo").build(),
 					IngressPolicies: []networkingv1.NetworkPolicy{},
 					EgressPolicies:  []networkingv1.NetworkPolicy{},
@@ -590,14 +590,14 @@ func Test_computeAllowedCommunication(t *testing.T) {
 					*namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
-			expectedAllowedCommunication: nil,
+			expectedAllowedTraffic: nil,
 		},
 	}
 	for _, tt := range tests {
-		allowedCommunication := computeAllowedCommunication(&tt.args.sourcePodIsolation, &tt.args.targetPodIsolation, tt.args.namespaces)
+		allowedTraffic := computeAllowedTraffic(&tt.args.sourcePodIsolation, &tt.args.targetPodIsolation, tt.args.namespaces)
 		t.Run(tt.name, func(t *testing.T) {
-			if diff := cmp.Diff(tt.expectedAllowedCommunication, allowedCommunication); diff != "" {
-				t.Errorf("computeAllowedCommunication() result mismatch (-want +got):\n%s", diff)
+			if diff := cmp.Diff(tt.expectedAllowedTraffic, allowedTraffic); diff != "" {
+				t.Errorf("computeAllowedTraffic() result mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

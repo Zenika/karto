@@ -1,21 +1,74 @@
 package trafficanalyzer
 
 import (
+	"context"
 	"fmt"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/kubernetes"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/tools/clientcmd"
 	"network-policy-explorer/types"
+	"time"
 )
 
-func Analyze(pods *corev1.PodList, policies *networkingv1.NetworkPolicyList, namespaces *corev1.NamespaceList) []types.AllowedTraffic {
-	podIsolations := computePodIsolations(pods, policies)
-	return computeAllowedCommunications(podIsolations, namespaces.Items)
+func AnalyzeEverySeconds(kubernetesConfigPath string, resultsChannel chan<- types.AnalysisResult, intervalSeconds time.Duration) {
+	kubernetesClient := getKubernetesClient(kubernetesConfigPath)
+	for {
+		pods := getPodsAllNamespaces(kubernetesClient)
+		policies := getNetworkPoliciesAllNamespaces(kubernetesClient)
+		namespaces := getNamespaces(kubernetesClient)
+		podIsolations := computePodIsolations(pods, policies)
+		allowedTraffics := computeAllowedTraffics(podIsolations, namespaces.Items)
+		fmt.Printf("Finished analysis, found %d pods and %d allowed traffics\n", len(podIsolations), len(allowedTraffics))
+		resultsChannel <- types.AnalysisResult{
+			PodIsolations:   podIsolations,
+			AllowedTraffics: allowedTraffics,
+		}
+		time.Sleep(intervalSeconds * time.Second)
+	}
 }
 
-func computePodIsolations(pods *corev1.PodList, policies *networkingv1.NetworkPolicyList) []podIsolation {
-	podIsolations := make([]podIsolation, 0)
+func getKubernetesClient(kubernetesClientConfig string) *kubernetes.Clientset {
+	config, err := clientcmd.BuildConfigFromFlags("", kubernetesClientConfig)
+	if err != nil {
+		panic(err.Error())
+	}
+	kubernetesClient, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err.Error())
+	}
+	return kubernetesClient
+}
+
+func getPodsAllNamespaces(kubernetesClient *kubernetes.Clientset) *corev1.PodList {
+	pods, err := kubernetesClient.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		panic(err.Error())
+	}
+	return pods
+}
+
+func getNetworkPoliciesAllNamespaces(kubernetesClient *kubernetes.Clientset) *networkingv1.NetworkPolicyList {
+	policies, err := kubernetesClient.NetworkingV1().NetworkPolicies("").List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		panic(err.Error())
+	}
+	return policies
+}
+
+func getNamespaces(kubernetesClient *kubernetes.Clientset) *corev1.NamespaceList {
+	namespaces, err := kubernetesClient.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		panic(err.Error())
+	}
+	return namespaces
+}
+
+func computePodIsolations(pods *corev1.PodList, policies *networkingv1.NetworkPolicyList) []types.PodIsolation {
+	podIsolations := make([]types.PodIsolation, 0)
 	for _, pod := range pods.Items {
 		podIsolation := computePodIsolation(&pod, policies)
 		podIsolations = append(podIsolations, *podIsolation)
@@ -23,18 +76,18 @@ func computePodIsolations(pods *corev1.PodList, policies *networkingv1.NetworkPo
 	return podIsolations
 }
 
-func computePodIsolation(pod *corev1.Pod, policies *networkingv1.NetworkPolicyList) *podIsolation {
-	podIsolation := NewPodIsolation(*pod)
+func computePodIsolation(pod *corev1.Pod, policies *networkingv1.NetworkPolicyList) *types.PodIsolation {
+	podIsolation := types.NewPodIsolation(*pod)
 	for _, policy := range policies.Items {
 		namespaceMatches := namespaceMatches(pod, &policy)
 		selectorMatches := selectorMatches(pod.Labels, &policy.Spec.PodSelector)
 		if namespaceMatches && selectorMatches {
 			isIngress, isEgress := policyTypes(&policy)
 			if isIngress {
-				podIsolation.addIngressPolicy(policy)
+				podIsolation.AddIngressPolicy(policy)
 			}
 			if isEgress {
-				podIsolation.addEgressPolicy(policy)
+				podIsolation.AddEgressPolicy(policy)
 			}
 		}
 	}
@@ -53,27 +106,27 @@ func policyTypes(policy *networkingv1.NetworkPolicy) (bool, bool) {
 	return isIngress, isEgress
 }
 
-func computeAllowedCommunications(podIsolations []podIsolation, namespaces []corev1.Namespace) []types.AllowedTraffic {
-	allowedCommunications := make([]types.AllowedTraffic, 0)
+func computeAllowedTraffics(podIsolations []types.PodIsolation, namespaces []corev1.Namespace) []types.AllowedTraffic {
+	allowedTraffics := make([]types.AllowedTraffic, 0)
 	for i, sourcePodIsolation := range podIsolations {
 		for j, targetPodIsolation := range podIsolations {
 			if i == j {
-				// Ignore communication to itself
+				// Ignore traffic to itself
 				continue
 			}
-			allowedCommunication := computeAllowedCommunication(&sourcePodIsolation, &targetPodIsolation, namespaces)
-			if allowedCommunication != nil {
-				allowedCommunications = append(allowedCommunications, *allowedCommunication)
+			allowedTraffic := computeAllowedTraffic(&sourcePodIsolation, &targetPodIsolation, namespaces)
+			if allowedTraffic != nil {
+				allowedTraffics = append(allowedTraffics, *allowedTraffic)
 			}
 		}
 	}
-	return allowedCommunications
+	return allowedTraffics
 }
 
-func computeAllowedCommunication(sourcePodIsolation *podIsolation, targetPodIsolation *podIsolation, namespaces []corev1.Namespace) *types.AllowedTraffic {
-	sourceAllowsEgress := !sourcePodIsolation.isEgressIsolated() ||
+func computeAllowedTraffic(sourcePodIsolation *types.PodIsolation, targetPodIsolation *types.PodIsolation, namespaces []corev1.Namespace) *types.AllowedTraffic {
+	sourceAllowsEgress := !sourcePodIsolation.IsEgressIsolated() ||
 		anyPolicyAllowsEgress(&targetPodIsolation.Pod, sourcePodIsolation, namespaces)
-	targetAllowsIngress := !targetPodIsolation.isIngressIsolated() ||
+	targetAllowsIngress := !targetPodIsolation.IsIngressIsolated() ||
 		anyPolicyAllowsIngress(&sourcePodIsolation.Pod, targetPodIsolation, namespaces)
 	if sourceAllowsEgress && targetAllowsIngress {
 		return &types.AllowedTraffic{
@@ -87,7 +140,7 @@ func computeAllowedCommunication(sourcePodIsolation *podIsolation, targetPodIsol
 	}
 }
 
-func anyPolicyAllowsIngress(sourcePod *corev1.Pod, targetPodIsolation *podIsolation, namespaces []corev1.Namespace) bool {
+func anyPolicyAllowsIngress(sourcePod *corev1.Pod, targetPodIsolation *types.PodIsolation, namespaces []corev1.Namespace) bool {
 	for _, ingressPolicy := range targetPodIsolation.IngressPolicies {
 		if policyAllowsIngress(sourcePod, ingressPolicy, namespaces) {
 			return true
@@ -114,7 +167,7 @@ func ingressRuleAllows(sourcePod *corev1.Pod, ingressRule *networkingv1.NetworkP
 	return false
 }
 
-func anyPolicyAllowsEgress(targetPod *corev1.Pod, sourcePodIsolation *podIsolation, namespaces []corev1.Namespace) bool {
+func anyPolicyAllowsEgress(targetPod *corev1.Pod, sourcePodIsolation *types.PodIsolation, namespaces []corev1.Namespace) bool {
 	for _, egressPolicy := range sourcePodIsolation.EgressPolicies {
 		if policyAllowsEgress(targetPod, egressPolicy, namespaces) {
 			return true
