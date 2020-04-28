@@ -139,16 +139,16 @@ func Test_computePodIsolation(t *testing.T) {
 	}
 }
 
-func Test_computeAllowedTraffic(t *testing.T) {
+func Test_computeAllowedRoutes(t *testing.T) {
 	type args struct {
 		sourcePodIsolation podIsolation
 		targetPodIsolation podIsolation
 		namespaces         []corev1.Namespace
 	}
 	tests := []struct {
-		name                   string
-		args                   args
-		expectedAllowedTraffic *types.AllowedTraffic
+		name                 string
+		args                 args
+		expectedAllowedRoute *types.AllowedRoute
 	}{
 		{
 			name: "a non isolated pod can send traffic to non isolated pod",
@@ -171,7 +171,7 @@ func Test_computeAllowedTraffic(t *testing.T) {
 					namespaceBuilder().name("default").build(),
 				},
 			},
-			expectedAllowedTraffic: &types.AllowedTraffic{
+			expectedAllowedRoute: &types.AllowedRoute{
 				SourcePod:       types.Pod{Name: "Pod1", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: true, IsEgressIsolated: false},
 				EgressPolicies:  []types.NetworkPolicy{},
 				TargetPod:       types.Pod{Name: "Pod2", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: false, IsEgressIsolated: true},
@@ -203,7 +203,7 @@ func Test_computeAllowedTraffic(t *testing.T) {
 					namespaceBuilder().name("default").build(),
 				},
 			},
-			expectedAllowedTraffic: &types.AllowedTraffic{
+			expectedAllowedRoute: &types.AllowedRoute{
 				SourcePod:      types.Pod{Name: "Pod1", Namespace: "default", Labels: map[string]string{"app": "foo"}, IsIngressIsolated: false, IsEgressIsolated: false},
 				EgressPolicies: []types.NetworkPolicy{},
 				TargetPod:      types.Pod{Name: "Pod2", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: true, IsEgressIsolated: false},
@@ -237,7 +237,7 @@ func Test_computeAllowedTraffic(t *testing.T) {
 					namespaceBuilder().name("default").build(),
 				},
 			},
-			expectedAllowedTraffic: nil,
+			expectedAllowedRoute: nil,
 		},
 		{
 			name: "a non isolated pod can send traffic to pod accepting its namespace",
@@ -264,7 +264,7 @@ func Test_computeAllowedTraffic(t *testing.T) {
 					namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
-			expectedAllowedTraffic: &types.AllowedTraffic{
+			expectedAllowedRoute: &types.AllowedRoute{
 				SourcePod:      types.Pod{Name: "Pod1", Namespace: "ns", Labels: map[string]string{}, IsIngressIsolated: false, IsEgressIsolated: false},
 				EgressPolicies: []types.NetworkPolicy{},
 				TargetPod:      types.Pod{Name: "Pod2", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: true, IsEgressIsolated: false},
@@ -298,7 +298,7 @@ func Test_computeAllowedTraffic(t *testing.T) {
 					namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
-			expectedAllowedTraffic: nil,
+			expectedAllowedRoute: nil,
 		},
 		{
 			name: "a non isolated pod can send traffic to pod accepting both its labels and namespace",
@@ -326,7 +326,7 @@ func Test_computeAllowedTraffic(t *testing.T) {
 					namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
-			expectedAllowedTraffic: &types.AllowedTraffic{
+			expectedAllowedRoute: &types.AllowedRoute{
 				SourcePod:      types.Pod{Name: "Pod1", Namespace: "ns", Labels: map[string]string{"app": "foo"}, IsIngressIsolated: false, IsEgressIsolated: false},
 				EgressPolicies: []types.NetworkPolicy{},
 				TargetPod:      types.Pod{Name: "Pod2", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: true, IsEgressIsolated: false},
@@ -361,7 +361,7 @@ func Test_computeAllowedTraffic(t *testing.T) {
 					namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
-			expectedAllowedTraffic: nil,
+			expectedAllowedRoute: nil,
 		},
 		{
 			name: "a non isolated pod cannot send traffic to pod accepting its namespace but not its labels",
@@ -389,7 +389,7 @@ func Test_computeAllowedTraffic(t *testing.T) {
 					namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
-			expectedAllowedTraffic: nil,
+			expectedAllowedRoute: nil,
 		},
 		{
 			name: "a non isolated pod can receive traffic from pod accepting its labels",
@@ -416,7 +416,7 @@ func Test_computeAllowedTraffic(t *testing.T) {
 					namespaceBuilder().name("default").build(),
 				},
 			},
-			expectedAllowedTraffic: &types.AllowedTraffic{
+			expectedAllowedRoute: &types.AllowedRoute{
 				SourcePod: types.Pod{Name: "Pod1", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: false, IsEgressIsolated: true},
 				EgressPolicies: []types.NetworkPolicy{
 					{Name: "np", Namespace: "default", Labels: map[string]string{}},
@@ -450,7 +450,7 @@ func Test_computeAllowedTraffic(t *testing.T) {
 					namespaceBuilder().name("default").build(),
 				},
 			},
-			expectedAllowedTraffic: nil,
+			expectedAllowedRoute: nil,
 		},
 		{
 			name: "a non isolated pod can receive traffic from pod accepting its namespace",
@@ -477,7 +477,7 @@ func Test_computeAllowedTraffic(t *testing.T) {
 					namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
-			expectedAllowedTraffic: &types.AllowedTraffic{
+			expectedAllowedRoute: &types.AllowedRoute{
 				SourcePod: types.Pod{Name: "Pod1", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: false, IsEgressIsolated: true},
 				EgressPolicies: []types.NetworkPolicy{
 					{Name: "np", Namespace: "default", Labels: map[string]string{}},
@@ -511,7 +511,7 @@ func Test_computeAllowedTraffic(t *testing.T) {
 					namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
-			expectedAllowedTraffic: nil,
+			expectedAllowedRoute: nil,
 		},
 		{
 			name: "a non isolated pod can receive traffic from pod accepting both its labels and namespace",
@@ -539,7 +539,7 @@ func Test_computeAllowedTraffic(t *testing.T) {
 					namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
-			expectedAllowedTraffic: &types.AllowedTraffic{
+			expectedAllowedRoute: &types.AllowedRoute{
 				SourcePod: types.Pod{Name: "Pod1", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: false, IsEgressIsolated: true},
 				EgressPolicies: []types.NetworkPolicy{
 					{Name: "np", Namespace: "default", Labels: map[string]string{}},
@@ -574,7 +574,7 @@ func Test_computeAllowedTraffic(t *testing.T) {
 					namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
-			expectedAllowedTraffic: nil,
+			expectedAllowedRoute: nil,
 		},
 		{
 			name: "a non isolated pod cannot receive traffic from pod accepting its namespace but not its labels",
@@ -602,14 +602,14 @@ func Test_computeAllowedTraffic(t *testing.T) {
 					namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
-			expectedAllowedTraffic: nil,
+			expectedAllowedRoute: nil,
 		},
 	}
 	for _, tt := range tests {
-		allowedTraffic := computeAllowedTraffic(tt.args.sourcePodIsolation, tt.args.targetPodIsolation, tt.args.namespaces)
+		allowedRoute := computeAllowedRoute(tt.args.sourcePodIsolation, tt.args.targetPodIsolation, tt.args.namespaces)
 		t.Run(tt.name, func(t *testing.T) {
-			if diff := cmp.Diff(tt.expectedAllowedTraffic, allowedTraffic); diff != "" {
-				t.Errorf("computeAllowedTraffic() result mismatch (-want +got):\n%s", diff)
+			if diff := cmp.Diff(tt.expectedAllowedRoute, allowedRoute); diff != "" {
+				t.Errorf("computeAllowedRoute() result mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

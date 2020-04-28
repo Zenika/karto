@@ -5,14 +5,17 @@ import Content from './Content';
 
 const useStyles = makeStyles(theme => ({
     root: {
-        height: '100vh',
         backgroundColor: theme.palette.background.default
     },
     header: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
         height: '80px'
     },
     content: {
-        height: 'calc(100vh - 80px)'
+        height: '100vh'
     }
 }));
 
@@ -24,6 +27,6 @@ const App = () => {
             <Content className={classes.content}/>
         </div>
     );
-}
+};
 
 export default App;

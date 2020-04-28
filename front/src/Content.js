@@ -3,58 +3,117 @@ import { makeStyles } from '@material-ui/core/styles';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import classNames from 'classnames';
 import Typography from '@material-ui/core/Typography';
+import Graph from './Graph';
+import FormControlLabel from '@material-ui/core/FormControlLabel';
+import Switch from './components/Switch';
 
 const useStyles = makeStyles(theme => ({
     root: {
+        position: 'relative'
+    },
+    main: {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        height: '100vh'
+    },
+    controls: {
+        position: 'absolute',
+        top: 80,
+        left: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        padding: '0 16px'
+    },
+    controlsTitle: {
+        marginBottom: 8
     },
     loadingCaption: {
-        marginTop: 10,
-        color: theme.palette.text.main
+        marginTop: 8
     }
 }));
+
+async function fetchAnalysisResults() {
+    const response = await fetch('./api/analysisResults');
+    if (response.status !== 200) {
+        console.error(`Could not fetch analysis result: error code : ${response.status}`);
+        return;
+    }
+    return await response.json();
+}
+
+function filterResults(analysisResult, controls) {
+    if (analysisResult == null) {
+        return null;
+    }
+    const { includeKubeSystem } = controls;
+    const podFilter = pod => includeKubeSystem || pod.namespace !== 'kube-system';
+    return {
+        pods: analysisResult.pods.filter(podFilter),
+        allowedRoutes: analysisResult.allowedRoutes
+            .filter(allowedRoute => podFilter(allowedRoute.sourcePod) && podFilter(allowedRoute.targetPod))
+    };
+}
 
 const Content = ({ className = '' }) => {
     const classes = useStyles();
     const [isLoading, setIsLoading] = useState(true);
-    const [allowedTraffic, setAllowedTraffic] = useState(null);
+    const [analysisResult, setAnalysisResult] = useState(null);
+    const [controls, setControls] = useState({
+        includeKubeSystem: false
+    });
 
     useEffect(() => {
-        fetchAnalysisResults();
+        async function updateAnalysisResults() {
+            const analysisResult = await fetchAnalysisResults();
+            setAnalysisResult(filterResults(analysisResult, controls));
+            setIsLoading(false);
+        }
+
+        updateAnalysisResults();
         const interval = setInterval(() => {
-            fetchAnalysisResults()
+            updateAnalysisResults()
         }, 5000);
 
         return () => clearInterval(interval);
-    }, [])
+    }, [controls]);
 
-    async function fetchAnalysisResults() {
-        const response = await fetch('./api/analysisResults');
-        if (response.status !== 200) {
-            console.error(`Could not fetch analysis result: error code : ${response.status}`);
-            return;
-        }
-        const data = await response.json();
-        setAllowedTraffic(data);
-        setIsLoading(false);
+    function handleControlChange(key, newState) {
+        let newControls = { ...controls, [key]: newState };
+        setControls(newControls);
     }
 
     return (
-        <section className={classNames(classes.root, className)}>
-            {isLoading && <>
-                <CircularProgress thickness={1} size={60} color="secondary"/>
-                <Typography className={classes.loadingCaption} variant="caption">Analyzing your cluster...</Typography>
-            </>}
-            {!isLoading && <>
-                <Typography className={classes.loadingCaption} variant="body1">
-                    {`Found ${allowedTraffic.pods.length} pods and ${allowedTraffic.allowedTraffic.length} allowed pod-to-pod routes`}
-                </Typography>
-            </>}
-        </section>
+        <div className={classNames(classes.root, className)}>
+            <main className={classes.main}>
+                {isLoading && <>
+                    <CircularProgress thickness={1} size={60} color="secondary"/>
+                    <Typography className={classes.loadingCaption} variant="caption">Analyzing your
+                        cluster...</Typography>
+                </>}
+                {!isLoading && analysisResult && analysisResult.pods.length === 0 && <>
+                    <Typography className={classes.loadingCaption} variant="caption">
+                        {`Found ${analysisResult.pods.length} pods in your cluster`}
+                    </Typography>
+                </>}
+                {!isLoading && analysisResult && analysisResult.pods.length > 0 && <>
+                    <Graph analysisResult={analysisResult}/>
+                </>}
+            </main>
+            <aside role="search" className={classes.controls}>
+                <Typography className={classes.controlsTitle} variant="h2">Controls</Typography>
+                <FormControlLabel
+                    control={
+                        <Switch color="primary" name="includeKubeSystem" checked={controls.includeKubeSystem}
+                                onChange={event => handleControlChange('includeKubeSystem', event.target.checked)}/>
+                    }
+                    label="Include kube-system namespace"
+                />
+            </aside>
+        </div>
     );
-}
+};
 
 export default Content;

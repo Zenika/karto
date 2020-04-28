@@ -13,6 +13,16 @@ type handler struct {
 	lastAnalysisResult types.AnalysisResult
 }
 
+func newHandler() *handler {
+	handler := &handler{
+		lastAnalysisResult: types.AnalysisResult{
+			Pods:          make([]types.Pod, 0),
+			AllowedRoutes: make([]types.AllowedRoute, 0),
+		},
+	}
+	return handler
+}
+
 func (handler *handler) keepUpdated(resultsChannel <-chan types.AnalysisResult) {
 	for {
 		newResults := <-resultsChannel
@@ -29,7 +39,7 @@ func (handler *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func Expose(resultsChannel <-chan types.AnalysisResult) {
-	handler := &handler{}
+	handler := newHandler()
 	go handler.keepUpdated(resultsChannel)
 	mux := http.NewServeMux()
 	mux.Handle("/api/analysisResults", handler)

@@ -14,7 +14,7 @@ type NetworkPolicy struct {
 	Labels    map[string]string `json:"labels"`
 }
 
-type AllowedTraffic struct {
+type AllowedRoute struct {
 	SourcePod       Pod             `json:"sourcePod"`
 	EgressPolicies  []NetworkPolicy `json:"egressPolicies"`
 	TargetPod       Pod             `json:"targetPod"`
@@ -22,6 +22,6 @@ type AllowedTraffic struct {
 }
 
 type AnalysisResult struct {
-	Pods           []Pod            `json:"pods"`
-	AllowedTraffic []AllowedTraffic `json:"allowedTraffic"`
+	Pods          []Pod          `json:"pods"`
+	AllowedRoutes []AllowedRoute `json:"allowedRoutes"`
 }

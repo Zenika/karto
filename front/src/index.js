@@ -15,36 +15,28 @@ const theme = createMuiTheme({
         secondary: {
             main: '#9878d9'
         },
-        text: {
-            main: 'rgba(255, 255, 255, 0.75)',
-            primary: 'rgba(0, 0, 0, 0.75)',
-            secondary: 'rgba(0, 0, 0, 0.75)',
-            disabled: 'rgba(255, 255, 255, 0.38)',
-            hint: 'rgba(255, 255, 255, 0.38)'
-        },
         background: {
             paper: '#24344D',
             default: '#192231'
-        },
-        divider: '#27303E'
+        }
     },
     typography: {
         h1: {
-            fontSize: 32
+            fontSize: '2rem'
         },
         h2: {
-            fontSize: 24
+            fontSize: '1.2rem'
         },
-        h3: {
-            fontSize: 18
+        body1: {
+            fontSize: '0.8rem',
         }
     }
 });
 
 ReactDOM.render(
     <React.StrictMode>
-        <CssBaseline/>
         <ThemeProvider theme={theme}>
+            <CssBaseline/>
             <App/>
         </ThemeProvider>
     </React.StrictMode>,
