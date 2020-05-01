@@ -30,6 +30,9 @@ const useStyles = makeStyles(theme => ({
     controlsTitle: {
         marginBottom: 8
     },
+    controlsItem: {
+        marginBottom: 8
+    },
     loadingCaption: {
         marginTop: 8
     }
@@ -44,14 +47,15 @@ async function fetchAnalysisResults() {
     return await response.json();
 }
 
-function filterResults(analysisResult, controls) {
+function applyControls(analysisResult, controls) {
     if (analysisResult == null) {
         return null;
     }
-    const { includeKubeSystem } = controls;
+    const { includeKubeSystem, showNamespacePrefix } = controls;
     const podFilter = pod => includeKubeSystem || pod.namespace !== 'kube-system';
+    const podMapper = pod => ({...pod, displayName: showNamespacePrefix ? `${pod.namespace}/${pod.name}` : pod.name});
     return {
-        pods: analysisResult.pods.filter(podFilter),
+        pods: analysisResult.pods.filter(podFilter).map(podMapper),
         allowedRoutes: analysisResult.allowedRoutes
             .filter(allowedRoute => podFilter(allowedRoute.sourcePod) && podFilter(allowedRoute.targetPod))
     };
@@ -62,13 +66,14 @@ const Content = ({ className = '' }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [analysisResult, setAnalysisResult] = useState(null);
     const [controls, setControls] = useState({
-        includeKubeSystem: false
+        includeKubeSystem: false,
+        showNamespacePrefix: true
     });
 
     useEffect(() => {
         async function updateAnalysisResults() {
             const analysisResult = await fetchAnalysisResults();
-            setAnalysisResult(filterResults(analysisResult, controls));
+            setAnalysisResult(applyControls(analysisResult, controls));
             setIsLoading(false);
         }
 
@@ -104,13 +109,14 @@ const Content = ({ className = '' }) => {
             </main>
             <aside role="search" className={classes.controls}>
                 <Typography className={classes.controlsTitle} variant="h2">Controls</Typography>
-                <FormControlLabel
-                    control={
-                        <Switch color="primary" name="includeKubeSystem" checked={controls.includeKubeSystem}
-                                onChange={event => handleControlChange('includeKubeSystem', event.target.checked)}/>
-                    }
-                    label="Include kube-system namespace"
-                />
+                <FormControlLabel className={classes.controlsItem} label="Include kube-system namespace" control={
+                    <Switch color="primary" name="includeKubeSystem" checked={controls.includeKubeSystem}
+                            onChange={event => handleControlChange('includeKubeSystem', event.target.checked)}/>
+                }/>
+                <FormControlLabel className={classes.controlsItem} label="Show namespace prefix" control={
+                    <Switch color="primary" name="showNamespacePrefix" checked={controls.showNamespacePrefix}
+                            onChange={event => handleControlChange('showNamespacePrefix', event.target.checked)}/>
+                }/>
             </aside>
         </div>
     );

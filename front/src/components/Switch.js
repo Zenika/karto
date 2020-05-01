@@ -17,8 +17,8 @@ const Switch = withStyles((theme) => ({
             color: theme.palette.common.white,
             '& + $track': {
                 opacity: 1,
-                backgroundColor: theme.palette.primary.main,
-                borderColor: theme.palette.primary.main
+                backgroundColor: theme.palette.secondary.main,
+                borderColor: theme.palette.secondary.main
             }
         }
     },
@@ -28,7 +28,7 @@ const Switch = withStyles((theme) => ({
         boxShadow: 'none'
     },
     track: {
-        border: `1px solid ${theme.palette.primary.main}`,
+        border: `1px solid ${theme.palette.secondary.main}`,
         borderRadius: 18 / 2,
         opacity: 1,
         backgroundColor: theme.palette.background.default

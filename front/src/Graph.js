@@ -2,40 +2,57 @@ import React, { useEffect } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import * as d3 from 'd3';
 
-const width = 480;
-const height = 250;
-const linkWidth = 1;
+const useStyles = makeStyles(theme => ({
+    root: {
+        height: '100%',
+        width: '100%',
+        overflow: 'hidden',
+        '& .node': {
+            fill: theme.palette.primary.main
+        },
+        '& .label': {
+            fill: theme.palette.text.primary,
+            fontWeight: 100,
+            cursor: 'default'
+        },
+        '& .link': {
+            stroke: theme.palette.secondary.main
+        }
+    }
+}));
+
+const width = 300;
+const height = 180;
+const linkWidth = 0.1;
 const nodeSize = 2;
-let svg, nodesContainer, linksContainer, simulation;
+const nodeFontSize = 4;
+const nodeFontSpacing = 0.1;
+let svg, nodesContainer, linksContainer, labelsContainer, simulation;
 let zoomFactor = 1;
 let d3Pods = [];
 let d3AllowedRoutes = [];
 
-function fullName(pod) {
+function d3PodId(pod) {
     return `${pod.namespace}/${pod.name}`;
 }
 
-function d3PodId(pod) {
-    return fullName(pod);
-}
-
 function d3AllowedRouteId(allowedRoute) {
-    return `${fullName(allowedRoute.sourcePod)}->${fullName(allowedRoute.targetPod)}`;
+    return `${d3PodId(allowedRoute.sourcePod)}->${d3PodId(allowedRoute.targetPod)}`;
 }
 
 function toD3Pod(pod) {
     const id = d3PodId(pod);
-    return { id }
+    return { id, displayName: pod.displayName }
 }
 
 function toD3AllowedRoute(allowedRoute) {
     const id = d3AllowedRouteId(allowedRoute);
-    const source = fullName(allowedRoute.sourcePod);
-    const target = fullName(allowedRoute.targetPod);
+    const source = d3PodId(allowedRoute.sourcePod);
+    const target = d3PodId(allowedRoute.targetPod);
     return { id, source, target }
 }
 
-function update(pods, allowedRoutes) {
+function redraw(pods, allowedRoutes) {
     if (!svg) {
         // Create graph on first call
         svg = d3.select('#graph').append('svg')
@@ -45,12 +62,19 @@ function update(pods, allowedRoutes) {
             .call(d3.zoom().on('zoom', () => {
                 zoomFactor = d3.event.transform.k;
                 svg.attr('transform', d3.event.transform);
-                nodes.attr('r', nodeSize / zoomFactor); // Compensate changes to node radius
-                links.attr('stroke-width', linkWidth / zoomFactor); // Compensate changes to link width
+                // Compensate changes to node radius
+                nodes.attr('r', nodeSize / zoomFactor);
+                // Compensate changes to node label
+                labels.attr('font-size', nodeFontSize / zoomFactor);
+                labels.attr('letter-spacing', nodeFontSpacing / zoomFactor);
+                labels.attr('dy', -nodeFontSize / zoomFactor);
+                // Compensate changes to link width
+                links.attr('stroke-width', linkWidth / zoomFactor);
             }))
             .append('g');
         linksContainer = svg.append('g').attr('class', 'linksContainer');
         nodesContainer = svg.append('g').attr('class', 'nodesContainer');
+        labelsContainer = svg.append('g').attr('class', 'labelsContainer');
     }
 
     // Update data
@@ -91,22 +115,33 @@ function update(pods, allowedRoutes) {
     }
     d3AllowedRoutes = newD3AllowedRoutes;
 
-    // Update links
-    const links = linksContainer
-        .selectAll('line')
-        .data(d3AllowedRoutes)
-        .join('line')
-        .attr('stroke', '#999')
-        .attr('stroke-opacity', 0.6)
-        .attr('stroke-width', linkWidth / zoomFactor);
-
     // Update nodes
     const nodes = nodesContainer
         .selectAll('circle')
         .data(d3Pods)
         .join('circle')
-        .attr('fill', 'red')
+        .attr('class', 'node')
         .attr('r', nodeSize / zoomFactor);
+
+    // Update labels
+    const labels = labelsContainer
+        .selectAll('text')
+        .data(d3Pods)
+        .join('text')
+        .text(d => d.displayName)
+        .attr('text-anchor', 'middle')
+        .attr('font-size', nodeFontSize / zoomFactor)
+        .attr('letter-spacing', nodeFontSpacing / zoomFactor)
+        .attr('dy', -nodeFontSize / zoomFactor)
+        .attr('class', 'label');
+
+    // Update links
+    const links = linksContainer
+        .selectAll('line')
+        .data(d3AllowedRoutes)
+        .join('line')
+        .attr('class', 'link')
+        .attr('stroke-width', linkWidth / zoomFactor);
 
     if (!simulation) {
         // Create simulation on first call
@@ -118,16 +153,20 @@ function update(pods, allowedRoutes) {
 
         simulation.on('tick', () => {
             console.log('tick');
+            nodesContainer
+                .selectAll('circle')
+                .attr('cx', d => d.x)
+                .attr('cy', d => d.y);
             linksContainer
                 .selectAll('line')
                 .attr('x1', d => d.source.x)
                 .attr('y1', d => d.source.y)
                 .attr('x2', d => d.target.x)
                 .attr('y2', d => d.target.y);
-            nodesContainer
-                .selectAll('circle')
-                .attr('cx', d => d.x)
-                .attr('cy', d => d.y);
+            labelsContainer
+                .selectAll('text')
+                .attr('x', d => d.x)
+                .attr('y', d => d.y);
         });
     } else {
         // Update simulation
@@ -139,19 +178,11 @@ function update(pods, allowedRoutes) {
     }
 }
 
-const useStyles = makeStyles(() => ({
-    root: {
-        height: '100%',
-        width: '100%',
-        overflow: 'hidden'
-    }
-}));
-
 const Graph = ({ analysisResult: { pods, allowedRoutes } }) => {
     const classes = useStyles();
 
     useEffect(() => {
-        update(pods, allowedRoutes);
+        redraw(pods, allowedRoutes);
     });
 
     return (
