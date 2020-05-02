@@ -5,7 +5,7 @@ import { createStyles, withStyles } from '@material-ui/core';
 
 const GRAPH_WIDTH = 300;
 const GRAPH_HEIGHT = 180;
-const LINK_WIDTH = 0.1;
+const LINK_WIDTH = 0.2;
 const NODE_SIZE = 2;
 const NODE_FONT_SIZE = 4;
 const NODE_FONT_SPACING = 0.1;
@@ -25,6 +25,9 @@ const styles = createStyles(theme => ({
         },
         '& .link': {
             stroke: theme.palette.primary.main
+        },
+        '& .linkArrow': {
+            fill: theme.palette.primary.main
         }
     }
 }));
@@ -52,12 +55,23 @@ function toD3AllowedRoute(allowedRoute) {
 class Graph extends React.Component {
 
     init() {
-        this.svg = d3.select('#graph').append('svg')
+        const svgRoot = d3.select('#graph').append('svg')
             .attr('width', '100%')
             .attr('height', '100%')
             .attr('viewBox', [-GRAPH_WIDTH / 2, -GRAPH_HEIGHT / 2, GRAPH_WIDTH, GRAPH_HEIGHT])
-            .call(d3.zoom().on('zoom', () => this.handleZoom()))
-            .append('g');
+            .call(d3.zoom().on('zoom', () => this.handleZoom()));
+        svgRoot.append('defs').append('marker')
+            .attr('id', 'arrow')
+            .attr('viewBox', '0 -5 10 10')
+            .attr('refX', 12)
+            .attr('refY', 0)
+            .attr('markerWidth', 14)
+            .attr('markerHeight', 14)
+            .attr('orient', 'auto')
+            .append('path')
+            .attr('d', 'M0,-5L10,0L0,5')
+            .attr('class', 'linkArrow');
+        this.svg = svgRoot.append('g');
         this.linksContainer = this.svg.append('g').attr('class', 'linksContainer');
         this.nodesContainer = this.svg.append('g').attr('class', 'nodesContainer');
         this.labelsContainer = this.svg.append('g').attr('class', 'labelsContainer');
@@ -152,6 +166,7 @@ class Graph extends React.Component {
             .selectAll('line')
             .data(this.d3AllowedRoutes)
             .join('line')
+            .attr('marker-end', 'url(#arrow)')
             .attr('class', 'link')
             .attr('stroke-width', LINK_WIDTH / this.zoomFactor);
 
