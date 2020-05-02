@@ -47,8 +47,8 @@ const useStyles = makeStyles(theme => ({
     }
 }));
 
-async function fetchAnalysisResults() {
-    const response = await fetch('./api/analysisResults');
+async function fetchAnalysisResult() {
+    const response = await fetch('./api/analysisResult');
     if (response.status !== 200) {
         console.error(`Could not fetch analysis result: error code : ${response.status}`);
         return;
@@ -56,7 +56,7 @@ async function fetchAnalysisResults() {
     return await response.json();
 }
 
-function applyControls(analysisResult, controls) {
+function computeAnalysisResultView(analysisResult, controls) {
     if (analysisResult == null) {
         return null;
     }
@@ -71,81 +71,105 @@ function applyControls(analysisResult, controls) {
 }
 
 function allNamespacesOfPods(pods) {
-    return [...new Set(pods.map(pod => pod.namespace))];
+    return [...new Set(pods.map(pod => pod.namespace))].sort();
 }
 
-function displayedNamespaceLabel(displayedNamespaces) {
-    const namespaceCount = displayedNamespaces.length;
-    if (namespaceCount === 0) {
+function namespaceFilterActive(displayedNamespaces, allNamespaces) {
+    return displayedNamespaces.length !== 0 && displayedNamespaces.length !== allNamespaces.length;
+}
+
+function displayedNamespaceLabel(displayedNamespaces, allNamespaces) {
+    if (!namespaceFilterActive(displayedNamespaces, allNamespaces)) {
         return 'All namespaces'
-    } else if (namespaceCount === 1) {
+    } else if (displayedNamespaces.length === 1) {
         return '1 namespace filter'
     } else {
-        return `${namespaceCount} namespace filters`
+        return `${(displayedNamespaces.length)} namespace filters`
     }
 }
 
 const Content = ({ className = '' }) => {
     const classes = useStyles();
-    const [isLoading, setIsLoading] = useState(true);
-    const [analysisResult, setAnalysisResult] = useState(null);
-    const [allNamespaces, setAllNamespaces] = useState([]);
-    const [controls, setControls] = useState({
-        displayedNamespaces: [],
-        showNamespacePrefix: true
+    const [state, setState] = useState({
+        isLoading: true,
+        allNamespaces: [],
+        analysisResult: null,
+        analysisResultView: null,
+        controls: {
+            displayedNamespaces: [],
+            showNamespacePrefix: true,
+            autoRefresh: false
+        }
     });
 
     useEffect(() => {
-        async function updateAnalysisResults() {
-            const analysisResult = await fetchAnalysisResults();
-            setAnalysisResult(applyControls(analysisResult, controls));
-            setAllNamespaces(allNamespacesOfPods(analysisResult.pods));
-            setIsLoading(false);
+        console.log('effect')
+        const fetchAndUpdate = async () => {
+            const analysisResult = await fetchAnalysisResult();
+            setState(oldState => ({
+                ...oldState,
+                isLoading: false,
+                allNamespaces: allNamespacesOfPods(analysisResult.pods),
+                analysisResult: analysisResult,
+                analysisResultView: computeAnalysisResultView(analysisResult, oldState.controls)
+            }));
+        };
+        fetchAndUpdate();
+
+        if (state.controls.autoRefresh) {
+            const interval = setInterval(() => {
+                fetchAndUpdate()
+            }, 5000);
+            return () => clearInterval(interval);
         }
+    }, [state.controls.autoRefresh]);
 
-        updateAnalysisResults();
-        const interval = setInterval(() => {
-            updateAnalysisResults()
-        }, 5000);
-
-        return () => clearInterval(interval);
-    }, [controls]);
-
-    const handleControlChange = key => newState => {
-        let newControls = { ...controls, [key]: newState };
-        setControls(newControls);
+    const handleControlChange = key => newValue => {
+        setState(oldState => {
+            const newControls = { ...oldState.controls, [key]: newValue };
+            return ({
+                ...oldState,
+                controls: newControls,
+                analysisResultView: computeAnalysisResultView(oldState.analysisResult, newControls)
+            });
+        });
     };
 
     return (
         <div className={classNames(classes.root, className)}>
             <main className={classes.main}>
-                {isLoading && <>
+                {state.isLoading && <>
                     <CircularProgress thickness={1} size={60}/>
                     <Typography className={classes.loadingCaption} variant="caption">Analyzing your
                         cluster...</Typography>
                 </>}
-                {!isLoading && analysisResult && analysisResult.pods.length === 0 && <>
+                {!state.isLoading && state.analysisResultView && state.analysisResultView.pods.length === 0 && <>
                     <Typography className={classes.loadingCaption} variant="caption">
-                        {`Found ${analysisResult.pods.length} pods in your cluster`}
+                        {`No pod to display`}
                     </Typography>
                 </>}
-                {!isLoading && analysisResult && analysisResult.pods.length > 0 && <>
-                    <Graph analysisResult={analysisResult}/>
+                {!state.isLoading && state.analysisResultView && state.analysisResultView.pods.length > 0 && <>
+                    <Graph analysisResult={state.analysisResultView}/>
                 </>}
             </main>
             <aside role="search" className={classes.controls}>
                 <Typography className={classes.controlsTitle} variant="h2">Filters</Typography>
                 <div className={classes.controlsSection}>
                     <MultiSelect className={classes.controlsItem}
-                                 name={displayedNamespaceLabel(controls.displayedNamespaces)}
-                                 options={allNamespaces} selectedOptions={controls.displayedNamespaces}
+                                 name={displayedNamespaceLabel(state.controls.displayedNamespaces, state.allNamespaces)}
+                                 checked={namespaceFilterActive(state.controls.displayedNamespaces,
+                                     state.allNamespaces)}
+                                 options={state.allNamespaces} selectedOptions={state.controls.displayedNamespaces}
                                  onChange={handleControlChange('displayedNamespaces')}/>
                 </div>
                 <Typography className={classes.controlsTitle} variant="h2">Display options</Typography>
                 <div className={classes.controlsSection}>
                     <Switch className={classes.controlsItem} name="Show namespace prefix"
-                            checked={controls.showNamespacePrefix}
+                            checked={state.controls.showNamespacePrefix}
                             onChange={handleControlChange('showNamespacePrefix')}/>
+                    <Switch className={classes.controlsItem} name="Auto refresh"
+                            checked={state.controls.autoRefresh}
+                            onChange={handleControlChange('autoRefresh')}/>
                 </div>
             </aside>
         </div>

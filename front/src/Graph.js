@@ -1,9 +1,16 @@
-import React, { useEffect } from 'react';
-import { makeStyles } from '@material-ui/core/styles';
+import React from 'react';
 import * as d3 from 'd3';
 import PropTypes from 'prop-types';
+import { createStyles, withStyles } from '@material-ui/core';
 
-const useStyles = makeStyles(theme => ({
+const GRAPH_WIDTH = 300;
+const GRAPH_HEIGHT = 180;
+const LINK_WIDTH = 0.1;
+const NODE_SIZE = 2;
+const NODE_FONT_SIZE = 4;
+const NODE_FONT_SPACING = 0.1;
+
+const styles = createStyles(theme => ({
     root: {
         height: '100%',
         width: '100%',
@@ -21,17 +28,6 @@ const useStyles = makeStyles(theme => ({
         }
     }
 }));
-
-const width = 300;
-const height = 180;
-const linkWidth = 0.1;
-const nodeSize = 2;
-const nodeFontSize = 4;
-const nodeFontSpacing = 0.1;
-let svg, nodesContainer, linksContainer, labelsContainer, simulation;
-let zoomFactor = 1;
-let d3Pods = [];
-let d3AllowedRoutes = [];
 
 function d3PodId(pod) {
     return `${pod.namespace}/${pod.name}`;
@@ -53,149 +49,154 @@ function toD3AllowedRoute(allowedRoute) {
     return { id, source, target }
 }
 
-function redraw(pods, allowedRoutes) {
-    if (!svg) {
-        // Create graph on first call
-        svg = d3.select('#graph').append('svg')
+class Graph extends React.Component {
+
+    init() {
+        this.svg = d3.select('#graph').append('svg')
             .attr('width', '100%')
             .attr('height', '100%')
-            .attr('viewBox', [-width / 2, -height / 2, width, height])
-            .call(d3.zoom().on('zoom', () => {
-                zoomFactor = d3.event.transform.k;
-                svg.attr('transform', d3.event.transform);
-
-                // Compensate changes to node radius
-                const nodes = nodesContainer.selectAll('circle');
-                nodes.attr('r', nodeSize / zoomFactor);
-
-                // Compensate changes to node label
-                const labels = labelsContainer.selectAll('text');
-                labels.attr('font-size', nodeFontSize / zoomFactor);
-                labels.attr('letter-spacing', nodeFontSpacing / zoomFactor);
-                labels.attr('dy', -nodeFontSize / zoomFactor);
-
-                // Compensate changes to link width
-                const links = linksContainer.selectAll('line');
-                links.attr('stroke-width', linkWidth / zoomFactor);
-            }))
+            .attr('viewBox', [-GRAPH_WIDTH / 2, -GRAPH_HEIGHT / 2, GRAPH_WIDTH, GRAPH_HEIGHT])
+            .call(d3.zoom().on('zoom', () => this.handleZoom()))
             .append('g');
-        linksContainer = svg.append('g').attr('class', 'linksContainer');
-        nodesContainer = svg.append('g').attr('class', 'nodesContainer');
-        labelsContainer = svg.append('g').attr('class', 'labelsContainer');
-    }
-
-    // Update data
-    let atLeastOneChange = false;
-    const indexedPods = new Map();
-    d3Pods.forEach(pod => indexedPods.set(pod.id, pod));
-    const newD3Pods = pods.map(pod => {
-        const oldPod = indexedPods.get(d3PodId(pod));
-        if (oldPod) {
-            // Pod was already displayed, keep new attributes and patch with d3 data
-            return Object.assign(oldPod, toD3Pod(pod));
-        } else {
-            // Pod is new
-            atLeastOneChange = true;
-            return toD3Pod(pod);
-        }
-    });
-    if (d3Pods.length !== newD3Pods.length) {
-        atLeastOneChange = true;
-    }
-    d3Pods = newD3Pods;
-
-    const indexedAllowedRoutes = new Map();
-    d3AllowedRoutes.forEach(allowedRoute => indexedAllowedRoutes.set(allowedRoute.id, allowedRoute));
-    let newD3AllowedRoutes = allowedRoutes.map(allowedRoute => {
-        const oldAllowedRoute = indexedAllowedRoutes.get(d3AllowedRouteId(allowedRoute));
-        if (oldAllowedRoute) {
-            // AllowedRoute was already displayed, keep new attributes and patch with d3 data
-            return Object.assign(oldAllowedRoute, toD3AllowedRoute(allowedRoute));
-        } else {
-            // AllowedRoute is new
-            atLeastOneChange = true;
-            return toD3AllowedRoute(allowedRoute);
-        }
-    });
-    if (d3AllowedRoutes.length !== newD3AllowedRoutes.length) {
-        atLeastOneChange = true;
-    }
-    d3AllowedRoutes = newD3AllowedRoutes;
-
-    // Update nodes
-    nodesContainer
-        .selectAll('circle')
-        .data(d3Pods)
-        .join('circle')
-        .attr('class', 'node')
-        .attr('r', nodeSize / zoomFactor);
-
-    // Update labels
-    labelsContainer
-        .selectAll('text')
-        .data(d3Pods)
-        .join('text')
-        .text(d => d.displayName)
-        .attr('text-anchor', 'middle')
-        .attr('font-size', nodeFontSize / zoomFactor)
-        .attr('letter-spacing', nodeFontSpacing / zoomFactor)
-        .attr('dy', -nodeFontSize / zoomFactor)
-        .attr('class', 'label');
-
-    // Update links
-    linksContainer
-        .selectAll('line')
-        .data(d3AllowedRoutes)
-        .join('line')
-        .attr('class', 'link')
-        .attr('stroke-width', linkWidth / zoomFactor);
-
-    if (!simulation) {
-        // Create simulation on first call
-        simulation = d3.forceSimulation(d3Pods)
-            .force('link', d3.forceLink(d3AllowedRoutes).id(d => d.id))
+        this.linksContainer = this.svg.append('g').attr('class', 'linksContainer');
+        this.nodesContainer = this.svg.append('g').attr('class', 'nodesContainer');
+        this.labelsContainer = this.svg.append('g').attr('class', 'labelsContainer');
+        this.zoomFactor = 1;
+        this.d3Pods = [];
+        this.d3AllowedRoutes = [];
+        this.simulation = d3.forceSimulation(this.d3Pods)
+            .force('link', d3.forceLink(this.d3AllowedRoutes).id(d => d.id))
             .force('charge', d3.forceManyBody())
             .force('x', d3.forceX())
             .force('y', d3.forceY());
-
-        simulation.on('tick', () => {
+        this.simulation.on('tick', () => {
             console.log('tick');
-            nodesContainer
+            this.nodesContainer
                 .selectAll('circle')
                 .attr('cx', d => d.x)
                 .attr('cy', d => d.y);
-            linksContainer
+            this.linksContainer
                 .selectAll('line')
                 .attr('x1', d => d.source.x)
                 .attr('y1', d => d.source.y)
                 .attr('x2', d => d.target.x)
                 .attr('y2', d => d.target.y);
-            labelsContainer
+            this.labelsContainer
                 .selectAll('text')
                 .attr('x', d => d.x)
                 .attr('y', d => d.y);
         });
-    } else {
+    }
+
+    update() {
+        // Update data
+        let atLeastOneChange = false;
+        const indexedPods = new Map();
+        this.d3Pods.forEach(pod => indexedPods.set(pod.id, pod));
+        const newD3Pods = this.props.analysisResult.pods.map(pod => {
+            const oldPod = indexedPods.get(d3PodId(pod));
+            if (oldPod) {
+                // Pod was already displayed, keep new attributes and patch with d3 data
+                return Object.assign(oldPod, toD3Pod(pod));
+            } else {
+                // Pod is new
+                atLeastOneChange = true;
+                return toD3Pod(pod);
+            }
+        });
+        if (this.d3Pods.length !== newD3Pods.length) {
+            atLeastOneChange = true;
+        }
+        this.d3Pods = newD3Pods;
+
+        const indexedAllowedRoutes = new Map();
+        this.d3AllowedRoutes.forEach(allowedRoute => indexedAllowedRoutes.set(allowedRoute.id, allowedRoute));
+        let newD3AllowedRoutes = this.props.analysisResult.allowedRoutes.map(allowedRoute => {
+            const oldAllowedRoute = indexedAllowedRoutes.get(d3AllowedRouteId(allowedRoute));
+            if (oldAllowedRoute) {
+                // AllowedRoute was already displayed, keep new attributes and patch with d3 data
+                return Object.assign(oldAllowedRoute, toD3AllowedRoute(allowedRoute));
+            } else {
+                // AllowedRoute is new
+                atLeastOneChange = true;
+                return toD3AllowedRoute(allowedRoute);
+            }
+        });
+        if (this.d3AllowedRoutes.length !== newD3AllowedRoutes.length) {
+            atLeastOneChange = true;
+        }
+        this.d3AllowedRoutes = newD3AllowedRoutes;
+
+        // Update nodes
+        this.nodesContainer
+            .selectAll('circle')
+            .data(this.d3Pods)
+            .join('circle')
+            .attr('class', 'node')
+            .attr('r', NODE_SIZE / this.zoomFactor);
+
+        // Update labels
+        this.labelsContainer
+            .selectAll('text')
+            .data(this.d3Pods)
+            .join('text')
+            .text(d => d.displayName)
+            .attr('text-anchor', 'middle')
+            .attr('font-size', NODE_FONT_SIZE / this.zoomFactor)
+            .attr('letter-spacing', NODE_FONT_SPACING / this.zoomFactor)
+            .attr('dy', -NODE_FONT_SIZE / this.zoomFactor)
+            .attr('class', 'label');
+
+        // Update links
+        this.linksContainer
+            .selectAll('line')
+            .data(this.d3AllowedRoutes)
+            .join('line')
+            .attr('class', 'link')
+            .attr('stroke-width', LINK_WIDTH / this.zoomFactor);
+
         // Update simulation
-        simulation.nodes(d3Pods);
-        simulation.force('link').links(d3AllowedRoutes);
+        this.simulation.nodes(this.d3Pods);
+        this.simulation.force('link').links(this.d3AllowedRoutes);
         if (atLeastOneChange) {
-            simulation.alpha(1).restart();
+            this.simulation.alpha(1).restart();
         }
     }
+
+    handleZoom() {
+        this.zoomFactor = d3.event.transform.k;
+        this.svg.attr('transform', d3.event.transform);
+
+        // Compensate changes to node radius
+        const nodes = this.nodesContainer.selectAll('circle');
+        nodes.attr('r', NODE_SIZE / this.zoomFactor);
+
+        // Compensate changes to node label
+        const labels = this.labelsContainer.selectAll('text');
+        labels.attr('font-size', NODE_FONT_SIZE / this.zoomFactor);
+        labels.attr('letter-spacing', NODE_FONT_SPACING / this.zoomFactor);
+        labels.attr('dy', -NODE_FONT_SIZE / this.zoomFactor);
+
+        // Compensate changes to link width
+        const links = this.linksContainer.selectAll('line');
+        links.attr('stroke-width', LINK_WIDTH / this.zoomFactor);
+    }
+
+    componentDidMount() {
+        this.init();
+        this.update();
+    }
+
+    componentDidUpdate() {
+        console.log('update');
+        this.update();
+    }
+
+    render() {
+        const { classes } = this.props;
+        return <div id="graph" className={classes.root}/>;
+    }
 }
-
-const Graph = ({ analysisResult: { pods, allowedRoutes } }) => {
-    const classes = useStyles();
-
-    useEffect(() => {
-        redraw(pods, allowedRoutes);
-    });
-
-    return (
-        <div id="graph" className={classes.root}/>
-    );
-};
 
 Graph.propTypes = {
     analysisResult: PropTypes.shape({
@@ -217,4 +218,4 @@ Graph.propTypes = {
     }).isRequired
 };
 
-export default Graph;
+export default withStyles(styles, { withTheme: true })(Graph);

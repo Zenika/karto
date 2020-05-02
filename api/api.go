@@ -42,7 +42,7 @@ func Expose(resultsChannel <-chan types.AnalysisResult) {
 	handler := newHandler()
 	go handler.keepUpdated(resultsChannel)
 	mux := http.NewServeMux()
-	mux.Handle("/api/analysisResults", handler)
+	mux.Handle("/api/analysisResult", handler)
 	log.Println("Listening...")
 	http.ListenAndServe(":8000", mux)
 }
