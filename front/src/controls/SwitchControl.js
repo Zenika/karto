@@ -39,7 +39,7 @@ const CustomSwitch = withStyles((theme) => ({
     checked: {}
 }))(MuiSwitch);
 
-const Switch = ({ className = '', name, checked, onChange }) => {
+const SwitchControl = ({ className = '', name, checked, onChange }) => {
     const handleChange = (event) => {
         onChange(event.target.checked);
     };
@@ -50,11 +50,11 @@ const Switch = ({ className = '', name, checked, onChange }) => {
     )
 };
 
-Switch.propTypes = {
+SwitchControl.propTypes = {
     className: PropTypes.string,
     name: PropTypes.string.isRequired,
     checked: PropTypes.bool.isRequired,
     onChange: PropTypes.func.isRequired
 };
 
-export default Switch;
+export default SwitchControl;

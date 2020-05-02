@@ -36,6 +36,13 @@ const theme = createMuiTheme({
         button: {
             fontSize: '0.65rem'
         }
+    },
+    overrides: {
+        MuiButton: {
+            root: {
+                minWidth: 0
+            }
+        }
     }
 });
 

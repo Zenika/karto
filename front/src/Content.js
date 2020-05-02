@@ -3,10 +3,10 @@ import { makeStyles } from '@material-ui/core/styles';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import classNames from 'classnames';
 import Typography from '@material-ui/core/Typography';
-import Switch from './components/Switch';
-import MultiSelect from './components/MultiSelect';
+import SwitchControl from './controls/SwitchControl';
+import MultiSelectControl from './controls/MultiSelectControl';
 import PropTypes from 'prop-types';
-import Graph from './Graph';
+import Graph from './graph/Graph';
 
 const useStyles = makeStyles(theme => ({
     root: {
@@ -60,8 +60,14 @@ function computeAnalysisResultView(analysisResult, controls) {
     if (analysisResult == null) {
         return null;
     }
-    const { displayedNamespaces, showNamespacePrefix } = controls;
-    const podFilter = pod => displayedNamespaces.length === 0 || displayedNamespaces.includes(pod.namespace);
+    const { namespaceFilters, labelFilters, showNamespacePrefix } = controls;
+    const podFilter = pod => {
+        const namespaceMatches = namespaceFilters.length === 0 || namespaceFilters.includes(pod.namespace);
+        const labels = labelsToStringList(pod);
+        const labelsMatch = labelFilters.length === 0
+            || labelFilters.every(labelFilter => labels.includes(labelFilter));
+        return namespaceMatches && labelsMatch;
+    };
     const podMapper = pod => ({ ...pod, displayName: showNamespacePrefix ? `${pod.namespace}/${pod.name}` : pod.name });
     return {
         pods: analysisResult.pods.filter(podFilter).map(podMapper),
@@ -70,21 +76,33 @@ function computeAnalysisResultView(analysisResult, controls) {
     };
 }
 
+function distinctAndSort(arr) {
+    return [...new Set(arr)].sort();
+}
+
+function labelsToStringList(pod) {
+    return Object.entries(pod.labels).map(([key, value]) => `${key}=${value}`);
+}
+
 function allNamespacesOfPods(pods) {
-    return [...new Set(pods.map(pod => pod.namespace))].sort();
+    return distinctAndSort(pods.map(pod => pod.namespace));
 }
 
-function namespaceFilterActive(displayedNamespaces, allNamespaces) {
-    return displayedNamespaces.length !== 0 && displayedNamespaces.length !== allNamespaces.length;
+function allLabelsOfPods(pods) {
+    return distinctAndSort(pods.map(labelsToStringList).flat());
 }
 
-function displayedNamespaceLabel(displayedNamespaces, allNamespaces) {
-    if (!namespaceFilterActive(displayedNamespaces, allNamespaces)) {
-        return 'All namespaces'
-    } else if (displayedNamespaces.length === 1) {
-        return '1 namespace filter'
+function isFilterActive(selectedValues, allValues) {
+    return selectedValues.length !== 0 && selectedValues.length !== allValues.length;
+}
+
+function filterLabel(filterName, selectedValues, allValues) {
+    if (!isFilterActive(selectedValues, allValues)) {
+        return `All ${filterName}s`
+    } else if (selectedValues.length === 1) {
+        return `1 ${filterName} filter`
     } else {
-        return `${(displayedNamespaces.length)} namespace filters`
+        return `${(selectedValues.length)} namespace filters`
     }
 }
 
@@ -93,10 +111,12 @@ const Content = ({ className = '' }) => {
     const [state, setState] = useState({
         isLoading: true,
         allNamespaces: [],
+        allLabels: [],
         analysisResult: null,
         analysisResultView: null,
         controls: {
-            displayedNamespaces: [],
+            namespaceFilters: [],
+            labelFilters: [],
             showNamespacePrefix: true,
             autoRefresh: false
         }
@@ -110,6 +130,7 @@ const Content = ({ className = '' }) => {
                 ...oldState,
                 isLoading: false,
                 allNamespaces: allNamespacesOfPods(analysisResult.pods),
+                allLabels: allLabelsOfPods(analysisResult.pods),
                 analysisResult: analysisResult,
                 analysisResultView: computeAnalysisResultView(analysisResult, oldState.controls)
             }));
@@ -140,12 +161,13 @@ const Content = ({ className = '' }) => {
             <main className={classes.main}>
                 {state.isLoading && <>
                     <CircularProgress thickness={1} size={60}/>
-                    <Typography className={classes.loadingCaption} variant="caption">Analyzing your
-                        cluster...</Typography>
+                    <Typography className={classes.loadingCaption} variant="caption">
+                        Analyzing your cluster...
+                    </Typography>
                 </>}
                 {!state.isLoading && state.analysisResultView && state.analysisResultView.pods.length === 0 && <>
                     <Typography className={classes.loadingCaption} variant="caption">
-                        {`No pod to display`}
+                        "No pod to display"
                     </Typography>
                 </>}
                 {!state.isLoading && state.analysisResultView && state.analysisResultView.pods.length > 0 && <>
@@ -155,21 +177,31 @@ const Content = ({ className = '' }) => {
             <aside role="search" className={classes.controls}>
                 <Typography className={classes.controlsTitle} variant="h2">Filters</Typography>
                 <div className={classes.controlsSection}>
-                    <MultiSelect className={classes.controlsItem}
-                                 name={displayedNamespaceLabel(state.controls.displayedNamespaces, state.allNamespaces)}
-                                 checked={namespaceFilterActive(state.controls.displayedNamespaces,
-                                     state.allNamespaces)}
-                                 options={state.allNamespaces} selectedOptions={state.controls.displayedNamespaces}
-                                 onChange={handleControlChange('displayedNamespaces')}/>
+                    <MultiSelectControl
+                        className={classes.controlsItem} placeholder="Select a namespace"
+                        name={filterLabel('namespace', state.controls.namespaceFilters, state.allNamespaces)}
+                        selectAllAction={true} clearAction={true}
+                        checked={isFilterActive(state.controls.namespaceFilters, state.allNamespaces)}
+                        options={state.allNamespaces}
+                        selectedOptions={state.controls.namespaceFilters}
+                        onChange={handleControlChange('namespaceFilters')}/>
+                    <MultiSelectControl
+                        className={classes.controlsItem} placeholder="Select a label"
+                        name={filterLabel('label', state.controls.labelFilters, state.allLabels)}
+                        selectAllAction={false} clearAction={true}
+                        checked={isFilterActive(state.controls.labelFilters, state.allLabels)}
+                        options={state.allLabels}
+                        selectedOptions={state.controls.labelFilters}
+                        onChange={handleControlChange('labelFilters')}/>
                 </div>
                 <Typography className={classes.controlsTitle} variant="h2">Display options</Typography>
                 <div className={classes.controlsSection}>
-                    <Switch className={classes.controlsItem} name="Show namespace prefix"
-                            checked={state.controls.showNamespacePrefix}
-                            onChange={handleControlChange('showNamespacePrefix')}/>
-                    <Switch className={classes.controlsItem} name="Auto refresh"
-                            checked={state.controls.autoRefresh}
-                            onChange={handleControlChange('autoRefresh')}/>
+                    <SwitchControl className={classes.controlsItem} name="Show namespace prefix"
+                                   checked={state.controls.showNamespacePrefix}
+                                   onChange={handleControlChange('showNamespacePrefix')}/>
+                    <SwitchControl className={classes.controlsItem} name="Auto refresh"
+                                   checked={state.controls.autoRefresh}
+                                   onChange={handleControlChange('autoRefresh')}/>
                 </div>
             </aside>
         </div>
