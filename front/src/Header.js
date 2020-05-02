@@ -2,13 +2,14 @@ import React from 'react';
 import Typography from '@material-ui/core/Typography';
 import { makeStyles } from '@material-ui/core/styles';
 import classNames from 'classnames';
+import PropTypes from 'prop-types';
 
 const useStyles = makeStyles(theme => ({
     root: {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'flex-start',
-        padding: 16,
+        padding: theme.spacing(2),
         cursor: 'default'
     }
 }));
@@ -20,6 +21,10 @@ const Header = ({ className = '' }) => {
             <Typography variant="h1">Network Policy Explorer</Typography>
         </header>
     );
+};
+
+Header.propTypes = {
+    className: PropTypes.string
 };
 
 export default Header;

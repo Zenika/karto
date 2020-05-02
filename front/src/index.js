@@ -3,17 +3,17 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
 import CssBaseline from '@material-ui/core/CssBaseline';
-import { ThemeProvider } from '@material-ui/core/styles';
-import { createMuiTheme } from '@material-ui/core';
+// https://github.com/mui-org/material-ui/issues/13394
+import { ThemeProvider, unstable_createMuiStrictModeTheme as createMuiTheme } from '@material-ui/core/styles';
 
 const theme = createMuiTheme({
     palette: {
         type: 'dark',
         primary: {
-            main: '#5893DF'
+            main: '#EC5E69'
         },
         secondary: {
-            main: '#EC5E69'
+            main: '#5893DF'
         },
         background: {
             paper: '#24344D',
@@ -28,7 +28,13 @@ const theme = createMuiTheme({
             fontSize: '1.2rem'
         },
         body1: {
-            fontSize: '0.8rem',
+            fontSize: '0.8rem'
+        },
+        body2: {
+            fontSize: '0.7rem'
+        },
+        button: {
+            fontSize: '0.65rem'
         }
     }
 });

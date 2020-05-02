@@ -3,9 +3,10 @@ import { makeStyles } from '@material-ui/core/styles';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import classNames from 'classnames';
 import Typography from '@material-ui/core/Typography';
-import Graph from './Graph';
-import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Switch from './components/Switch';
+import MultiSelect from './components/MultiSelect';
+import PropTypes from 'prop-types';
+import Graph from './Graph';
 
 const useStyles = makeStyles(theme => ({
     root: {
@@ -22,19 +23,27 @@ const useStyles = makeStyles(theme => ({
         position: 'absolute',
         top: 80,
         left: 0,
+        width: 300,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'flex-start',
-        padding: '0 16px'
+        padding: `0 ${theme.spacing(2)}px`
     },
     controlsTitle: {
-        marginBottom: 8
+        marginBottom: theme.spacing(1),
+        cursor: 'default'
     },
     controlsItem: {
-        marginBottom: 8
+        marginBottom: theme.spacing(1)
+    },
+    controlsSection: {
+        display: 'flex',
+        flexDirection: 'column',
+        marginBottom: theme.spacing(1),
+        width: '100%'
     },
     loadingCaption: {
-        marginTop: 8
+        marginTop: theme.spacing(1)
     }
 }));
 
@@ -51,9 +60,9 @@ function applyControls(analysisResult, controls) {
     if (analysisResult == null) {
         return null;
     }
-    const { includeKubeSystem, showNamespacePrefix } = controls;
-    const podFilter = pod => includeKubeSystem || pod.namespace !== 'kube-system';
-    const podMapper = pod => ({...pod, displayName: showNamespacePrefix ? `${pod.namespace}/${pod.name}` : pod.name});
+    const { displayedNamespaces, showNamespacePrefix } = controls;
+    const podFilter = pod => displayedNamespaces.length === 0 || displayedNamespaces.includes(pod.namespace);
+    const podMapper = pod => ({ ...pod, displayName: showNamespacePrefix ? `${pod.namespace}/${pod.name}` : pod.name });
     return {
         pods: analysisResult.pods.filter(podFilter).map(podMapper),
         allowedRoutes: analysisResult.allowedRoutes
@@ -61,12 +70,28 @@ function applyControls(analysisResult, controls) {
     };
 }
 
+function allNamespacesOfPods(pods) {
+    return [...new Set(pods.map(pod => pod.namespace))];
+}
+
+function displayedNamespaceLabel(displayedNamespaces) {
+    const namespaceCount = displayedNamespaces.length;
+    if (namespaceCount === 0) {
+        return 'All namespaces'
+    } else if (namespaceCount === 1) {
+        return '1 namespace filter'
+    } else {
+        return `${namespaceCount} namespace filters`
+    }
+}
+
 const Content = ({ className = '' }) => {
     const classes = useStyles();
     const [isLoading, setIsLoading] = useState(true);
     const [analysisResult, setAnalysisResult] = useState(null);
+    const [allNamespaces, setAllNamespaces] = useState([]);
     const [controls, setControls] = useState({
-        includeKubeSystem: false,
+        displayedNamespaces: [],
         showNamespacePrefix: true
     });
 
@@ -74,6 +99,7 @@ const Content = ({ className = '' }) => {
         async function updateAnalysisResults() {
             const analysisResult = await fetchAnalysisResults();
             setAnalysisResult(applyControls(analysisResult, controls));
+            setAllNamespaces(allNamespacesOfPods(analysisResult.pods));
             setIsLoading(false);
         }
 
@@ -85,16 +111,16 @@ const Content = ({ className = '' }) => {
         return () => clearInterval(interval);
     }, [controls]);
 
-    function handleControlChange(key, newState) {
+    const handleControlChange = key => newState => {
         let newControls = { ...controls, [key]: newState };
         setControls(newControls);
-    }
+    };
 
     return (
         <div className={classNames(classes.root, className)}>
             <main className={classes.main}>
                 {isLoading && <>
-                    <CircularProgress thickness={1} size={60} color="secondary"/>
+                    <CircularProgress thickness={1} size={60}/>
                     <Typography className={classes.loadingCaption} variant="caption">Analyzing your
                         cluster...</Typography>
                 </>}
@@ -108,18 +134,26 @@ const Content = ({ className = '' }) => {
                 </>}
             </main>
             <aside role="search" className={classes.controls}>
-                <Typography className={classes.controlsTitle} variant="h2">Controls</Typography>
-                <FormControlLabel className={classes.controlsItem} label="Include kube-system namespace" control={
-                    <Switch color="primary" name="includeKubeSystem" checked={controls.includeKubeSystem}
-                            onChange={event => handleControlChange('includeKubeSystem', event.target.checked)}/>
-                }/>
-                <FormControlLabel className={classes.controlsItem} label="Show namespace prefix" control={
-                    <Switch color="primary" name="showNamespacePrefix" checked={controls.showNamespacePrefix}
-                            onChange={event => handleControlChange('showNamespacePrefix', event.target.checked)}/>
-                }/>
+                <Typography className={classes.controlsTitle} variant="h2">Filters</Typography>
+                <div className={classes.controlsSection}>
+                    <MultiSelect className={classes.controlsItem}
+                                 name={displayedNamespaceLabel(controls.displayedNamespaces)}
+                                 options={allNamespaces} selectedOptions={controls.displayedNamespaces}
+                                 onChange={handleControlChange('displayedNamespaces')}/>
+                </div>
+                <Typography className={classes.controlsTitle} variant="h2">Display options</Typography>
+                <div className={classes.controlsSection}>
+                    <Switch className={classes.controlsItem} name="Show namespace prefix"
+                            checked={controls.showNamespacePrefix}
+                            onChange={handleControlChange('showNamespacePrefix')}/>
+                </div>
             </aside>
         </div>
     );
+};
+
+Content.propTypes = {
+    className: PropTypes.string
 };
 
 export default Content;

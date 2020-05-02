@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import * as d3 from 'd3';
+import PropTypes from 'prop-types';
 
 const useStyles = makeStyles(theme => ({
     root: {
@@ -8,7 +9,7 @@ const useStyles = makeStyles(theme => ({
         width: '100%',
         overflow: 'hidden',
         '& .node': {
-            fill: theme.palette.primary.main
+            fill: theme.palette.secondary.main
         },
         '& .label': {
             fill: theme.palette.text.primary,
@@ -16,7 +17,7 @@ const useStyles = makeStyles(theme => ({
             cursor: 'default'
         },
         '& .link': {
-            stroke: theme.palette.secondary.main
+            stroke: theme.palette.primary.main
         }
     }
 }));
@@ -62,13 +63,19 @@ function redraw(pods, allowedRoutes) {
             .call(d3.zoom().on('zoom', () => {
                 zoomFactor = d3.event.transform.k;
                 svg.attr('transform', d3.event.transform);
+
                 // Compensate changes to node radius
+                const nodes = nodesContainer.selectAll('circle');
                 nodes.attr('r', nodeSize / zoomFactor);
+
                 // Compensate changes to node label
+                const labels = labelsContainer.selectAll('text');
                 labels.attr('font-size', nodeFontSize / zoomFactor);
                 labels.attr('letter-spacing', nodeFontSpacing / zoomFactor);
                 labels.attr('dy', -nodeFontSize / zoomFactor);
+
                 // Compensate changes to link width
+                const links = linksContainer.selectAll('line');
                 links.attr('stroke-width', linkWidth / zoomFactor);
             }))
             .append('g');
@@ -116,7 +123,7 @@ function redraw(pods, allowedRoutes) {
     d3AllowedRoutes = newD3AllowedRoutes;
 
     // Update nodes
-    const nodes = nodesContainer
+    nodesContainer
         .selectAll('circle')
         .data(d3Pods)
         .join('circle')
@@ -124,7 +131,7 @@ function redraw(pods, allowedRoutes) {
         .attr('r', nodeSize / zoomFactor);
 
     // Update labels
-    const labels = labelsContainer
+    labelsContainer
         .selectAll('text')
         .data(d3Pods)
         .join('text')
@@ -136,7 +143,7 @@ function redraw(pods, allowedRoutes) {
         .attr('class', 'label');
 
     // Update links
-    const links = linksContainer
+    linksContainer
         .selectAll('line')
         .data(d3AllowedRoutes)
         .join('line')
@@ -188,6 +195,26 @@ const Graph = ({ analysisResult: { pods, allowedRoutes } }) => {
     return (
         <div id="graph" className={classes.root}/>
     );
+};
+
+Graph.propTypes = {
+    analysisResult: PropTypes.shape({
+        pods: PropTypes.arrayOf(PropTypes.shape({
+            displayName: PropTypes.string.isRequired,
+            name: PropTypes.string.isRequired,
+            namespace: PropTypes.string.isRequired
+        })).isRequired,
+        allowedRoutes: PropTypes.arrayOf(PropTypes.shape({
+            sourcePod: PropTypes.shape({
+                name: PropTypes.string.isRequired,
+                namespace: PropTypes.string.isRequired
+            }).isRequired,
+            targetPod: PropTypes.shape({
+                name: PropTypes.string.isRequired,
+                namespace: PropTypes.string.isRequired
+            }).isRequired
+        })).isRequired
+    }).isRequired
 };
 
 export default Graph;

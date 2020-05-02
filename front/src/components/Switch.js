@@ -1,13 +1,16 @@
 import withStyles from '@material-ui/core/styles/withStyles';
 import { Switch as MuiSwitch } from '@material-ui/core';
+import React from 'react';
+import PropTypes from 'prop-types';
+import FormControlLabel from '@material-ui/core/FormControlLabel';
 
-const Switch = withStyles((theme) => ({
+const CustomSwitch = withStyles((theme) => ({
     root: {
         width: 32,
         height: 18,
         padding: 0,
         display: 'flex',
-        margin: '0 12px'
+        margin: `0 ${theme.spacing(1)}px 0 ${theme.spacing(1) + 3}px`
     },
     switchBase: {
         padding: 2,
@@ -17,8 +20,8 @@ const Switch = withStyles((theme) => ({
             color: theme.palette.common.white,
             '& + $track': {
                 opacity: 1,
-                backgroundColor: theme.palette.secondary.main,
-                borderColor: theme.palette.secondary.main
+                backgroundColor: theme.palette.primary.main,
+                borderColor: theme.palette.primary.main
             }
         }
     },
@@ -28,12 +31,30 @@ const Switch = withStyles((theme) => ({
         boxShadow: 'none'
     },
     track: {
-        border: `1px solid ${theme.palette.secondary.main}`,
+        border: `1px solid ${theme.palette.primary.main}`,
         borderRadius: 18 / 2,
         opacity: 1,
         backgroundColor: theme.palette.background.default
     },
     checked: {}
 }))(MuiSwitch);
+
+const Switch = ({ className = '', name, checked, onChange }) => {
+    const handleChange = (event) => {
+        onChange(event.target.checked);
+    };
+    return (
+        <FormControlLabel className={className} label={name} control={
+            <CustomSwitch name={name} checked={checked} onChange={handleChange}/>
+        }/>
+    )
+};
+
+Switch.propTypes = {
+    className: PropTypes.string,
+    name: PropTypes.string.isRequired,
+    checked: PropTypes.bool.isRequired,
+    onChange: PropTypes.func.isRequired
+};
 
 export default Switch;
