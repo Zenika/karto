@@ -14,13 +14,20 @@ export function computeAnalysisResultView(analysisResult, controls) {
     if (analysisResult == null) {
         return null;
     }
-    const { namespaceFilters, labelFilters, showNamespacePrefix, highlightNonIsolatedPods } = controls;
-    const podFilter = pod => {
-        const namespaceMatches = namespaceFilters.length === 0 || namespaceFilters.includes(pod.namespace);
+    const { namespaceFilters, labelFilters, nameFilter, showNamespacePrefix, highlightNonIsolatedPods } = controls;
+    const namespaceMatches = (pod) => {
+        return namespaceFilters.length === 0 || namespaceFilters.includes(pod.namespace);
+    };
+    const labelsMatch = (pod) => {
         const labels = labelsToStringList(pod);
-        const labelsMatch = labelFilters.length === 0
-            || labelFilters.every(labelFilter => labels.includes(labelFilter));
-        return namespaceMatches && labelsMatch;
+        return labelFilters.length === 0 || labelFilters.every(labelFilter => labels.includes(labelFilter));
+    };
+    const nameRegex = new RegExp(nameFilter);
+    const nameMatches = (pod) => {
+        return nameFilter === '' || nameRegex.test(pod.name);
+    };
+    const podFilter = pod => {
+        return namespaceMatches(pod) && labelsMatch(pod) && nameMatches(pod);
     };
     const podMapper = pod => ({
         ...pod,

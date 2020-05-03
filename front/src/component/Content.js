@@ -9,10 +9,12 @@ import PropTypes from 'prop-types';
 import Graph from './graph/Graph';
 import { getStoredControls, storeControls } from '../service/storageService';
 import { computeAnalysisResultView, fetchAnalysisResult } from '../service/analysisResultService';
+import InputControl from './controls/InputControl';
 
 const DEFAULT_CONTROLS = {
     namespaceFilters: [],
     labelFilters: [],
+    nameFilter: '',
     showNamespacePrefix: true,
     autoRefresh: false,
     highlightNonIsolatedPods: false
@@ -77,7 +79,7 @@ const Content = ({ className = '' }) => {
         isLoading: true,
         analysisResult: null,
         analysisResultView: null,
-        controls: getStoredControls() || DEFAULT_CONTROLS
+        controls: Object.assign(DEFAULT_CONTROLS, getStoredControls())
     });
 
     useEffect(() => {
@@ -154,6 +156,13 @@ const Content = ({ className = '' }) => {
                         options={allLabels}
                         selectedOptions={state.controls.labelFilters}
                         onChange={handleControlChange('labelFilters')}/>
+                    <InputControl
+                        className={classes.controlsItem} placeholder="Type a pod name or regex"
+                        name={state.controls.nameFilter === '' ? 'All pod names' : '1 pod name filter'}
+                        clearAction={true}
+                        checked={state.controls.nameFilter !== ''}
+                        value={state.controls.nameFilter}
+                        onChange={handleControlChange('nameFilter')}/>
                 </div>
                 <Typography className={classes.controlsTitle} variant="h2">Display options</Typography>
                 <div className={classes.controlsSection}>
