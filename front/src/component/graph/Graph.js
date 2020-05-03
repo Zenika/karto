@@ -18,16 +18,26 @@ const styles = createStyles(theme => ({
         '& .node': {
             fill: theme.palette.secondary.main
         },
+        '& .nodeFaded': {
+            fill: theme.palette.secondary.dark
+        },
         '& .label': {
             fill: theme.palette.text.primary,
             fontWeight: 100,
-            cursor: 'default'
+            cursor: 'default',
+            pointerEvents: 'none'
         },
         '& .link': {
             stroke: theme.palette.primary.main
         },
+        '& .linkFaded': {
+            stroke: theme.palette.primary.dark
+        },
         '& .linkArrow': {
             fill: theme.palette.primary.main
+        },
+        '& .linkArrowFaded': {
+            fill: theme.palette.primary.dark
         }
     }
 }));
@@ -40,12 +50,16 @@ function d3AllowedRouteId(allowedRoute) {
     return `${d3PodId(allowedRoute.sourcePod)}->${d3PodId(allowedRoute.targetPod)}`;
 }
 
-function toD3Pod(pod) {
+function d3AllowedRouteIdFromNodeIds(pod1Id, pod2Id) {
+    return `${pod1Id}->${pod2Id}`;
+}
+
+function d3Pod(pod) {
     const id = d3PodId(pod);
     return { id, displayName: pod.displayName }
 }
 
-function toD3AllowedRoute(allowedRoute) {
+function d3AllowedRoute(allowedRoute) {
     const id = d3AllowedRouteId(allowedRoute);
     const source = d3PodId(allowedRoute.sourcePod);
     const target = d3PodId(allowedRoute.targetPod);
@@ -60,24 +74,32 @@ class Graph extends React.Component {
             .attr('height', '100%')
             .attr('viewBox', [-GRAPH_WIDTH / 2, -GRAPH_HEIGHT / 2, GRAPH_WIDTH, GRAPH_HEIGHT])
             .call(d3.zoom().on('zoom', () => this.handleZoom()));
-        svgRoot.append('defs').append('marker')
-            .attr('id', 'arrow')
-            .attr('viewBox', '0 -5 10 10')
-            .attr('refX', 20)
-            .attr('refY', 0)
-            .attr('markerWidth', 10)
-            .attr('markerHeight', 10)
-            .attr('orient', 'auto')
-            .append('path')
-            .attr('d', 'M0,-5L10,0L0,5L0,-5')
-            .attr('class', 'linkArrow');
+        const defs = svgRoot.append('defs');
+        const defineArrowMarker = (id, className) => {
+            defs.append('marker')
+                .attr('id', id)
+                .attr('viewBox', '0 -5 10 10')
+                .attr('refX', 20)
+                .attr('refY', 0)
+                .attr('markerWidth', 10)
+                .attr('markerHeight', 10)
+                .attr('orient', 'auto')
+                .append('path')
+                .attr('d', 'M0,-5L10,0L0,5L0,-5')
+                .attr('class', className);
+        };
+        defineArrowMarker('arrow', 'linkArrow');
+        defineArrowMarker('arrowFaded', 'linkArrowFaded');
         this.svg = svgRoot.append('g');
         this.linksContainer = this.svg.append('g').attr('class', 'linksContainer');
         this.nodesContainer = this.svg.append('g').attr('class', 'nodesContainer');
         this.labelsContainer = this.svg.append('g').attr('class', 'labelsContainer');
         this.zoomFactor = 1;
+        this.indexedPods = new Map();
+        this.indexedAllowedRoutes = new Map();
         this.d3Pods = [];
         this.d3AllowedRoutes = [];
+        this.highlightedNodeId = null;
         this.simulation = d3.forceSimulation(this.d3Pods)
             .force('link', d3.forceLink(this.d3AllowedRoutes).id(d => d.id))
             .force('charge', d3.forceManyBody())
@@ -104,41 +126,41 @@ class Graph extends React.Component {
     update() {
         // Update data
         let atLeastOneChange = false;
-        const indexedPods = new Map();
-        this.d3Pods.forEach(pod => indexedPods.set(pod.id, pod));
         const newD3Pods = this.props.analysisResult.pods.map(pod => {
-            const oldPod = indexedPods.get(d3PodId(pod));
+            const oldPod = this.indexedPods.get(d3PodId(pod));
             if (oldPod) {
                 // Pod was already displayed, keep new attributes and patch with d3 data
-                return Object.assign(oldPod, toD3Pod(pod));
+                return Object.assign(oldPod, d3Pod(pod));
             } else {
                 // Pod is new
                 atLeastOneChange = true;
-                return toD3Pod(pod);
+                return d3Pod(pod);
             }
         });
         if (this.d3Pods.length !== newD3Pods.length) {
             atLeastOneChange = true;
         }
         this.d3Pods = newD3Pods;
+        this.indexedPods.clear();
+        this.d3Pods.forEach(pod => this.indexedPods.set(pod.id, pod));
 
-        const indexedAllowedRoutes = new Map();
-        this.d3AllowedRoutes.forEach(allowedRoute => indexedAllowedRoutes.set(allowedRoute.id, allowedRoute));
         let newD3AllowedRoutes = this.props.analysisResult.allowedRoutes.map(allowedRoute => {
-            const oldAllowedRoute = indexedAllowedRoutes.get(d3AllowedRouteId(allowedRoute));
+            const oldAllowedRoute = this.indexedAllowedRoutes.get(d3AllowedRouteId(allowedRoute));
             if (oldAllowedRoute) {
                 // AllowedRoute was already displayed, keep new attributes and patch with d3 data
-                return Object.assign(oldAllowedRoute, toD3AllowedRoute(allowedRoute));
+                return Object.assign(oldAllowedRoute, d3AllowedRoute(allowedRoute));
             } else {
                 // AllowedRoute is new
                 atLeastOneChange = true;
-                return toD3AllowedRoute(allowedRoute);
+                return d3AllowedRoute(allowedRoute);
             }
         });
         if (this.d3AllowedRoutes.length !== newD3AllowedRoutes.length) {
             atLeastOneChange = true;
         }
         this.d3AllowedRoutes = newD3AllowedRoutes;
+        this.indexedAllowedRoutes.clear();
+        this.d3AllowedRoutes.forEach(allowedRoute => this.indexedAllowedRoutes.set(allowedRoute.id, allowedRoute));
 
         // Update nodes
         this.nodesContainer
@@ -146,7 +168,9 @@ class Graph extends React.Component {
             .data(this.d3Pods)
             .join('circle')
             .attr('class', 'node')
-            .attr('r', NODE_SIZE / this.zoomFactor);
+            .attr('r', NODE_SIZE / this.zoomFactor)
+            .on('mouseover', () => this.focus(d3.select(d3.event.target).datum().id))
+            .on('mouseout', () => this.unFocus());
 
         // Update labels
         this.labelsContainer
@@ -175,6 +199,11 @@ class Graph extends React.Component {
         if (atLeastOneChange) {
             this.simulation.alpha(1).restart();
         }
+
+        // Restore highlight if still active
+        if (this.highlightedNodeId) {
+            this.focus(this.highlightedNodeId);
+        }
     }
 
     handleZoom() {
@@ -194,6 +223,35 @@ class Graph extends React.Component {
         // Compensate changes to link width
         const links = this.linksContainer.selectAll('line');
         links.attr('stroke-width', LINK_WIDTH / this.zoomFactor);
+    }
+
+    focus(nodeId) {
+        this.highlightedNodeId = nodeId;
+        const isInNeighborhood = (node1Id, node2Id) => {
+            return node1Id === node2Id || this.indexedAllowedRoutes.has(d3AllowedRouteIdFromNodeIds(node1Id, node2Id))
+                || this.indexedAllowedRoutes.has(d3AllowedRouteIdFromNodeIds(node2Id, node1Id));
+        };
+        const isLinkOfNode = (nodeId, link) => {
+            return link.source.id === nodeId || link.target.id === nodeId;
+        };
+        this.nodesContainer.selectAll('circle')
+            .attr('class', node => isInNeighborhood(nodeId, node.id) ? 'node' : 'nodeFaded');
+        this.labelsContainer.selectAll('text')
+            .attr('display', node => isInNeighborhood(nodeId, node.id) ? 'block' : 'none');
+        this.linksContainer.selectAll('line')
+            .attr('class', link => isLinkOfNode(nodeId, link) ? 'link' : 'linkFaded')
+            .attr('marker-end', link => isLinkOfNode(nodeId, link) ? 'url(#arrow)' : 'url(#arrowFaded)');
+    }
+
+    unFocus() {
+        this.highlightedNodeId = null;
+        this.nodesContainer.selectAll('circle')
+            .attr('class', 'node');
+        this.labelsContainer.selectAll('text')
+            .attr('display', 'block');
+        this.linksContainer.selectAll('line')
+            .attr('class', 'link')
+            .attr('marker-end', 'url(#arrow)');
     }
 
     componentDidMount() {
