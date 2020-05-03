@@ -10,38 +10,6 @@ const NODE_SIZE = 2;
 const NODE_FONT_SIZE = 4;
 const NODE_FONT_SPACING = 0.1;
 
-const styles = createStyles(theme => ({
-    root: {
-        height: '100%',
-        width: '100%',
-        overflow: 'hidden',
-        '& .node': {
-            fill: theme.palette.secondary.main
-        },
-        '& .nodeFaded': {
-            fill: theme.palette.secondary.dark
-        },
-        '& .label': {
-            fill: theme.palette.text.primary,
-            fontWeight: 100,
-            cursor: 'default',
-            pointerEvents: 'none'
-        },
-        '& .link': {
-            stroke: theme.palette.primary.main
-        },
-        '& .linkFaded': {
-            stroke: theme.palette.primary.dark
-        },
-        '& .linkArrow': {
-            fill: theme.palette.primary.main
-        },
-        '& .linkArrowFaded': {
-            fill: theme.palette.primary.dark
-        }
-    }
-}));
-
 function d3PodId(pod) {
     return `${pod.namespace}/${pod.name}`;
 }
@@ -56,7 +24,7 @@ function d3AllowedRouteIdFromNodeIds(pod1Id, pod2Id) {
 
 function d3Pod(pod) {
     const id = d3PodId(pod);
-    return { id, displayName: pod.displayName }
+    return { id, displayName: pod.displayName, highlighted: pod.highlighted }
 }
 
 function d3AllowedRoute(allowedRoute) {
@@ -64,6 +32,48 @@ function d3AllowedRoute(allowedRoute) {
     const source = d3PodId(allowedRoute.sourcePod);
     const target = d3PodId(allowedRoute.targetPod);
     return { id, source, target }
+}
+
+const styles = createStyles(theme => ({
+    root: {
+        height: '100%',
+        width: '100%',
+        overflow: 'hidden',
+        '& .node': {
+            fill: theme.palette.secondary.main
+        },
+        '& .node-highlight': {
+            fill: theme.palette.warning.main
+        },
+        '& .node-faded': {
+            fill: theme.palette.secondary.dark
+        },
+        '& .node-faded-highlight': {
+            fill: theme.palette.warning.dark
+        },
+        '& .label': {
+            fill: theme.palette.text.primary,
+            fontWeight: 100,
+            cursor: 'default',
+            pointerEvents: 'none'
+        },
+        '& .link': {
+            stroke: theme.palette.primary.main
+        },
+        '& .link-faded': {
+            stroke: theme.palette.primary.dark
+        },
+        '& .link-arrow': {
+            fill: theme.palette.primary.main
+        },
+        '& .link-arrow-faded': {
+            fill: theme.palette.primary.dark
+        }
+    }
+}));
+
+function ifHighlighted(node, classIfHighlighted, classIfNotHighlighted) {
+    return node.highlighted ? classIfHighlighted : classIfNotHighlighted;
 }
 
 class Graph extends React.Component {
@@ -88,8 +98,8 @@ class Graph extends React.Component {
                 .attr('d', 'M0,-5L10,0L0,5L0,-5')
                 .attr('class', className);
         };
-        defineArrowMarker('arrow', 'linkArrow');
-        defineArrowMarker('arrowFaded', 'linkArrowFaded');
+        defineArrowMarker('arrow', 'link-arrow');
+        defineArrowMarker('arrow-faded', 'link-arrow-faded');
         this.svg = svgRoot.append('g');
         this.linksContainer = this.svg.append('g').attr('class', 'linksContainer');
         this.nodesContainer = this.svg.append('g').attr('class', 'nodesContainer');
@@ -167,7 +177,7 @@ class Graph extends React.Component {
             .selectAll('circle')
             .data(this.d3Pods)
             .join('circle')
-            .attr('class', 'node')
+            .attr('class', node => ifHighlighted(node, 'node-highlight', 'node'))
             .attr('r', NODE_SIZE / this.zoomFactor)
             .on('mouseover', () => this.focus(d3.select(d3.event.target).datum().id))
             .on('mouseout', () => this.unFocus());
@@ -235,18 +245,21 @@ class Graph extends React.Component {
             return link.source.id === nodeId || link.target.id === nodeId;
         };
         this.nodesContainer.selectAll('circle')
-            .attr('class', node => isInNeighborhood(nodeId, node.id) ? 'node' : 'nodeFaded');
+            .attr('class', node => isInNeighborhood(nodeId, node.id)
+                ? ifHighlighted(node, 'node-highlight', 'node')
+                : ifHighlighted(node, 'node-faded-highlight', 'node-faded')
+            );
         this.labelsContainer.selectAll('text')
             .attr('display', node => isInNeighborhood(nodeId, node.id) ? 'block' : 'none');
         this.linksContainer.selectAll('line')
-            .attr('class', link => isLinkOfNode(nodeId, link) ? 'link' : 'linkFaded')
-            .attr('marker-end', link => isLinkOfNode(nodeId, link) ? 'url(#arrow)' : 'url(#arrowFaded)');
+            .attr('class', link => isLinkOfNode(nodeId, link) ? 'link' : 'link-faded')
+            .attr('marker-end', link => isLinkOfNode(nodeId, link) ? 'url(#arrow)' : 'url(#arrow-faded)');
     }
 
     unFocus() {
         this.highlightedNodeId = null;
         this.nodesContainer.selectAll('circle')
-            .attr('class', 'node');
+            .attr('class', node => ifHighlighted(node, 'node-highlight', 'node'));
         this.labelsContainer.selectAll('text')
             .attr('display', 'block');
         this.linksContainer.selectAll('line')

@@ -14,7 +14,7 @@ export function computeAnalysisResultView(analysisResult, controls) {
     if (analysisResult == null) {
         return null;
     }
-    const { namespaceFilters, labelFilters, showNamespacePrefix } = controls;
+    const { namespaceFilters, labelFilters, showNamespacePrefix, highlightNonIsolatedPods } = controls;
     const podFilter = pod => {
         const namespaceMatches = namespaceFilters.length === 0 || namespaceFilters.includes(pod.namespace);
         const labels = labelsToStringList(pod);
@@ -22,7 +22,11 @@ export function computeAnalysisResultView(analysisResult, controls) {
             || labelFilters.every(labelFilter => labels.includes(labelFilter));
         return namespaceMatches && labelsMatch;
     };
-    const podMapper = pod => ({ ...pod, displayName: showNamespacePrefix ? `${pod.namespace}/${pod.name}` : pod.name });
+    const podMapper = pod => ({
+        ...pod,
+        displayName: showNamespacePrefix ? `${pod.namespace}/${pod.name}` : pod.name,
+        highlighted: highlightNonIsolatedPods && !pod.isIngressIsolated && !pod.isEgressIsolated
+    });
     return {
         pods: analysisResult.pods.filter(podFilter).map(podMapper),
         allowedRoutes: analysisResult.allowedRoutes

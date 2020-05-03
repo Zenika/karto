@@ -14,7 +14,8 @@ const DEFAULT_CONTROLS = {
     namespaceFilters: [],
     labelFilters: [],
     showNamespacePrefix: true,
-    autoRefresh: false
+    autoRefresh: false,
+    highlightNonIsolatedPods: false
 };
 
 export function isFilterActive(selectedValues, allValues) {
@@ -146,8 +147,8 @@ const Content = ({ className = '' }) => {
                         selectedOptions={state.controls.namespaceFilters}
                         onChange={handleControlChange('namespaceFilters')}/>
                     <MultiSelectControl
-                        className={classes.controlsItem} placeholder="Select a label"
-                        name={filterLabel('label', state.controls.labelFilters, allLabels)}
+                        className={classes.controlsItem} placeholder="Select a pod label"
+                        name={filterLabel('pod label', state.controls.labelFilters, allLabels)}
                         selectAllAction={false} clearAction={true}
                         checked={isFilterActive(state.controls.labelFilters, allLabels)}
                         options={allLabels}
@@ -162,6 +163,9 @@ const Content = ({ className = '' }) => {
                     <SwitchControl className={classes.controlsItem} name="Auto refresh"
                                    checked={state.controls.autoRefresh}
                                    onChange={handleControlChange('autoRefresh')}/>
+                    <SwitchControl className={classes.controlsItem} name="Highlight non isolated pods"
+                                   checked={state.controls.highlightNonIsolatedPods}
+                                   onChange={handleControlChange('highlightNonIsolatedPods')}/>
                 </div>
             </aside>
         </div>
