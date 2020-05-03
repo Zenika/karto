@@ -69,7 +69,7 @@ class Graph extends React.Component {
             .attr('markerHeight', 14)
             .attr('orient', 'auto')
             .append('path')
-            .attr('d', 'M0,-5L10,0L0,5')
+            .attr('d', 'M0,-5L10,0L0,5L0,-5')
             .attr('class', 'linkArrow');
         this.svg = svgRoot.append('g');
         this.linksContainer = this.svg.append('g').attr('class', 'linksContainer');
