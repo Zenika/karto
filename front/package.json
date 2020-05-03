@@ -8,6 +8,7 @@
     "@material-ui/lab": "4.0.0-alpha.51",
     "classnames": "2.2.6",
     "d3": "5.16.0",
+    "local-storage": "2.0.0",
     "prop-types": "15.7.2",
     "react": "16.13.1",
     "react-dom": "16.13.1",

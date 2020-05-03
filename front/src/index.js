@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
-import App from './App';
+import App from './component/App';
 import CssBaseline from '@material-ui/core/CssBaseline';
 // https://github.com/mui-org/material-ui/issues/13394
 import { ThemeProvider, unstable_createMuiStrictModeTheme as createMuiTheme } from '@material-ui/core/styles';

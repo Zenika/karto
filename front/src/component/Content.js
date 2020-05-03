@@ -7,6 +7,29 @@ import SwitchControl from './controls/SwitchControl';
 import MultiSelectControl from './controls/MultiSelectControl';
 import PropTypes from 'prop-types';
 import Graph from './graph/Graph';
+import { getStoredControls, storeControls } from '../service/storageService';
+import { computeAnalysisResultView, fetchAnalysisResult } from '../service/analysisResultService';
+
+const DEFAULT_CONTROLS = {
+    namespaceFilters: [],
+    labelFilters: [],
+    showNamespacePrefix: true,
+    autoRefresh: false
+};
+
+export function isFilterActive(selectedValues, allValues) {
+    return selectedValues.length !== 0 && selectedValues.length !== allValues.length;
+}
+
+export function filterLabel(filterName, selectedValues, allValues) {
+    if (!isFilterActive(selectedValues, allValues)) {
+        return `All ${filterName}s`
+    } else if (selectedValues.length === 1) {
+        return `1 ${filterName} filter`
+    } else {
+        return `${(selectedValues.length)} namespace filters`
+    }
+}
 
 const useStyles = makeStyles(theme => ({
     root: {
@@ -47,90 +70,22 @@ const useStyles = makeStyles(theme => ({
     }
 }));
 
-async function fetchAnalysisResult() {
-    const response = await fetch('./api/analysisResult');
-    if (response.status !== 200) {
-        console.error(`Could not fetch analysis result: error code : ${response.status}`);
-        return;
-    }
-    return await response.json();
-}
-
-function computeAnalysisResultView(analysisResult, controls) {
-    if (analysisResult == null) {
-        return null;
-    }
-    const { namespaceFilters, labelFilters, showNamespacePrefix } = controls;
-    const podFilter = pod => {
-        const namespaceMatches = namespaceFilters.length === 0 || namespaceFilters.includes(pod.namespace);
-        const labels = labelsToStringList(pod);
-        const labelsMatch = labelFilters.length === 0
-            || labelFilters.every(labelFilter => labels.includes(labelFilter));
-        return namespaceMatches && labelsMatch;
-    };
-    const podMapper = pod => ({ ...pod, displayName: showNamespacePrefix ? `${pod.namespace}/${pod.name}` : pod.name });
-    return {
-        pods: analysisResult.pods.filter(podFilter).map(podMapper),
-        allowedRoutes: analysisResult.allowedRoutes
-            .filter(allowedRoute => podFilter(allowedRoute.sourcePod) && podFilter(allowedRoute.targetPod))
-    };
-}
-
-function distinctAndSort(arr) {
-    return [...new Set(arr)].sort();
-}
-
-function labelsToStringList(pod) {
-    return Object.entries(pod.labels).map(([key, value]) => `${key}=${value}`);
-}
-
-function allNamespacesOfPods(pods) {
-    return distinctAndSort(pods.map(pod => pod.namespace));
-}
-
-function allLabelsOfPods(pods) {
-    return distinctAndSort(pods.map(labelsToStringList).flat());
-}
-
-function isFilterActive(selectedValues, allValues) {
-    return selectedValues.length !== 0 && selectedValues.length !== allValues.length;
-}
-
-function filterLabel(filterName, selectedValues, allValues) {
-    if (!isFilterActive(selectedValues, allValues)) {
-        return `All ${filterName}s`
-    } else if (selectedValues.length === 1) {
-        return `1 ${filterName} filter`
-    } else {
-        return `${(selectedValues.length)} namespace filters`
-    }
-}
-
 const Content = ({ className = '' }) => {
     const classes = useStyles();
     const [state, setState] = useState({
         isLoading: true,
-        allNamespaces: [],
-        allLabels: [],
         analysisResult: null,
         analysisResultView: null,
-        controls: {
-            namespaceFilters: [],
-            labelFilters: [],
-            showNamespacePrefix: true,
-            autoRefresh: false
-        }
+        controls: getStoredControls() || DEFAULT_CONTROLS
     });
 
     useEffect(() => {
-        console.log('effect')
+        console.log('query effect')
         const fetchAndUpdate = async () => {
             const analysisResult = await fetchAnalysisResult();
             setState(oldState => ({
                 ...oldState,
                 isLoading: false,
-                allNamespaces: allNamespacesOfPods(analysisResult.pods),
-                allLabels: allLabelsOfPods(analysisResult.pods),
                 analysisResult: analysisResult,
                 analysisResultView: computeAnalysisResultView(analysisResult, oldState.controls)
             }));
@@ -145,6 +100,11 @@ const Content = ({ className = '' }) => {
         }
     }, [state.controls.autoRefresh]);
 
+    useEffect(() => {
+        console.log('store controls effect')
+        storeControls(state.controls);
+    }, [state.controls]);
+
     const handleControlChange = key => newValue => {
         setState(oldState => {
             const newControls = { ...oldState.controls, [key]: newValue };
@@ -156,6 +116,8 @@ const Content = ({ className = '' }) => {
         });
     };
 
+    const allNamespaces = state.analysisResult ? state.analysisResult.allNamespaces : [];
+    const allLabels = state.analysisResult ? state.analysisResult.allLabels : [];
     return (
         <div className={classNames(classes.root, className)}>
             <main className={classes.main}>
@@ -179,18 +141,18 @@ const Content = ({ className = '' }) => {
                 <div className={classes.controlsSection}>
                     <MultiSelectControl
                         className={classes.controlsItem} placeholder="Select a namespace"
-                        name={filterLabel('namespace', state.controls.namespaceFilters, state.allNamespaces)}
+                        name={filterLabel('namespace', state.controls.namespaceFilters, allNamespaces)}
                         selectAllAction={true} clearAction={true}
-                        checked={isFilterActive(state.controls.namespaceFilters, state.allNamespaces)}
-                        options={state.allNamespaces}
+                        checked={isFilterActive(state.controls.namespaceFilters, allNamespaces)}
+                        options={allNamespaces}
                         selectedOptions={state.controls.namespaceFilters}
                         onChange={handleControlChange('namespaceFilters')}/>
                     <MultiSelectControl
                         className={classes.controlsItem} placeholder="Select a label"
-                        name={filterLabel('label', state.controls.labelFilters, state.allLabels)}
+                        name={filterLabel('label', state.controls.labelFilters, allLabels)}
                         selectAllAction={false} clearAction={true}
-                        checked={isFilterActive(state.controls.labelFilters, state.allLabels)}
-                        options={state.allLabels}
+                        checked={isFilterActive(state.controls.labelFilters, allLabels)}
+                        options={allLabels}
                         selectedOptions={state.controls.labelFilters}
                         onChange={handleControlChange('labelFilters')}/>
                 </div>
