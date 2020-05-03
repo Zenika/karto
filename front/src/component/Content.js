@@ -80,7 +80,6 @@ const Content = ({ className = '' }) => {
     });
 
     useEffect(() => {
-        console.log('query effect')
         const fetchAndUpdate = async () => {
             const analysisResult = await fetchAnalysisResult();
             setState(oldState => ({
@@ -101,7 +100,6 @@ const Content = ({ className = '' }) => {
     }, [state.controls.autoRefresh]);
 
     useEffect(() => {
-        console.log('store controls effect')
         storeControls(state.controls);
     }, [state.controls]);
 

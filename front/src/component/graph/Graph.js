@@ -84,7 +84,6 @@ class Graph extends React.Component {
             .force('x', d3.forceX())
             .force('y', d3.forceY());
         this.simulation.on('tick', () => {
-            console.log('tick');
             this.nodesContainer
                 .selectAll('circle')
                 .attr('cx', d => d.x)
@@ -203,7 +202,6 @@ class Graph extends React.Component {
     }
 
     componentDidUpdate() {
-        console.log('update');
         this.update();
     }
 

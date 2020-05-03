@@ -39,10 +39,12 @@ func (handler *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func Expose(resultsChannel <-chan types.AnalysisResult) {
-	handler := newHandler()
-	go handler.keepUpdated(resultsChannel)
+	frontendHandler := http.FileServer(http.Dir("./front/build"))
+	apiHandler := newHandler()
+	go apiHandler.keepUpdated(resultsChannel)
 	mux := http.NewServeMux()
-	mux.Handle("/api/analysisResult", handler)
+	mux.Handle("/", frontendHandler)
+	mux.Handle("/api/analysisResult", apiHandler)
 	log.Println("Listening...")
 	http.ListenAndServe(":8000", mux)
 }
