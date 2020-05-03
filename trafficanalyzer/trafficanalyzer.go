@@ -51,11 +51,11 @@ func AnalyzeEverySeconds(k8sConfigPath string, resultsChannel chan<- types.Analy
 		policies := getNetworkPoliciesAllNamespaces(k8sClient)
 		namespaces := getNamespaces(k8sClient)
 		podIsolations := computePodIsolations(pods, policies)
-		allAllowedTraffic := computeAllAllowedTraffic(podIsolations, namespaces.Items)
-		fmt.Printf("Finished analysis, found %d pods and computed %d instances of pod-to-pod allowed traffic\n", len(podIsolations), len(allAllowedTraffic))
+		allowedRoutes := computeAllowedRoutes(podIsolations, namespaces.Items)
+		fmt.Printf("Finished analysis, found %d pods and %d allowed pod-to-pod routes\n", len(podIsolations), len(allowedRoutes))
 		resultsChannel <- types.AnalysisResult{
-			Pods:           fromK8sPodIsolations(podIsolations),
-			AllowedTraffic: allAllowedTraffic,
+			Pods:          fromK8sPodIsolations(podIsolations),
+			AllowedRoutes: allowedRoutes,
 		}
 		time.Sleep(intervalSeconds * time.Second)
 	}
@@ -136,30 +136,30 @@ func policyTypes(policy networkingv1.NetworkPolicy) (bool, bool) {
 	return isIngress, isEgress
 }
 
-func computeAllAllowedTraffic(podIsolations []podIsolation, namespaces []corev1.Namespace) []types.AllowedTraffic {
-	allAllowedTraffic := make([]types.AllowedTraffic, 0)
+func computeAllowedRoutes(podIsolations []podIsolation, namespaces []corev1.Namespace) []types.AllowedRoute {
+	allowedRoutes := make([]types.AllowedRoute, 0)
 	for i, sourcePodIsolation := range podIsolations {
 		for j, targetPodIsolation := range podIsolations {
 			if i == j {
 				// Ignore traffic to itself
 				continue
 			}
-			allowedTraffic := computeAllowedTraffic(sourcePodIsolation, targetPodIsolation, namespaces)
-			if allowedTraffic != nil {
-				allAllowedTraffic = append(allAllowedTraffic, *allowedTraffic)
+			allowedRoute := computeAllowedRoute(sourcePodIsolation, targetPodIsolation, namespaces)
+			if allowedRoute != nil {
+				allowedRoutes = append(allowedRoutes, *allowedRoute)
 			}
 		}
 	}
-	return allAllowedTraffic
+	return allowedRoutes
 }
 
-func computeAllowedTraffic(sourcePodIsolation podIsolation, targetPodIsolation podIsolation, namespaces []corev1.Namespace) *types.AllowedTraffic {
+func computeAllowedRoute(sourcePodIsolation podIsolation, targetPodIsolation podIsolation, namespaces []corev1.Namespace) *types.AllowedRoute {
 	egressPolicies := policiesAllowingEgress(targetPodIsolation.Pod, sourcePodIsolation, namespaces)
 	sourceAllowsEgress := !sourcePodIsolation.IsEgressIsolated() || len(egressPolicies) > 0
 	ingressPolicies := policiesAllowingIngress(sourcePodIsolation.Pod, targetPodIsolation, namespaces)
 	targetAllowsIngress := !targetPodIsolation.IsIngressIsolated() || len(ingressPolicies) > 0
 	if sourceAllowsEgress && targetAllowsIngress {
-		return &types.AllowedTraffic{
+		return &types.AllowedRoute{
 			SourcePod:       fromK8sPodIsolation(sourcePodIsolation),
 			EgressPolicies:  fromK8sNetworkPolicies(egressPolicies),
 			TargetPod:       fromK8sPodIsolation(targetPodIsolation),
