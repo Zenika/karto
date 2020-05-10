@@ -14,7 +14,10 @@ export function computeAnalysisResultView(analysisResult, controls) {
     if (analysisResult == null) {
         return null;
     }
-    const { namespaceFilters, labelFilters, nameFilter, showNamespacePrefix, highlightNonIsolatedPods } = controls;
+    const {
+        namespaceFilters, labelFilters, nameFilter, showNamespacePrefix,
+        highlightPodsWithoutIngressIsolation, highlightPodsWithoutEgressIsolation
+    } = controls;
     const namespaceMatches = (pod) => {
         return namespaceFilters.length === 0 || namespaceFilters.includes(pod.namespace);
     };
@@ -32,7 +35,8 @@ export function computeAnalysisResultView(analysisResult, controls) {
     const podMapper = pod => ({
         ...pod,
         displayName: showNamespacePrefix ? `${pod.namespace}/${pod.name}` : pod.name,
-        highlighted: highlightNonIsolatedPods && !pod.isIngressIsolated && !pod.isEgressIsolated
+        highlighted: (highlightPodsWithoutIngressIsolation && !pod.isIngressIsolated)
+            || (highlightPodsWithoutEgressIsolation && !pod.isEgressIsolated)
     });
     return {
         pods: analysisResult.pods.filter(podFilter).map(podMapper),

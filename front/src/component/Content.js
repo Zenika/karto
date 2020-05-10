@@ -17,7 +17,8 @@ const DEFAULT_CONTROLS = {
     nameFilter: '',
     showNamespacePrefix: true,
     autoRefresh: false,
-    highlightNonIsolatedPods: false
+    highlightPodsWithoutIngressIsolation: false,
+    highlightPodsWithoutEgressIsolation: false
 };
 
 export function isFilterActive(selectedValues, allValues) {
@@ -49,7 +50,7 @@ const useStyles = makeStyles(theme => ({
         position: 'absolute',
         top: 80,
         left: 0,
-        width: 300,
+        width: 320,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'flex-start',
@@ -172,9 +173,12 @@ const Content = ({ className = '' }) => {
                     <SwitchControl className={classes.controlsItem} name="Auto refresh"
                                    checked={state.controls.autoRefresh}
                                    onChange={handleControlChange('autoRefresh')}/>
-                    <SwitchControl className={classes.controlsItem} name="Highlight non isolated pods"
-                                   checked={state.controls.highlightNonIsolatedPods}
-                                   onChange={handleControlChange('highlightNonIsolatedPods')}/>
+                    <SwitchControl className={classes.controlsItem} name="Highlight non isolated pods (ingress)"
+                                   checked={state.controls.highlightPodsWithoutIngressIsolation}
+                                   onChange={handleControlChange('highlightPodsWithoutIngressIsolation')}/>
+                    <SwitchControl className={classes.controlsItem} name="Highlight non isolated pods (egress)"
+                                   checked={state.controls.highlightPodsWithoutEgressIsolation}
+                                   onChange={handleControlChange('highlightPodsWithoutEgressIsolation')}/>
                 </div>
             </aside>
         </div>
