@@ -29,12 +29,17 @@ export function isFilterActive(selectedValues, allValues) {
 
 export function filterLabel(filterName, selectedValues, allValues) {
     if (!isFilterActive(selectedValues, allValues)) {
-        return `All ${filterName}s`
+        return `All ${filterName}s`;
     } else if (selectedValues.length === 1) {
-        return `1 ${filterName} filter`
+        return `1 ${filterName} filter`;
     } else {
-        return `${(selectedValues.length)} namespace filters`
+        return `${(selectedValues.length)} namespace filters`;
     }
+}
+
+export function displaySummary(displayedPods, allPods, displayedAllowedRoutes, allAllowedRoutes) {
+    return `Displaying ${displayedPods.length}/${allPods.length} pods`
+        + ` and ${displayedAllowedRoutes.length}/${allAllowedRoutes.length} allowed routes`;
 }
 
 const useStyles = makeStyles(theme => ({
@@ -73,6 +78,14 @@ const useStyles = makeStyles(theme => ({
     },
     loadingCaption: {
         marginTop: theme.spacing(1)
+    },
+    graphCaption: {
+        position: 'absolute',
+        bottom: 0,
+        left: 'auto',
+        right: 'auto',
+        backgroundColor: 'transparent',
+        cursor: 'default'
     }
 }));
 
@@ -99,7 +112,7 @@ const Content = ({ className = '' }) => {
 
         if (state.controls.autoRefresh) {
             const interval = setInterval(() => {
-                fetchAndUpdate()
+                fetchAndUpdate();
             }, 5000);
             return () => clearInterval(interval);
         }
@@ -133,11 +146,15 @@ const Content = ({ className = '' }) => {
                 </>}
                 {!state.isLoading && state.analysisResultView && state.analysisResultView.pods.length === 0 && <>
                     <Typography className={classes.loadingCaption} variant="caption">
-                        "No pod to display"
+                        No pod to display
                     </Typography>
                 </>}
                 {!state.isLoading && state.analysisResultView && state.analysisResultView.pods.length > 0 && <>
                     <Graph analysisResult={state.analysisResultView}/>
+                    <Typography className={classes.graphCaption} variant="caption">
+                        {displaySummary(state.analysisResultView.pods, state.analysisResult.pods,
+                            state.analysisResultView.allowedRoutes, state.analysisResult.allowedRoutes)}
+                    </Typography>
                 </>}
             </main>
             <aside role="search" className={classes.controls}>
