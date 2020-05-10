@@ -136,6 +136,7 @@ class Graph extends React.Component {
     update() {
         // Update data
         let atLeastOneChange = false;
+
         const newD3Pods = this.props.analysisResult.pods.map(pod => {
             const oldPod = this.indexedPods.get(d3PodId(pod));
             if (oldPod) {
@@ -154,7 +155,7 @@ class Graph extends React.Component {
         this.indexedPods.clear();
         this.d3Pods.forEach(pod => this.indexedPods.set(pod.id, pod));
 
-        let newD3AllowedRoutes = this.props.analysisResult.allowedRoutes.map(allowedRoute => {
+        const newD3AllowedRoutes = this.props.analysisResult.allowedRoutes.map(allowedRoute => {
             const oldAllowedRoute = this.indexedAllowedRoutes.get(d3AllowedRouteId(allowedRoute));
             if (oldAllowedRoute) {
                 // AllowedRoute was already displayed, keep new attributes and patch with d3 data

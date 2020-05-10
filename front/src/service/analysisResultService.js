@@ -16,21 +16,18 @@ export function computeAnalysisResultView(analysisResult, controls) {
     }
     const {
         namespaceFilters, labelFilters, nameFilter, showNamespacePrefix,
-        highlightPodsWithoutIngressIsolation, highlightPodsWithoutEgressIsolation
+        highlightPodsWithoutIngressIsolation, highlightPodsWithoutEgressIsolation,
+        includeIngressNeighbors, includeEgressNeighbors
     } = controls;
-    const namespaceMatches = (pod) => {
-        return namespaceFilters.length === 0 || namespaceFilters.includes(pod.namespace);
-    };
-    const labelsMatch = (pod) => {
-        const labels = labelsToStringList(pod);
-        return labelFilters.length === 0 || labelFilters.every(labelFilter => labels.includes(labelFilter));
-    };
+
     const nameRegex = new RegExp(nameFilter);
-    const nameMatches = (pod) => {
-        return nameFilter === '' || nameRegex.test(pod.name);
-    };
     const podFilter = pod => {
-        return namespaceMatches(pod) && labelsMatch(pod) && nameMatches(pod);
+        const namespaceMatches = namespaceFilters.length === 0 || namespaceFilters.includes(pod.namespace);
+        const labels = labelsToStringList(pod);
+        const labelsMatch = labelFilters.length === 0
+            || labelFilters.every(labelFilter => labels.includes(labelFilter));
+        const nameMatches = nameFilter === '' || nameRegex.test(pod.name);
+        return namespaceMatches && labelsMatch && nameMatches;
     };
     const podMapper = pod => ({
         ...pod,
@@ -38,10 +35,43 @@ export function computeAnalysisResultView(analysisResult, controls) {
         highlighted: (highlightPodsWithoutIngressIsolation && !pod.isIngressIsolated)
             || (highlightPodsWithoutEgressIsolation && !pod.isEgressIsolated)
     });
+
+    // Index pods by id for faster access
+    const podsById = new Map();
+    analysisResult.pods.forEach(pod => podsById.set(podId(pod), pod));
+    const filteredPodsIds = new Set();
+    const neighborPodsIds = new Set();
+
+    // Apply filters
+    const filteredPods = analysisResult.pods.filter(podFilter);
+    filteredPods.forEach(pod => filteredPodsIds.add(podId(pod)));
+    const filteredAllowedRoutes = analysisResult.allowedRoutes.filter(allowedRoute =>
+        filteredPodsIds.has(podId(allowedRoute.sourcePod)) && filteredPodsIds.has(podId(allowedRoute.targetPod))
+    );
+
+    // Include neighbors
+    analysisResult.allowedRoutes.forEach(allowedRoute => {
+        const sourcePodId = podId(allowedRoute.sourcePod);
+        const targetPodId = podId(allowedRoute.targetPod);
+        if (includeIngressNeighbors && !filteredPodsIds.has(sourcePodId) && filteredPodsIds.has(targetPodId)) {
+            if (!neighborPodsIds.has(sourcePodId)) {
+                neighborPodsIds.add(sourcePodId);
+                filteredPods.push(podsById.get(sourcePodId));
+            }
+            filteredAllowedRoutes.push(allowedRoute);
+        }
+        if (includeEgressNeighbors && !filteredPodsIds.has(targetPodId) && filteredPodsIds.has(sourcePodId)) {
+            if (!neighborPodsIds.has(targetPodId)) {
+                neighborPodsIds.add(targetPodId);
+                filteredPods.push(podsById.get(targetPodId));
+            }
+            filteredAllowedRoutes.push(allowedRoute);
+        }
+    });
+
     return {
-        pods: analysisResult.pods.filter(podFilter).map(podMapper),
-        allowedRoutes: analysisResult.allowedRoutes
-            .filter(allowedRoute => podFilter(allowedRoute.sourcePod) && podFilter(allowedRoute.targetPod))
+        pods: filteredPods.map(podMapper),
+        allowedRoutes: filteredAllowedRoutes
     };
 }
 
@@ -59,4 +89,8 @@ function distinctAndSort(arr) {
 
 function labelsToStringList(pod) {
     return Object.entries(pod.labels).map(([key, value]) => `${key}=${value}`);
+}
+
+function podId(pod) {
+    return `${pod.namespace}/${pod.name}`;
 }

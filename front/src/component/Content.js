@@ -15,8 +15,10 @@ const DEFAULT_CONTROLS = {
     namespaceFilters: [],
     labelFilters: [],
     nameFilter: '',
-    showNamespacePrefix: true,
+    includeIngressNeighbors: false,
+    includeEgressNeighbors: false,
     autoRefresh: false,
+    showNamespacePrefix: true,
     highlightPodsWithoutIngressIsolation: false,
     highlightPodsWithoutEgressIsolation: false
 };
@@ -164,21 +166,32 @@ const Content = ({ className = '' }) => {
                         checked={state.controls.nameFilter !== ''}
                         value={state.controls.nameFilter}
                         onChange={handleControlChange('nameFilter')}/>
+                    <SwitchControl
+                        className={classes.controlsItem} name="Include ingress neighbors"
+                        checked={state.controls.includeIngressNeighbors}
+                        onChange={handleControlChange('includeIngressNeighbors')}/>
+                    <SwitchControl
+                        className={classes.controlsItem} name="Include egress neighbors"
+                        checked={state.controls.includeEgressNeighbors}
+                        onChange={handleControlChange('includeEgressNeighbors')}/>
                 </div>
                 <Typography className={classes.controlsTitle} variant="h2">Display options</Typography>
                 <div className={classes.controlsSection}>
-                    <SwitchControl className={classes.controlsItem} name="Show namespace prefix"
-                                   checked={state.controls.showNamespacePrefix}
-                                   onChange={handleControlChange('showNamespacePrefix')}/>
-                    <SwitchControl className={classes.controlsItem} name="Auto refresh"
-                                   checked={state.controls.autoRefresh}
-                                   onChange={handleControlChange('autoRefresh')}/>
-                    <SwitchControl className={classes.controlsItem} name="Highlight non isolated pods (ingress)"
-                                   checked={state.controls.highlightPodsWithoutIngressIsolation}
-                                   onChange={handleControlChange('highlightPodsWithoutIngressIsolation')}/>
-                    <SwitchControl className={classes.controlsItem} name="Highlight non isolated pods (egress)"
-                                   checked={state.controls.highlightPodsWithoutEgressIsolation}
-                                   onChange={handleControlChange('highlightPodsWithoutEgressIsolation')}/>
+                    <SwitchControl
+                        className={classes.controlsItem} name="Auto refresh" checked={state.controls.autoRefresh}
+                        onChange={handleControlChange('autoRefresh')}/>
+                    <SwitchControl
+                        className={classes.controlsItem} name="Show namespace prefix"
+                        checked={state.controls.showNamespacePrefix}
+                        onChange={handleControlChange('showNamespacePrefix')}/>
+                    <SwitchControl
+                        className={classes.controlsItem} name="Highlight non isolated pods (ingress)"
+                        checked={state.controls.highlightPodsWithoutIngressIsolation}
+                        onChange={handleControlChange('highlightPodsWithoutIngressIsolation')}/>
+                    <SwitchControl
+                        className={classes.controlsItem} name="Highlight non isolated pods (egress)"
+                        checked={state.controls.highlightPodsWithoutEgressIsolation}
+                        onChange={handleControlChange('highlightPodsWithoutEgressIsolation')}/>
                 </div>
             </aside>
         </div>
