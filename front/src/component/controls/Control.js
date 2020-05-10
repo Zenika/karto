@@ -42,6 +42,9 @@ const useStyles = makeStyles(theme => ({
         paddingBottom: theme.spacing(1),
         borderLeft: `1px solid ${theme.palette.primary.main}`,
         borderBottom: `1px solid ${theme.palette.primary.main}`
+    },
+    contentCollapsed: {
+        paddingBottom: 0
     }
 }));
 
@@ -63,7 +66,8 @@ const Control = ({ className = '', name, checked, children }) => {
                 </Button>
                 <Typography variant="body1">{name}</Typography>
             </div>
-            <Collapse className={classes.content} in={expanded} timeout="auto">
+            <Collapse className={classNames(classes.content, { [classes.contentCollapsed]: !expanded })} in={expanded}
+                      timeout="auto">
                 {children}
             </Collapse>
         </div>
