@@ -6,6 +6,7 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"network-policy-explorer/types"
 	"testing"
 )
@@ -176,6 +177,7 @@ func Test_computeAllowedRoutes(t *testing.T) {
 				EgressPolicies:  []types.NetworkPolicy{},
 				TargetPod:       types.Pod{Name: "Pod2", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: false, IsEgressIsolated: true},
 				IngressPolicies: []types.NetworkPolicy{},
+				Ports:           nil,
 			},
 		},
 		{
@@ -210,6 +212,7 @@ func Test_computeAllowedRoutes(t *testing.T) {
 				IngressPolicies: []types.NetworkPolicy{
 					{Name: "np", Namespace: "default", Labels: map[string]string{}},
 				},
+				Ports: nil,
 			},
 		},
 		{
@@ -271,6 +274,7 @@ func Test_computeAllowedRoutes(t *testing.T) {
 				IngressPolicies: []types.NetworkPolicy{
 					{Name: "np", Namespace: "default", Labels: map[string]string{}},
 				},
+				Ports: nil,
 			},
 		},
 		{
@@ -333,6 +337,7 @@ func Test_computeAllowedRoutes(t *testing.T) {
 				IngressPolicies: []types.NetworkPolicy{
 					{Name: "np", Namespace: "default", Labels: map[string]string{}},
 				},
+				Ports: nil,
 			},
 		},
 		{
@@ -423,6 +428,7 @@ func Test_computeAllowedRoutes(t *testing.T) {
 				},
 				TargetPod:       types.Pod{Name: "Pod2", Namespace: "default", Labels: map[string]string{"app": "foo"}, IsIngressIsolated: false, IsEgressIsolated: false},
 				IngressPolicies: []types.NetworkPolicy{},
+				Ports:           nil,
 			},
 		},
 		{
@@ -484,6 +490,7 @@ func Test_computeAllowedRoutes(t *testing.T) {
 				},
 				TargetPod:       types.Pod{Name: "Pod2", Namespace: "ns", Labels: map[string]string{}, IsIngressIsolated: false, IsEgressIsolated: false},
 				IngressPolicies: []types.NetworkPolicy{},
+				Ports:           nil,
 			},
 		},
 		{
@@ -546,6 +553,7 @@ func Test_computeAllowedRoutes(t *testing.T) {
 				},
 				TargetPod:       types.Pod{Name: "Pod2", Namespace: "ns", Labels: map[string]string{"app": "foo"}, IsIngressIsolated: false, IsEgressIsolated: false},
 				IngressPolicies: []types.NetworkPolicy{},
+				Ports:           nil,
 			},
 		},
 		{
@@ -603,6 +611,314 @@ func Test_computeAllowedRoutes(t *testing.T) {
 				},
 			},
 			expectedAllowedRoute: nil,
+		},
+		{
+			name: "allowed route ports are the intersection of ingress and egress rule ports",
+			args: args{
+				sourcePodIsolation: podIsolation{
+					Pod:             podBuilder().name("Pod1").build(),
+					IngressPolicies: []networkingv1.NetworkPolicy{},
+					EgressPolicies: []networkingv1.NetworkPolicy{
+						networkPolicyBuilder().types("Egress").egressRule(networkingv1.NetworkPolicyEgressRule{
+							To: []networkingv1.NetworkPolicyPeer{
+								{
+									PodSelector: labelSelectorBuilder().build(),
+								},
+							},
+							Ports: []networkingv1.NetworkPolicyPort{
+								{Port: &intstr.IntOrString{IntVal: 80}},
+								{Port: &intstr.IntOrString{IntVal: 8080}},
+							},
+						}).build(),
+					},
+				},
+				targetPodIsolation: podIsolation{
+					Pod: podBuilder().name("Pod2").build(),
+					IngressPolicies: []networkingv1.NetworkPolicy{
+						networkPolicyBuilder().types("Ingress").ingressRule(networkingv1.NetworkPolicyIngressRule{
+							From: []networkingv1.NetworkPolicyPeer{
+								{
+									PodSelector: labelSelectorBuilder().build(),
+								},
+							},
+							Ports: []networkingv1.NetworkPolicyPort{
+								{Port: &intstr.IntOrString{IntVal: 443}},
+								{Port: &intstr.IntOrString{IntVal: 80}},
+							},
+						}).build(),
+					},
+					EgressPolicies: []networkingv1.NetworkPolicy{},
+				},
+				namespaces: []corev1.Namespace{
+					namespaceBuilder().name("default").build(),
+				},
+			},
+			expectedAllowedRoute: &types.AllowedRoute{
+				SourcePod: types.Pod{Name: "Pod1", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: false, IsEgressIsolated: true},
+				EgressPolicies: []types.NetworkPolicy{
+					{Namespace: "default", Labels: map[string]string{}},
+				},
+				TargetPod: types.Pod{Name: "Pod2", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: true, IsEgressIsolated: false},
+				IngressPolicies: []types.NetworkPolicy{
+					{Namespace: "default", Labels: map[string]string{}},
+				},
+				Ports: []int32{80},
+			},
+		},
+		{
+			name: "allowed route ports are ingress rule ports when egress applies to all ports",
+			args: args{
+				sourcePodIsolation: podIsolation{
+					Pod:             podBuilder().name("Pod1").build(),
+					IngressPolicies: []networkingv1.NetworkPolicy{},
+					EgressPolicies: []networkingv1.NetworkPolicy{
+						networkPolicyBuilder().types("Egress").egressRule(networkingv1.NetworkPolicyEgressRule{
+							To: []networkingv1.NetworkPolicyPeer{
+								{
+									PodSelector: labelSelectorBuilder().build(),
+								},
+							},
+						}).build(),
+					},
+				},
+				targetPodIsolation: podIsolation{
+					Pod: podBuilder().name("Pod2").build(),
+					IngressPolicies: []networkingv1.NetworkPolicy{
+						networkPolicyBuilder().types("Ingress").ingressRule(networkingv1.NetworkPolicyIngressRule{
+							From: []networkingv1.NetworkPolicyPeer{
+								{
+									PodSelector: labelSelectorBuilder().build(),
+								},
+							},
+							Ports: []networkingv1.NetworkPolicyPort{
+								{Port: &intstr.IntOrString{IntVal: 443}},
+								{Port: &intstr.IntOrString{IntVal: 80}},
+							},
+						}).build(),
+					},
+					EgressPolicies: []networkingv1.NetworkPolicy{},
+				},
+				namespaces: []corev1.Namespace{
+					namespaceBuilder().name("default").build(),
+				},
+			},
+			expectedAllowedRoute: &types.AllowedRoute{
+				SourcePod: types.Pod{Name: "Pod1", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: false, IsEgressIsolated: true},
+				EgressPolicies: []types.NetworkPolicy{
+					{Namespace: "default", Labels: map[string]string{}},
+				},
+				TargetPod: types.Pod{Name: "Pod2", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: true, IsEgressIsolated: false},
+				IngressPolicies: []types.NetworkPolicy{
+					{Namespace: "default", Labels: map[string]string{}},
+				},
+				Ports: []int32{80, 443},
+			},
+		},
+		{
+			name: "allowed route ports are egress rule ports when ingress applies to all ports",
+			args: args{
+				sourcePodIsolation: podIsolation{
+					Pod:             podBuilder().name("Pod1").build(),
+					IngressPolicies: []networkingv1.NetworkPolicy{},
+					EgressPolicies: []networkingv1.NetworkPolicy{
+						networkPolicyBuilder().types("Egress").egressRule(networkingv1.NetworkPolicyEgressRule{
+							To: []networkingv1.NetworkPolicyPeer{
+								{
+									PodSelector: labelSelectorBuilder().build(),
+								},
+							},
+							Ports: []networkingv1.NetworkPolicyPort{
+								{Port: &intstr.IntOrString{IntVal: 443}},
+								{Port: &intstr.IntOrString{IntVal: 80}},
+							},
+						}).build(),
+					},
+				},
+				targetPodIsolation: podIsolation{
+					Pod: podBuilder().name("Pod2").build(),
+					IngressPolicies: []networkingv1.NetworkPolicy{
+						networkPolicyBuilder().types("Ingress").ingressRule(networkingv1.NetworkPolicyIngressRule{
+							From: []networkingv1.NetworkPolicyPeer{
+								{
+									PodSelector: labelSelectorBuilder().build(),
+								},
+							},
+						}).build(),
+					},
+					EgressPolicies: []networkingv1.NetworkPolicy{},
+				},
+				namespaces: []corev1.Namespace{
+					namespaceBuilder().name("default").build(),
+				},
+			},
+			expectedAllowedRoute: &types.AllowedRoute{
+				SourcePod: types.Pod{Name: "Pod1", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: false, IsEgressIsolated: true},
+				EgressPolicies: []types.NetworkPolicy{
+					{Namespace: "default", Labels: map[string]string{}},
+				},
+				TargetPod: types.Pod{Name: "Pod2", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: true, IsEgressIsolated: false},
+				IngressPolicies: []types.NetworkPolicy{
+					{Namespace: "default", Labels: map[string]string{}},
+				},
+				Ports: []int32{80, 443},
+			},
+		},
+		{
+			name: "allowed route ports is nil when both ingress and egress apply to all ports",
+			args: args{
+				sourcePodIsolation: podIsolation{
+					Pod:             podBuilder().name("Pod1").build(),
+					IngressPolicies: []networkingv1.NetworkPolicy{},
+					EgressPolicies: []networkingv1.NetworkPolicy{
+						networkPolicyBuilder().types("Egress").egressRule(networkingv1.NetworkPolicyEgressRule{
+							To: []networkingv1.NetworkPolicyPeer{
+								{
+									PodSelector: labelSelectorBuilder().build(),
+								},
+							},
+						}).build(),
+					},
+				},
+				targetPodIsolation: podIsolation{
+					Pod: podBuilder().name("Pod2").build(),
+					IngressPolicies: []networkingv1.NetworkPolicy{
+						networkPolicyBuilder().types("Ingress").ingressRule(networkingv1.NetworkPolicyIngressRule{
+							From: []networkingv1.NetworkPolicyPeer{
+								{
+									PodSelector: labelSelectorBuilder().build(),
+								},
+							},
+						}).build(),
+					},
+					EgressPolicies: []networkingv1.NetworkPolicy{},
+				},
+				namespaces: []corev1.Namespace{
+					namespaceBuilder().name("default").build(),
+				},
+			},
+			expectedAllowedRoute: &types.AllowedRoute{
+				SourcePod: types.Pod{Name: "Pod1", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: false, IsEgressIsolated: true},
+				EgressPolicies: []types.NetworkPolicy{
+					{Namespace: "default", Labels: map[string]string{}},
+				},
+				TargetPod: types.Pod{Name: "Pod2", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: true, IsEgressIsolated: false},
+				IngressPolicies: []types.NetworkPolicy{
+					{Namespace: "default", Labels: map[string]string{}},
+				},
+				Ports: nil,
+			},
+		},
+		{
+			name: "route is forbidden when ingress and egress have no ports in common",
+			args: args{
+				sourcePodIsolation: podIsolation{
+					Pod:             podBuilder().name("Pod1").build(),
+					IngressPolicies: []networkingv1.NetworkPolicy{},
+					EgressPolicies: []networkingv1.NetworkPolicy{
+						networkPolicyBuilder().types("Egress").egressRule(networkingv1.NetworkPolicyEgressRule{
+							To: []networkingv1.NetworkPolicyPeer{
+								{
+									PodSelector: labelSelectorBuilder().build(),
+								},
+							},
+							Ports: []networkingv1.NetworkPolicyPort{
+								{Port: &intstr.IntOrString{IntVal: 80}},
+							},
+						}).build(),
+					},
+				},
+				targetPodIsolation: podIsolation{
+					Pod: podBuilder().name("Pod2").build(),
+					IngressPolicies: []networkingv1.NetworkPolicy{
+						networkPolicyBuilder().types("Ingress").ingressRule(networkingv1.NetworkPolicyIngressRule{
+							From: []networkingv1.NetworkPolicyPeer{
+								{
+									PodSelector: labelSelectorBuilder().build(),
+								},
+							},
+							Ports: []networkingv1.NetworkPolicyPort{
+								{Port: &intstr.IntOrString{IntVal: 443}},
+							},
+						}).build(),
+					},
+					EgressPolicies: []networkingv1.NetworkPolicy{},
+				},
+				namespaces: []corev1.Namespace{
+					namespaceBuilder().name("default").build(),
+				},
+			},
+			expectedAllowedRoute: nil,
+		},
+		{
+			name: "allowed route only contains policies with allowed ports",
+			args: args{
+				sourcePodIsolation: podIsolation{
+					Pod:             podBuilder().name("Pod1").build(),
+					IngressPolicies: []networkingv1.NetworkPolicy{},
+					EgressPolicies: []networkingv1.NetworkPolicy{
+						networkPolicyBuilder().name("eg1").types("Egress").egressRule(networkingv1.NetworkPolicyEgressRule{
+							To: []networkingv1.NetworkPolicyPeer{
+								{
+									PodSelector: labelSelectorBuilder().build(),
+								},
+							},
+							Ports: []networkingv1.NetworkPolicyPort{
+								{Port: &intstr.IntOrString{IntVal: 80}},
+							},
+						}).build(),
+						networkPolicyBuilder().name("eg2").types("Egress").egressRule(networkingv1.NetworkPolicyEgressRule{
+							To: []networkingv1.NetworkPolicyPeer{
+								{
+									PodSelector: labelSelectorBuilder().build(),
+								},
+							},
+							Ports: []networkingv1.NetworkPolicyPort{
+								{Port: &intstr.IntOrString{IntVal: 5000}},
+							},
+						}).build(),
+					},
+				},
+				targetPodIsolation: podIsolation{
+					Pod: podBuilder().name("Pod2").build(),
+					IngressPolicies: []networkingv1.NetworkPolicy{
+						networkPolicyBuilder().name("in1").types("Ingress").ingressRule(networkingv1.NetworkPolicyIngressRule{
+							From: []networkingv1.NetworkPolicyPeer{
+								{
+									PodSelector: labelSelectorBuilder().build(),
+								},
+							},
+							Ports: []networkingv1.NetworkPolicyPort{
+								{Port: &intstr.IntOrString{IntVal: 80}},
+							},
+						}).build(),
+						networkPolicyBuilder().name("in2").types("Ingress").ingressRule(networkingv1.NetworkPolicyIngressRule{
+							From: []networkingv1.NetworkPolicyPeer{
+								{
+									PodSelector: labelSelectorBuilder().build(),
+								},
+							},
+							Ports: []networkingv1.NetworkPolicyPort{
+								{Port: &intstr.IntOrString{IntVal: 7000}},
+							},
+						}).build(),
+					},
+					EgressPolicies: []networkingv1.NetworkPolicy{},
+				},
+				namespaces: []corev1.Namespace{
+					namespaceBuilder().name("default").build(),
+				},
+			},
+			expectedAllowedRoute: &types.AllowedRoute{
+				SourcePod: types.Pod{Name: "Pod1", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: false, IsEgressIsolated: true},
+				EgressPolicies: []types.NetworkPolicy{
+					{Name: "eg1", Namespace: "default", Labels: map[string]string{}},
+				},
+				TargetPod: types.Pod{Name: "Pod2", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: true, IsEgressIsolated: false},
+				IngressPolicies: []types.NetworkPolicy{
+					{Name: "in1", Namespace: "default", Labels: map[string]string{}},
+				},
+				Ports: []int32{80},
+			},
 		},
 	}
 	for _, tt := range tests {

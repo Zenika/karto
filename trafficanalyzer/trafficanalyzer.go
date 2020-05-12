@@ -11,8 +11,11 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
 	"network-policy-explorer/types"
+	"sort"
 	"time"
 )
+
+var portWildcard int32 = -1
 
 type podIsolation struct {
 	Pod             corev1.Pod `json:"pod"`
@@ -47,12 +50,14 @@ func newPodIsolation(pod corev1.Pod) podIsolation {
 func AnalyzeEverySeconds(k8sConfigPath string, resultsChannel chan<- types.AnalysisResult, intervalSeconds time.Duration) {
 	k8sClient := getK8sClient(k8sConfigPath)
 	for {
+		start := time.Now()
 		pods := getPodsAllNamespaces(k8sClient)
 		policies := getNetworkPoliciesAllNamespaces(k8sClient)
 		namespaces := getNamespaces(k8sClient)
 		podIsolations := computePodIsolations(pods, policies)
 		allowedRoutes := computeAllowedRoutes(podIsolations, namespaces.Items)
-		fmt.Printf("Finished analysis, found %d pods and %d allowed pod-to-pod routes\n", len(podIsolations), len(allowedRoutes))
+		elapsed := time.Since(start)
+		fmt.Printf("Finished analysis in %s, found %d pods and %d allowed pod-to-pod routes\n", elapsed, len(podIsolations), len(allowedRoutes))
 		resultsChannel <- types.AnalysisResult{
 			Pods:          fromK8sPodIsolations(podIsolations),
 			AllowedRoutes: allowedRoutes,
@@ -154,39 +159,52 @@ func computeAllowedRoutes(podIsolations []podIsolation, namespaces []corev1.Name
 }
 
 func computeAllowedRoute(sourcePodIsolation podIsolation, targetPodIsolation podIsolation, namespaces []corev1.Namespace) *types.AllowedRoute {
-	egressPolicies := policiesAllowingEgress(targetPodIsolation.Pod, sourcePodIsolation, namespaces)
-	sourceAllowsEgress := !sourcePodIsolation.IsEgressIsolated() || len(egressPolicies) > 0
-	ingressPolicies := policiesAllowingIngress(sourcePodIsolation.Pod, targetPodIsolation, namespaces)
-	targetAllowsIngress := !targetPodIsolation.IsIngressIsolated() || len(ingressPolicies) > 0
-	if sourceAllowsEgress && targetAllowsIngress {
+	ingressPoliciesByPort := ingressPoliciesByPort(sourcePodIsolation.Pod, targetPodIsolation, namespaces)
+	egressPoliciesByPort := egressPoliciesByPort(targetPodIsolation.Pod, sourcePodIsolation, namespaces)
+	ports, ingressPolicies, egressPolicies := matchPoliciesByPort(ingressPoliciesByPort, egressPoliciesByPort)
+	if ports == nil || len(ports) > 0 {
 		return &types.AllowedRoute{
 			SourcePod:       fromK8sPodIsolation(sourcePodIsolation),
 			EgressPolicies:  fromK8sNetworkPolicies(egressPolicies),
 			TargetPod:       fromK8sPodIsolation(targetPodIsolation),
 			IngressPolicies: fromK8sNetworkPolicies(ingressPolicies),
+			Ports:           ports,
 		}
 	} else {
 		return nil
 	}
 }
 
-func policiesAllowingIngress(sourcePod corev1.Pod, targetPodIsolation podIsolation, namespaces []corev1.Namespace) []networkingv1.NetworkPolicy {
-	policies := make([]networkingv1.NetworkPolicy, 0)
-	for _, ingressPolicy := range targetPodIsolation.IngressPolicies {
-		if policyAllowsIngress(sourcePod, ingressPolicy, namespaces) {
-			policies = append(policies, ingressPolicy)
+func ingressPoliciesByPort(sourcePod corev1.Pod, targetPodIsolation podIsolation, namespaces []corev1.Namespace) map[int32][]*networkingv1.NetworkPolicy {
+	policiesByPort := make(map[int32][]*networkingv1.NetworkPolicy)
+	if !targetPodIsolation.IsIngressIsolated() {
+		policiesByPort[portWildcard] = make([]*networkingv1.NetworkPolicy, 0)
+	} else {
+		for i, ingressPolicy := range targetPodIsolation.IngressPolicies {
+			for _, ingressRule := range ingressPolicy.Spec.Ingress {
+				if ingressRuleAllows(sourcePod, ingressRule, namespaces) {
+					if len(ingressRule.Ports) == 0 {
+						policies := policiesByPort[portWildcard]
+						if policies == nil {
+							policies = make([]*networkingv1.NetworkPolicy, 0)
+						}
+						policies = append(policies, &targetPodIsolation.IngressPolicies[i])
+						policiesByPort[portWildcard] = policies
+					} else {
+						for _, port := range ingressRule.Ports {
+							policies := policiesByPort[port.Port.IntVal]
+							if policies == nil {
+								policies = make([]*networkingv1.NetworkPolicy, 0)
+							}
+							policies = append(policies, &targetPodIsolation.IngressPolicies[i])
+							policiesByPort[port.Port.IntVal] = policies
+						}
+					}
+				}
+			}
 		}
 	}
-	return policies
-}
-
-func policyAllowsIngress(sourcePod corev1.Pod, ingressPolicy networkingv1.NetworkPolicy, namespaces []corev1.Namespace) bool {
-	for _, ingressRule := range ingressPolicy.Spec.Ingress {
-		if ingressRuleAllows(sourcePod, ingressRule, namespaces) {
-			return true
-		}
-	}
-	return false
+	return policiesByPort
 }
 
 func ingressRuleAllows(sourcePod corev1.Pod, ingressRule networkingv1.NetworkPolicyIngressRule, namespaces []corev1.Namespace) bool {
@@ -198,23 +216,36 @@ func ingressRuleAllows(sourcePod corev1.Pod, ingressRule networkingv1.NetworkPol
 	return false
 }
 
-func policiesAllowingEgress(targetPod corev1.Pod, sourcePodIsolation podIsolation, namespaces []corev1.Namespace) []networkingv1.NetworkPolicy {
-	policies := make([]networkingv1.NetworkPolicy, 0)
-	for _, egressPolicy := range sourcePodIsolation.EgressPolicies {
-		if policyAllowsEgress(targetPod, egressPolicy, namespaces) {
-			policies = append(policies, egressPolicy)
+func egressPoliciesByPort(targetPod corev1.Pod, sourcePodIsolation podIsolation, namespaces []corev1.Namespace) map[int32][]*networkingv1.NetworkPolicy {
+	policiesByPort := make(map[int32][]*networkingv1.NetworkPolicy)
+	if !sourcePodIsolation.IsEgressIsolated() {
+		policiesByPort[portWildcard] = make([]*networkingv1.NetworkPolicy, 0)
+	} else {
+		for i, egressPolicy := range sourcePodIsolation.EgressPolicies {
+			for _, egressRule := range egressPolicy.Spec.Egress {
+				if egressRuleAllows(targetPod, egressRule, namespaces) {
+					if len(egressRule.Ports) == 0 {
+						policies := policiesByPort[portWildcard]
+						if policies == nil {
+							policies = make([]*networkingv1.NetworkPolicy, 0)
+						}
+						policies = append(policies, &sourcePodIsolation.EgressPolicies[i])
+						policiesByPort[portWildcard] = policies
+					} else {
+						for _, port := range egressRule.Ports {
+							policies := policiesByPort[port.Port.IntVal]
+							if policies == nil {
+								policies = make([]*networkingv1.NetworkPolicy, 0)
+							}
+							policies = append(policies, &sourcePodIsolation.EgressPolicies[i])
+							policiesByPort[port.Port.IntVal] = policies
+						}
+					}
+				}
+			}
 		}
 	}
-	return policies
-}
-
-func policyAllowsEgress(targetPod corev1.Pod, egressPolicy networkingv1.NetworkPolicy, namespaces []corev1.Namespace) bool {
-	for _, egressRule := range egressPolicy.Spec.Egress {
-		if egressRuleAllows(targetPod, egressRule, namespaces) {
-			return true
-		}
-	}
-	return false
+	return policiesByPort
 }
 
 func egressRuleAllows(targetPod corev1.Pod, egressRule networkingv1.NetworkPolicyEgressRule, namespaces []corev1.Namespace) bool {
@@ -224,6 +255,49 @@ func egressRuleAllows(targetPod corev1.Pod, egressRule networkingv1.NetworkPolic
 		}
 	}
 	return false
+}
+
+func matchPoliciesByPort(ingressPoliciesByPort map[int32][]*networkingv1.NetworkPolicy, egressPoliciesByPort map[int32][]*networkingv1.NetworkPolicy) ([]int32, []*networkingv1.NetworkPolicy, []*networkingv1.NetworkPolicy) {
+	portsSet := make(map[int32]bool)
+	ingressPoliciesSet := make(map[*networkingv1.NetworkPolicy]bool)
+	egressPoliciesSet := make(map[*networkingv1.NetworkPolicy]bool)
+	for ingressPort, ingressPolicies := range ingressPoliciesByPort {
+		for egressPort, egressPolicies := range egressPoliciesByPort {
+			if ingressPort == portWildcard || egressPort == portWildcard || ingressPort == egressPort {
+				if ingressPort == portWildcard {
+					portsSet[egressPort] = true
+				} else {
+					portsSet[ingressPort] = true
+				}
+				for _, egressPolicy := range egressPolicies {
+					egressPoliciesSet[egressPolicy] = true
+				}
+				for _, ingressPolicy := range ingressPolicies {
+					ingressPoliciesSet[ingressPolicy] = true
+				}
+			}
+		}
+	}
+	if portsSet[portWildcard] {
+		portsSet = nil
+	}
+	var ports []int32
+	if portsSet != nil {
+		ports = make([]int32, 0, len(portsSet))
+		for port := range portsSet {
+			ports = append(ports, port)
+		}
+		sort.Slice(ports, func(i, j int) bool { return ports[i] < ports[j] })
+	}
+	ingressPolicies := make([]*networkingv1.NetworkPolicy, 0)
+	for ingressPolicy := range ingressPoliciesSet {
+		ingressPolicies = append(ingressPolicies, ingressPolicy)
+	}
+	egressPolicies := make([]*networkingv1.NetworkPolicy, 0)
+	for egressPolicy := range egressPoliciesSet {
+		egressPolicies = append(egressPolicies, egressPolicy)
+	}
+	return ports, ingressPolicies, egressPolicies
 }
 
 func networkRuleMatches(pod corev1.Pod, policyPeer networkingv1.NetworkPolicyPeer, namespaces []corev1.Namespace) bool {
@@ -282,10 +356,10 @@ func fromK8sNetworkPolicy(networkPolicy networkingv1.NetworkPolicy) types.Networ
 	}
 }
 
-func fromK8sNetworkPolicies(networkPolicies []networkingv1.NetworkPolicy) []types.NetworkPolicy {
+func fromK8sNetworkPolicies(networkPolicies []*networkingv1.NetworkPolicy) []types.NetworkPolicy {
 	result := make([]types.NetworkPolicy, 0)
 	for _, networkPolicy := range networkPolicies {
-		result = append(result, fromK8sNetworkPolicy(networkPolicy))
+		result = append(result, fromK8sNetworkPolicy(*networkPolicy))
 	}
 	return result
 }

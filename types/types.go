@@ -19,6 +19,7 @@ type AllowedRoute struct {
 	EgressPolicies  []NetworkPolicy `json:"egressPolicies"`
 	TargetPod       Pod             `json:"targetPod"`
 	IngressPolicies []NetworkPolicy `json:"ingressPolicies"`
+	Ports           []int32         `json:"ports"`
 }
 
 type AnalysisResult struct {
