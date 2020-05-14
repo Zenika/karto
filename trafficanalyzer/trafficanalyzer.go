@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"network-policy-explorer/types"
 	"sort"
@@ -67,9 +68,15 @@ func AnalyzeEverySeconds(k8sConfigPath string, resultsChannel chan<- types.Analy
 }
 
 func getK8sClient(k8sClientConfig string) *kubernetes.Clientset {
-	config, err := clientcmd.BuildConfigFromFlags("", k8sClientConfig)
-	if err != nil {
-		panic(err.Error())
+	var config *rest.Config
+	var err1InsideCluster, errOutsideCluster error
+	config, err1InsideCluster = rest.InClusterConfig()
+	if err1InsideCluster != nil {
+		fmt.Printf("Unable to connect to Kubernetes service, fallback to kubeconfig file")
+		config, errOutsideCluster = clientcmd.BuildConfigFromFlags("", k8sClientConfig)
+		if errOutsideCluster != nil {
+			panic(errOutsideCluster.Error())
+		}
 	}
 	k8sClient, err := kubernetes.NewForConfig(config)
 	if err != nil {

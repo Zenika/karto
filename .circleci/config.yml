@@ -1,8 +1,98 @@
 version: 2
 jobs:
-  build:
+  checkout-source:
     docker:
-      - image: cimg/go:1.14.2
+      - image: cimg/base:stable
+    working_directory: /home/circleci/network-policy-explorer
     steps:
       - checkout
-      - run: go test ./...
+      - persist_to_workspace:
+          root: /home/circleci
+          paths:
+            - network-policy-explorer
+  build-front:
+    docker:
+      - image: cimg/node:12.16.3
+    working_directory: /home/circleci/network-policy-explorer
+    steps:
+      - attach_workspace:
+          at: /home/circleci
+      - restore_cache:
+          keys:
+            - v2-front-dependencies-{{ checksum "front/package.json" }}
+            - v2-front-dependencies-
+      - run:
+          working_directory: front
+          name: Download dependencies
+          command: yarn install --frozen-lockfile
+      - save_cache:
+          paths:
+            - front/node_modules
+            - /home/circleci/.cache/yarn/v6
+          key: v2-front-dependencies-{{ checksum "front/package.json" }}
+      - run:
+          working_directory: front
+          name: Build frontend
+          command: yarn build
+      - persist_to_workspace:
+          root: /home/circleci
+          paths:
+            - network-policy-explorer/front/build
+  build-back:
+    docker:
+      - image: cimg/go:1.14.2
+    working_directory: /home/circleci/network-policy-explorer
+    steps:
+      - attach_workspace:
+          at: /home/circleci
+      - restore_cache:
+          keys:
+            - v2-back-dependencies-{{ checksum "go.sum" }}
+            - v2-back-dependencies-
+      - run:
+          name: Run tests
+          command: go test ./...
+      - run:
+          name: Build backend
+          command: |
+            export CGO_ENABLED=0
+            go build network-policy-explorer
+      - save_cache:
+          key: v2-back-dependencies-{{ checksum "go.sum" }}
+          paths:
+            - /home/circleci/go/pkg/mod
+      - persist_to_workspace:
+          root: /home/circleci
+          paths:
+            - network-policy-explorer/network-policy-explorer
+  dockerize:
+    docker:
+      - image: cimg/base:stable
+    working_directory: /home/circleci/network-policy-explorer
+    steps:
+      - setup_remote_docker
+      - attach_workspace:
+          at: /home/circleci
+      - run:
+          name: Build docker image
+          command: docker build -t zenikalabs/network-policy-explorer .
+      - run:
+          name: Push docker image
+          command: |
+            echo "$DOCKER_PASS" | docker login --username $DOCKER_USER --password-stdin
+            docker push zenikalabs/network-policy-explorer
+workflows:
+  version: 2
+  build-test-and-deploy:
+    jobs:
+      - checkout-source
+      - build-front:
+          requires:
+            - checkout-source
+      - build-back:
+          requires:
+            - checkout-source
+      - dockerize:
+          requires:
+            - build-front
+            - build-back

@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"network-policy-explorer/types"
@@ -38,6 +39,10 @@ func (handler *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(handler.lastAnalysisResult)
 }
 
+func healthCheck(w http.ResponseWriter, _ *http.Request) {
+	fmt.Fprintf(w, "hello\n")
+}
+
 func Expose(resultsChannel <-chan types.AnalysisResult) {
 	frontendHandler := http.FileServer(http.Dir("./front/build"))
 	apiHandler := newHandler()
@@ -45,6 +50,7 @@ func Expose(resultsChannel <-chan types.AnalysisResult) {
 	mux := http.NewServeMux()
 	mux.Handle("/", frontendHandler)
 	mux.Handle("/api/analysisResult", apiHandler)
+	mux.HandleFunc("/health", healthCheck)
 	log.Println("Listening...")
 	http.ListenAndServe(":8000", mux)
 }
