@@ -12,7 +12,7 @@ import (
 func main() {
 	k8sConfigPath := parseCmd()
 	analysisResultsChannel := make(chan types.AnalysisResult)
-	go trafficanalyzer.AnalyzeEverySeconds(k8sConfigPath, analysisResultsChannel, 10)
+	go trafficanalyzer.AnalyzeOnChange(k8sConfigPath, analysisResultsChannel)
 	api.Expose(analysisResultsChannel)
 }
 

@@ -13,8 +13,8 @@ import (
 
 func Test_computePodIsolation(t *testing.T) {
 	type args struct {
-		pod             corev1.Pod
-		networkPolicies networkingv1.NetworkPolicyList
+		pod             *corev1.Pod
+		networkPolicies []*networkingv1.NetworkPolicy
 	}
 	tests := []struct {
 		name                 string
@@ -25,28 +25,28 @@ func Test_computePodIsolation(t *testing.T) {
 			name: "a pod is not isolated by default",
 			args: args{
 				pod:             podBuilder().name("Pod1").build(),
-				networkPolicies: networkPolicyList(),
+				networkPolicies: []*networkingv1.NetworkPolicy{},
 			},
 			expectedPodIsolation: podIsolation{
 				Pod:             podBuilder().name("Pod1").build(),
-				IngressPolicies: []networkingv1.NetworkPolicy{},
-				EgressPolicies:  []networkingv1.NetworkPolicy{},
+				IngressPolicies: []*networkingv1.NetworkPolicy{},
+				EgressPolicies:  []*networkingv1.NetworkPolicy{},
 			},
 		},
 		{
 			name: "a pod is isolated when a network policy matches its labels",
 			args: args{
 				pod: podBuilder().name("Pod1").label("app", "foo").build(),
-				networkPolicies: networkPolicyList(
+				networkPolicies: []*networkingv1.NetworkPolicy{
 					networkPolicyBuilder().types("Ingress", "Egress").podSelector(labelSelectorBuilder().matchLabel("app", "foo").build()).build(),
-				),
+				},
 			},
 			expectedPodIsolation: podIsolation{
 				Pod: podBuilder().name("Pod1").label("app", "foo").build(),
-				IngressPolicies: []networkingv1.NetworkPolicy{
+				IngressPolicies: []*networkingv1.NetworkPolicy{
 					networkPolicyBuilder().types("Ingress", "Egress").podSelector(labelSelectorBuilder().matchLabel("app", "foo").build()).build(),
 				},
-				EgressPolicies: []networkingv1.NetworkPolicy{
+				EgressPolicies: []*networkingv1.NetworkPolicy{
 					networkPolicyBuilder().types("Ingress", "Egress").podSelector(labelSelectorBuilder().matchLabel("app", "foo").build()).build(),
 				},
 			},
@@ -55,30 +55,30 @@ func Test_computePodIsolation(t *testing.T) {
 			name: "a pod is not isolated if no network policy matches its labels",
 			args: args{
 				pod: podBuilder().name("Pod1").label("app", "foo").build(),
-				networkPolicies: networkPolicyList(
+				networkPolicies: []*networkingv1.NetworkPolicy{
 					networkPolicyBuilder().types("Ingress", "Egress").podSelector(labelSelectorBuilder().matchLabel("app", "bar").build()).build(),
-				),
+				},
 			},
 			expectedPodIsolation: podIsolation{
 				Pod:             podBuilder().name("Pod1").label("app", "foo").build(),
-				IngressPolicies: []networkingv1.NetworkPolicy{},
-				EgressPolicies:  []networkingv1.NetworkPolicy{},
+				IngressPolicies: []*networkingv1.NetworkPolicy{},
+				EgressPolicies:  []*networkingv1.NetworkPolicy{},
 			},
 		},
 		{
 			name: "a network policy with empty selector matches all pods",
 			args: args{
 				pod: podBuilder().name("Pod1").label("app", "foo").build(),
-				networkPolicies: networkPolicyList(
+				networkPolicies: []*networkingv1.NetworkPolicy{
 					networkPolicyBuilder().types("Ingress", "Egress").podSelector(labelSelectorBuilder().build()).build(),
-				),
+				},
 			},
 			expectedPodIsolation: podIsolation{
 				Pod: podBuilder().name("Pod1").label("app", "foo").build(),
-				IngressPolicies: []networkingv1.NetworkPolicy{
+				IngressPolicies: []*networkingv1.NetworkPolicy{
 					networkPolicyBuilder().types("Ingress", "Egress").podSelector(labelSelectorBuilder().build()).build(),
 				},
-				EgressPolicies: []networkingv1.NetworkPolicy{
+				EgressPolicies: []*networkingv1.NetworkPolicy{
 					networkPolicyBuilder().types("Ingress", "Egress").podSelector(labelSelectorBuilder().build()).build(),
 				},
 			},
@@ -87,44 +87,44 @@ func Test_computePodIsolation(t *testing.T) {
 			name: "a pod is not isolated by a network policy from another namespace",
 			args: args{
 				pod: podBuilder().name("Pod1").namespace("ns").build(),
-				networkPolicies: networkPolicyList(
+				networkPolicies: []*networkingv1.NetworkPolicy{
 					networkPolicyBuilder().types("Ingress", "Egress").namespace("other").build(),
-				),
+				},
 			},
 			expectedPodIsolation: podIsolation{
 				Pod:             podBuilder().name("Pod1").namespace("ns").build(),
-				IngressPolicies: []networkingv1.NetworkPolicy{},
-				EgressPolicies:  []networkingv1.NetworkPolicy{},
+				IngressPolicies: []*networkingv1.NetworkPolicy{},
+				EgressPolicies:  []*networkingv1.NetworkPolicy{},
 			},
 		},
 		{
 			name: "a pod can be isolated for ingress and not isolated for egress",
 			args: args{
 				pod: podBuilder().name("Pod1").build(),
-				networkPolicies: networkPolicyList(
+				networkPolicies: []*networkingv1.NetworkPolicy{
 					networkPolicyBuilder().types("Ingress").podSelector(labelSelectorBuilder().build()).build(),
-				),
+				},
 			},
 			expectedPodIsolation: podIsolation{
 				Pod: podBuilder().name("Pod1").build(),
-				IngressPolicies: []networkingv1.NetworkPolicy{
+				IngressPolicies: []*networkingv1.NetworkPolicy{
 					networkPolicyBuilder().types("Ingress").podSelector(labelSelectorBuilder().build()).build(),
 				},
-				EgressPolicies: []networkingv1.NetworkPolicy{},
+				EgressPolicies: []*networkingv1.NetworkPolicy{},
 			},
 		},
 		{
 			name: "a pod can be isolated for egress and not isolated for ingress",
 			args: args{
 				pod: podBuilder().name("Pod1").build(),
-				networkPolicies: networkPolicyList(
+				networkPolicies: []*networkingv1.NetworkPolicy{
 					networkPolicyBuilder().types("Egress").podSelector(labelSelectorBuilder().build()).build(),
-				),
+				},
 			},
 			expectedPodIsolation: podIsolation{
 				Pod:             podBuilder().name("Pod1").build(),
-				IngressPolicies: []networkingv1.NetworkPolicy{},
-				EgressPolicies: []networkingv1.NetworkPolicy{
+				IngressPolicies: []*networkingv1.NetworkPolicy{},
+				EgressPolicies: []*networkingv1.NetworkPolicy{
 					networkPolicyBuilder().types("Egress").podSelector(labelSelectorBuilder().build()).build(),
 				},
 			},
@@ -144,7 +144,7 @@ func Test_computeAllowedRoutes(t *testing.T) {
 	type args struct {
 		sourcePodIsolation podIsolation
 		targetPodIsolation podIsolation
-		namespaces         []corev1.Namespace
+		namespaces         []*corev1.Namespace
 	}
 	tests := []struct {
 		name                 string
@@ -156,19 +156,19 @@ func Test_computeAllowedRoutes(t *testing.T) {
 			args: args{
 				sourcePodIsolation: podIsolation{
 					Pod: podBuilder().name("Pod1").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{
+					IngressPolicies: []*networkingv1.NetworkPolicy{
 						networkPolicyBuilder().types("Ingress").podSelector(labelSelectorBuilder().build()).build(),
 					},
-					EgressPolicies: []networkingv1.NetworkPolicy{},
+					EgressPolicies: []*networkingv1.NetworkPolicy{},
 				},
 				targetPodIsolation: podIsolation{
 					Pod:             podBuilder().name("Pod2").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{},
-					EgressPolicies: []networkingv1.NetworkPolicy{
+					IngressPolicies: []*networkingv1.NetworkPolicy{},
+					EgressPolicies: []*networkingv1.NetworkPolicy{
 						networkPolicyBuilder().types("Egress").podSelector(labelSelectorBuilder().build()).build(),
 					},
 				},
-				namespaces: []corev1.Namespace{
+				namespaces: []*corev1.Namespace{
 					namespaceBuilder().name("default").build(),
 				},
 			},
@@ -185,12 +185,12 @@ func Test_computeAllowedRoutes(t *testing.T) {
 			args: args{
 				sourcePodIsolation: podIsolation{
 					Pod:             podBuilder().name("Pod1").label("app", "foo").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{},
-					EgressPolicies:  []networkingv1.NetworkPolicy{},
+					IngressPolicies: []*networkingv1.NetworkPolicy{},
+					EgressPolicies:  []*networkingv1.NetworkPolicy{},
 				},
 				targetPodIsolation: podIsolation{
 					Pod: podBuilder().name("Pod2").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{
+					IngressPolicies: []*networkingv1.NetworkPolicy{
 						networkPolicyBuilder().name("np").types("Ingress").ingressRule(networkingv1.NetworkPolicyIngressRule{
 							From: []networkingv1.NetworkPolicyPeer{
 								{
@@ -199,9 +199,9 @@ func Test_computeAllowedRoutes(t *testing.T) {
 							},
 						}).build(),
 					},
-					EgressPolicies: []networkingv1.NetworkPolicy{},
+					EgressPolicies: []*networkingv1.NetworkPolicy{},
 				},
-				namespaces: []corev1.Namespace{
+				namespaces: []*corev1.Namespace{
 					namespaceBuilder().name("default").build(),
 				},
 			},
@@ -220,12 +220,12 @@ func Test_computeAllowedRoutes(t *testing.T) {
 			args: args{
 				sourcePodIsolation: podIsolation{
 					Pod:             podBuilder().name("Pod1").label("app", "foo").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{},
-					EgressPolicies:  []networkingv1.NetworkPolicy{},
+					IngressPolicies: []*networkingv1.NetworkPolicy{},
+					EgressPolicies:  []*networkingv1.NetworkPolicy{},
 				},
 				targetPodIsolation: podIsolation{
 					Pod: podBuilder().name("Pod2").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{
+					IngressPolicies: []*networkingv1.NetworkPolicy{
 						networkPolicyBuilder().name("np").types("Ingress").ingressRule(networkingv1.NetworkPolicyIngressRule{
 							From: []networkingv1.NetworkPolicyPeer{
 								{
@@ -234,9 +234,9 @@ func Test_computeAllowedRoutes(t *testing.T) {
 							},
 						}).build(),
 					},
-					EgressPolicies: []networkingv1.NetworkPolicy{},
+					EgressPolicies: []*networkingv1.NetworkPolicy{},
 				},
-				namespaces: []corev1.Namespace{
+				namespaces: []*corev1.Namespace{
 					namespaceBuilder().name("default").build(),
 				},
 			},
@@ -247,12 +247,12 @@ func Test_computeAllowedRoutes(t *testing.T) {
 			args: args{
 				sourcePodIsolation: podIsolation{
 					Pod:             podBuilder().name("Pod1").namespace("ns").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{},
-					EgressPolicies:  []networkingv1.NetworkPolicy{},
+					IngressPolicies: []*networkingv1.NetworkPolicy{},
+					EgressPolicies:  []*networkingv1.NetworkPolicy{},
 				},
 				targetPodIsolation: podIsolation{
 					Pod: podBuilder().name("Pod2").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{
+					IngressPolicies: []*networkingv1.NetworkPolicy{
 						networkPolicyBuilder().name("np").types("Ingress").ingressRule(networkingv1.NetworkPolicyIngressRule{
 							From: []networkingv1.NetworkPolicyPeer{
 								{
@@ -261,9 +261,9 @@ func Test_computeAllowedRoutes(t *testing.T) {
 							},
 						}).build(),
 					},
-					EgressPolicies: []networkingv1.NetworkPolicy{},
+					EgressPolicies: []*networkingv1.NetworkPolicy{},
 				},
-				namespaces: []corev1.Namespace{
+				namespaces: []*corev1.Namespace{
 					namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
@@ -282,12 +282,12 @@ func Test_computeAllowedRoutes(t *testing.T) {
 			args: args{
 				sourcePodIsolation: podIsolation{
 					Pod:             podBuilder().name("Pod1").namespace("ns").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{},
-					EgressPolicies:  []networkingv1.NetworkPolicy{},
+					IngressPolicies: []*networkingv1.NetworkPolicy{},
+					EgressPolicies:  []*networkingv1.NetworkPolicy{},
 				},
 				targetPodIsolation: podIsolation{
 					Pod: podBuilder().name("Pod2").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{
+					IngressPolicies: []*networkingv1.NetworkPolicy{
 						networkPolicyBuilder().name("np").types("Ingress").ingressRule(networkingv1.NetworkPolicyIngressRule{
 							From: []networkingv1.NetworkPolicyPeer{
 								{
@@ -296,9 +296,9 @@ func Test_computeAllowedRoutes(t *testing.T) {
 							},
 						}).build(),
 					},
-					EgressPolicies: []networkingv1.NetworkPolicy{},
+					EgressPolicies: []*networkingv1.NetworkPolicy{},
 				},
-				namespaces: []corev1.Namespace{
+				namespaces: []*corev1.Namespace{
 					namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
@@ -309,12 +309,12 @@ func Test_computeAllowedRoutes(t *testing.T) {
 			args: args{
 				sourcePodIsolation: podIsolation{
 					Pod:             podBuilder().name("Pod1").namespace("ns").label("app", "foo").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{},
-					EgressPolicies:  []networkingv1.NetworkPolicy{},
+					IngressPolicies: []*networkingv1.NetworkPolicy{},
+					EgressPolicies:  []*networkingv1.NetworkPolicy{},
 				},
 				targetPodIsolation: podIsolation{
 					Pod: podBuilder().name("Pod2").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{
+					IngressPolicies: []*networkingv1.NetworkPolicy{
 						networkPolicyBuilder().name("np").types("Ingress").ingressRule(networkingv1.NetworkPolicyIngressRule{
 							From: []networkingv1.NetworkPolicyPeer{
 								{
@@ -324,9 +324,9 @@ func Test_computeAllowedRoutes(t *testing.T) {
 							},
 						}).build(),
 					},
-					EgressPolicies: []networkingv1.NetworkPolicy{},
+					EgressPolicies: []*networkingv1.NetworkPolicy{},
 				},
-				namespaces: []corev1.Namespace{
+				namespaces: []*corev1.Namespace{
 					namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
@@ -345,12 +345,12 @@ func Test_computeAllowedRoutes(t *testing.T) {
 			args: args{
 				sourcePodIsolation: podIsolation{
 					Pod:             podBuilder().name("Pod1").namespace("ns").label("app", "foo").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{},
-					EgressPolicies:  []networkingv1.NetworkPolicy{},
+					IngressPolicies: []*networkingv1.NetworkPolicy{},
+					EgressPolicies:  []*networkingv1.NetworkPolicy{},
 				},
 				targetPodIsolation: podIsolation{
 					Pod: podBuilder().name("Pod2").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{
+					IngressPolicies: []*networkingv1.NetworkPolicy{
 						networkPolicyBuilder().name("np").types("Ingress").ingressRule(networkingv1.NetworkPolicyIngressRule{
 							From: []networkingv1.NetworkPolicyPeer{
 								{
@@ -360,9 +360,9 @@ func Test_computeAllowedRoutes(t *testing.T) {
 							},
 						}).build(),
 					},
-					EgressPolicies: []networkingv1.NetworkPolicy{},
+					EgressPolicies: []*networkingv1.NetworkPolicy{},
 				},
-				namespaces: []corev1.Namespace{
+				namespaces: []*corev1.Namespace{
 					namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
@@ -373,12 +373,12 @@ func Test_computeAllowedRoutes(t *testing.T) {
 			args: args{
 				sourcePodIsolation: podIsolation{
 					Pod:             podBuilder().name("Pod1").namespace("ns").label("app", "foo").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{},
-					EgressPolicies:  []networkingv1.NetworkPolicy{},
+					IngressPolicies: []*networkingv1.NetworkPolicy{},
+					EgressPolicies:  []*networkingv1.NetworkPolicy{},
 				},
 				targetPodIsolation: podIsolation{
 					Pod: podBuilder().name("Pod2").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{
+					IngressPolicies: []*networkingv1.NetworkPolicy{
 						networkPolicyBuilder().name("np").types("Ingress").ingressRule(networkingv1.NetworkPolicyIngressRule{
 							From: []networkingv1.NetworkPolicyPeer{
 								{
@@ -388,9 +388,9 @@ func Test_computeAllowedRoutes(t *testing.T) {
 							},
 						}).build(),
 					},
-					EgressPolicies: []networkingv1.NetworkPolicy{},
+					EgressPolicies: []*networkingv1.NetworkPolicy{},
 				},
-				namespaces: []corev1.Namespace{
+				namespaces: []*corev1.Namespace{
 					namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
@@ -401,8 +401,8 @@ func Test_computeAllowedRoutes(t *testing.T) {
 			args: args{
 				sourcePodIsolation: podIsolation{
 					Pod:             podBuilder().name("Pod1").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{},
-					EgressPolicies: []networkingv1.NetworkPolicy{
+					IngressPolicies: []*networkingv1.NetworkPolicy{},
+					EgressPolicies: []*networkingv1.NetworkPolicy{
 						networkPolicyBuilder().name("np").types("Egress").egressRule(networkingv1.NetworkPolicyEgressRule{
 							To: []networkingv1.NetworkPolicyPeer{
 								{
@@ -414,10 +414,10 @@ func Test_computeAllowedRoutes(t *testing.T) {
 				},
 				targetPodIsolation: podIsolation{
 					Pod:             podBuilder().name("Pod2").label("app", "foo").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{},
-					EgressPolicies:  []networkingv1.NetworkPolicy{},
+					IngressPolicies: []*networkingv1.NetworkPolicy{},
+					EgressPolicies:  []*networkingv1.NetworkPolicy{},
 				},
-				namespaces: []corev1.Namespace{
+				namespaces: []*corev1.Namespace{
 					namespaceBuilder().name("default").build(),
 				},
 			},
@@ -436,8 +436,8 @@ func Test_computeAllowedRoutes(t *testing.T) {
 			args: args{
 				sourcePodIsolation: podIsolation{
 					Pod:             podBuilder().name("Pod1").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{},
-					EgressPolicies: []networkingv1.NetworkPolicy{
+					IngressPolicies: []*networkingv1.NetworkPolicy{},
+					EgressPolicies: []*networkingv1.NetworkPolicy{
 						networkPolicyBuilder().name("np").types("Egress").egressRule(networkingv1.NetworkPolicyEgressRule{
 							To: []networkingv1.NetworkPolicyPeer{
 								{
@@ -449,10 +449,10 @@ func Test_computeAllowedRoutes(t *testing.T) {
 				},
 				targetPodIsolation: podIsolation{
 					Pod:             podBuilder().name("Pod2").label("app", "foo").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{},
-					EgressPolicies:  []networkingv1.NetworkPolicy{},
+					IngressPolicies: []*networkingv1.NetworkPolicy{},
+					EgressPolicies:  []*networkingv1.NetworkPolicy{},
 				},
-				namespaces: []corev1.Namespace{
+				namespaces: []*corev1.Namespace{
 					namespaceBuilder().name("default").build(),
 				},
 			},
@@ -463,8 +463,8 @@ func Test_computeAllowedRoutes(t *testing.T) {
 			args: args{
 				sourcePodIsolation: podIsolation{
 					Pod:             podBuilder().name("Pod1").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{},
-					EgressPolicies: []networkingv1.NetworkPolicy{
+					IngressPolicies: []*networkingv1.NetworkPolicy{},
+					EgressPolicies: []*networkingv1.NetworkPolicy{
 						networkPolicyBuilder().name("np").types("Egress").egressRule(networkingv1.NetworkPolicyEgressRule{
 							To: []networkingv1.NetworkPolicyPeer{
 								{
@@ -476,10 +476,10 @@ func Test_computeAllowedRoutes(t *testing.T) {
 				},
 				targetPodIsolation: podIsolation{
 					Pod:             podBuilder().name("Pod2").namespace("ns").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{},
-					EgressPolicies:  []networkingv1.NetworkPolicy{},
+					IngressPolicies: []*networkingv1.NetworkPolicy{},
+					EgressPolicies:  []*networkingv1.NetworkPolicy{},
 				},
-				namespaces: []corev1.Namespace{
+				namespaces: []*corev1.Namespace{
 					namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
@@ -498,8 +498,8 @@ func Test_computeAllowedRoutes(t *testing.T) {
 			args: args{
 				sourcePodIsolation: podIsolation{
 					Pod:             podBuilder().name("Pod1").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{},
-					EgressPolicies: []networkingv1.NetworkPolicy{
+					IngressPolicies: []*networkingv1.NetworkPolicy{},
+					EgressPolicies: []*networkingv1.NetworkPolicy{
 						networkPolicyBuilder().name("np").types("Egress").egressRule(networkingv1.NetworkPolicyEgressRule{
 							To: []networkingv1.NetworkPolicyPeer{
 								{
@@ -511,10 +511,10 @@ func Test_computeAllowedRoutes(t *testing.T) {
 				},
 				targetPodIsolation: podIsolation{
 					Pod:             podBuilder().name("Pod2").name("ns").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{},
-					EgressPolicies:  []networkingv1.NetworkPolicy{},
+					IngressPolicies: []*networkingv1.NetworkPolicy{},
+					EgressPolicies:  []*networkingv1.NetworkPolicy{},
 				},
-				namespaces: []corev1.Namespace{
+				namespaces: []*corev1.Namespace{
 					namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
@@ -525,8 +525,8 @@ func Test_computeAllowedRoutes(t *testing.T) {
 			args: args{
 				sourcePodIsolation: podIsolation{
 					Pod:             podBuilder().name("Pod1").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{},
-					EgressPolicies: []networkingv1.NetworkPolicy{
+					IngressPolicies: []*networkingv1.NetworkPolicy{},
+					EgressPolicies: []*networkingv1.NetworkPolicy{
 						networkPolicyBuilder().name("np").types("Egress").egressRule(networkingv1.NetworkPolicyEgressRule{
 							To: []networkingv1.NetworkPolicyPeer{
 								{
@@ -539,10 +539,10 @@ func Test_computeAllowedRoutes(t *testing.T) {
 				},
 				targetPodIsolation: podIsolation{
 					Pod:             podBuilder().name("Pod2").namespace("ns").label("app", "foo").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{},
-					EgressPolicies:  []networkingv1.NetworkPolicy{},
+					IngressPolicies: []*networkingv1.NetworkPolicy{},
+					EgressPolicies:  []*networkingv1.NetworkPolicy{},
 				},
-				namespaces: []corev1.Namespace{
+				namespaces: []*corev1.Namespace{
 					namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
@@ -561,8 +561,8 @@ func Test_computeAllowedRoutes(t *testing.T) {
 			args: args{
 				sourcePodIsolation: podIsolation{
 					Pod:             podBuilder().name("Pod1").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{},
-					EgressPolicies: []networkingv1.NetworkPolicy{
+					IngressPolicies: []*networkingv1.NetworkPolicy{},
+					EgressPolicies: []*networkingv1.NetworkPolicy{
 						networkPolicyBuilder().name("np").types("Egress").egressRule(networkingv1.NetworkPolicyEgressRule{
 							To: []networkingv1.NetworkPolicyPeer{
 								{
@@ -575,10 +575,10 @@ func Test_computeAllowedRoutes(t *testing.T) {
 				},
 				targetPodIsolation: podIsolation{
 					Pod:             podBuilder().name("Pod2").namespace("ns").label("app", "foo").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{},
-					EgressPolicies:  []networkingv1.NetworkPolicy{},
+					IngressPolicies: []*networkingv1.NetworkPolicy{},
+					EgressPolicies:  []*networkingv1.NetworkPolicy{},
 				},
-				namespaces: []corev1.Namespace{
+				namespaces: []*corev1.Namespace{
 					namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
@@ -589,8 +589,8 @@ func Test_computeAllowedRoutes(t *testing.T) {
 			args: args{
 				sourcePodIsolation: podIsolation{
 					Pod:             podBuilder().name("Pod1").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{},
-					EgressPolicies: []networkingv1.NetworkPolicy{
+					IngressPolicies: []*networkingv1.NetworkPolicy{},
+					EgressPolicies: []*networkingv1.NetworkPolicy{
 						networkPolicyBuilder().name("np").types("Egress").egressRule(networkingv1.NetworkPolicyEgressRule{
 							To: []networkingv1.NetworkPolicyPeer{
 								{
@@ -603,10 +603,10 @@ func Test_computeAllowedRoutes(t *testing.T) {
 				},
 				targetPodIsolation: podIsolation{
 					Pod:             podBuilder().name("Pod2").namespace("ns").label("app", "foo").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{},
-					EgressPolicies:  []networkingv1.NetworkPolicy{},
+					IngressPolicies: []*networkingv1.NetworkPolicy{},
+					EgressPolicies:  []*networkingv1.NetworkPolicy{},
 				},
-				namespaces: []corev1.Namespace{
+				namespaces: []*corev1.Namespace{
 					namespaceBuilder().name("ns").label("name", "ns").build(),
 				},
 			},
@@ -617,8 +617,8 @@ func Test_computeAllowedRoutes(t *testing.T) {
 			args: args{
 				sourcePodIsolation: podIsolation{
 					Pod:             podBuilder().name("Pod1").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{},
-					EgressPolicies: []networkingv1.NetworkPolicy{
+					IngressPolicies: []*networkingv1.NetworkPolicy{},
+					EgressPolicies: []*networkingv1.NetworkPolicy{
 						networkPolicyBuilder().types("Egress").egressRule(networkingv1.NetworkPolicyEgressRule{
 							To: []networkingv1.NetworkPolicyPeer{
 								{
@@ -634,7 +634,7 @@ func Test_computeAllowedRoutes(t *testing.T) {
 				},
 				targetPodIsolation: podIsolation{
 					Pod: podBuilder().name("Pod2").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{
+					IngressPolicies: []*networkingv1.NetworkPolicy{
 						networkPolicyBuilder().types("Ingress").ingressRule(networkingv1.NetworkPolicyIngressRule{
 							From: []networkingv1.NetworkPolicyPeer{
 								{
@@ -647,9 +647,9 @@ func Test_computeAllowedRoutes(t *testing.T) {
 							},
 						}).build(),
 					},
-					EgressPolicies: []networkingv1.NetworkPolicy{},
+					EgressPolicies: []*networkingv1.NetworkPolicy{},
 				},
-				namespaces: []corev1.Namespace{
+				namespaces: []*corev1.Namespace{
 					namespaceBuilder().name("default").build(),
 				},
 			},
@@ -670,8 +670,8 @@ func Test_computeAllowedRoutes(t *testing.T) {
 			args: args{
 				sourcePodIsolation: podIsolation{
 					Pod:             podBuilder().name("Pod1").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{},
-					EgressPolicies: []networkingv1.NetworkPolicy{
+					IngressPolicies: []*networkingv1.NetworkPolicy{},
+					EgressPolicies: []*networkingv1.NetworkPolicy{
 						networkPolicyBuilder().types("Egress").egressRule(networkingv1.NetworkPolicyEgressRule{
 							To: []networkingv1.NetworkPolicyPeer{
 								{
@@ -683,7 +683,7 @@ func Test_computeAllowedRoutes(t *testing.T) {
 				},
 				targetPodIsolation: podIsolation{
 					Pod: podBuilder().name("Pod2").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{
+					IngressPolicies: []*networkingv1.NetworkPolicy{
 						networkPolicyBuilder().types("Ingress").ingressRule(networkingv1.NetworkPolicyIngressRule{
 							From: []networkingv1.NetworkPolicyPeer{
 								{
@@ -696,9 +696,9 @@ func Test_computeAllowedRoutes(t *testing.T) {
 							},
 						}).build(),
 					},
-					EgressPolicies: []networkingv1.NetworkPolicy{},
+					EgressPolicies: []*networkingv1.NetworkPolicy{},
 				},
-				namespaces: []corev1.Namespace{
+				namespaces: []*corev1.Namespace{
 					namespaceBuilder().name("default").build(),
 				},
 			},
@@ -719,8 +719,8 @@ func Test_computeAllowedRoutes(t *testing.T) {
 			args: args{
 				sourcePodIsolation: podIsolation{
 					Pod:             podBuilder().name("Pod1").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{},
-					EgressPolicies: []networkingv1.NetworkPolicy{
+					IngressPolicies: []*networkingv1.NetworkPolicy{},
+					EgressPolicies: []*networkingv1.NetworkPolicy{
 						networkPolicyBuilder().types("Egress").egressRule(networkingv1.NetworkPolicyEgressRule{
 							To: []networkingv1.NetworkPolicyPeer{
 								{
@@ -736,7 +736,7 @@ func Test_computeAllowedRoutes(t *testing.T) {
 				},
 				targetPodIsolation: podIsolation{
 					Pod: podBuilder().name("Pod2").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{
+					IngressPolicies: []*networkingv1.NetworkPolicy{
 						networkPolicyBuilder().types("Ingress").ingressRule(networkingv1.NetworkPolicyIngressRule{
 							From: []networkingv1.NetworkPolicyPeer{
 								{
@@ -745,9 +745,9 @@ func Test_computeAllowedRoutes(t *testing.T) {
 							},
 						}).build(),
 					},
-					EgressPolicies: []networkingv1.NetworkPolicy{},
+					EgressPolicies: []*networkingv1.NetworkPolicy{},
 				},
-				namespaces: []corev1.Namespace{
+				namespaces: []*corev1.Namespace{
 					namespaceBuilder().name("default").build(),
 				},
 			},
@@ -768,8 +768,8 @@ func Test_computeAllowedRoutes(t *testing.T) {
 			args: args{
 				sourcePodIsolation: podIsolation{
 					Pod:             podBuilder().name("Pod1").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{},
-					EgressPolicies: []networkingv1.NetworkPolicy{
+					IngressPolicies: []*networkingv1.NetworkPolicy{},
+					EgressPolicies: []*networkingv1.NetworkPolicy{
 						networkPolicyBuilder().types("Egress").egressRule(networkingv1.NetworkPolicyEgressRule{
 							To: []networkingv1.NetworkPolicyPeer{
 								{
@@ -781,7 +781,7 @@ func Test_computeAllowedRoutes(t *testing.T) {
 				},
 				targetPodIsolation: podIsolation{
 					Pod: podBuilder().name("Pod2").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{
+					IngressPolicies: []*networkingv1.NetworkPolicy{
 						networkPolicyBuilder().types("Ingress").ingressRule(networkingv1.NetworkPolicyIngressRule{
 							From: []networkingv1.NetworkPolicyPeer{
 								{
@@ -790,9 +790,9 @@ func Test_computeAllowedRoutes(t *testing.T) {
 							},
 						}).build(),
 					},
-					EgressPolicies: []networkingv1.NetworkPolicy{},
+					EgressPolicies: []*networkingv1.NetworkPolicy{},
 				},
-				namespaces: []corev1.Namespace{
+				namespaces: []*corev1.Namespace{
 					namespaceBuilder().name("default").build(),
 				},
 			},
@@ -813,8 +813,8 @@ func Test_computeAllowedRoutes(t *testing.T) {
 			args: args{
 				sourcePodIsolation: podIsolation{
 					Pod:             podBuilder().name("Pod1").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{},
-					EgressPolicies: []networkingv1.NetworkPolicy{
+					IngressPolicies: []*networkingv1.NetworkPolicy{},
+					EgressPolicies: []*networkingv1.NetworkPolicy{
 						networkPolicyBuilder().types("Egress").egressRule(networkingv1.NetworkPolicyEgressRule{
 							To: []networkingv1.NetworkPolicyPeer{
 								{
@@ -829,7 +829,7 @@ func Test_computeAllowedRoutes(t *testing.T) {
 				},
 				targetPodIsolation: podIsolation{
 					Pod: podBuilder().name("Pod2").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{
+					IngressPolicies: []*networkingv1.NetworkPolicy{
 						networkPolicyBuilder().types("Ingress").ingressRule(networkingv1.NetworkPolicyIngressRule{
 							From: []networkingv1.NetworkPolicyPeer{
 								{
@@ -841,9 +841,9 @@ func Test_computeAllowedRoutes(t *testing.T) {
 							},
 						}).build(),
 					},
-					EgressPolicies: []networkingv1.NetworkPolicy{},
+					EgressPolicies: []*networkingv1.NetworkPolicy{},
 				},
-				namespaces: []corev1.Namespace{
+				namespaces: []*corev1.Namespace{
 					namespaceBuilder().name("default").build(),
 				},
 			},
@@ -854,8 +854,8 @@ func Test_computeAllowedRoutes(t *testing.T) {
 			args: args{
 				sourcePodIsolation: podIsolation{
 					Pod:             podBuilder().name("Pod1").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{},
-					EgressPolicies: []networkingv1.NetworkPolicy{
+					IngressPolicies: []*networkingv1.NetworkPolicy{},
+					EgressPolicies: []*networkingv1.NetworkPolicy{
 						networkPolicyBuilder().name("eg1").types("Egress").egressRule(networkingv1.NetworkPolicyEgressRule{
 							To: []networkingv1.NetworkPolicyPeer{
 								{
@@ -880,7 +880,7 @@ func Test_computeAllowedRoutes(t *testing.T) {
 				},
 				targetPodIsolation: podIsolation{
 					Pod: podBuilder().name("Pod2").build(),
-					IngressPolicies: []networkingv1.NetworkPolicy{
+					IngressPolicies: []*networkingv1.NetworkPolicy{
 						networkPolicyBuilder().name("in1").types("Ingress").ingressRule(networkingv1.NetworkPolicyIngressRule{
 							From: []networkingv1.NetworkPolicyPeer{
 								{
@@ -902,9 +902,9 @@ func Test_computeAllowedRoutes(t *testing.T) {
 							},
 						}).build(),
 					},
-					EgressPolicies: []networkingv1.NetworkPolicy{},
+					EgressPolicies: []*networkingv1.NetworkPolicy{},
 				},
-				namespaces: []corev1.Namespace{
+				namespaces: []*corev1.Namespace{
 					namespaceBuilder().name("default").build(),
 				},
 			},
@@ -928,12 +928,6 @@ func Test_computeAllowedRoutes(t *testing.T) {
 				t.Errorf("computeAllowedRoute() result mismatch (-want +got):\n%s", diff)
 			}
 		})
-	}
-}
-
-func networkPolicyList(networkPolicies ...networkingv1.NetworkPolicy) networkingv1.NetworkPolicyList {
-	return networkingv1.NetworkPolicyList{
-		Items: networkPolicies,
 	}
 }
 
@@ -965,8 +959,8 @@ func (podBuilder *PodBuilder) label(key string, value string) *PodBuilder {
 	return podBuilder
 }
 
-func (podBuilder *PodBuilder) build() corev1.Pod {
-	return corev1.Pod{
+func (podBuilder *PodBuilder) build() *corev1.Pod {
+	return &corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      podBuilder.Name,
 			Namespace: podBuilder.Namespace,
@@ -1023,8 +1017,8 @@ func (networkPolicyBuilder *NetworkPolicyBuilder) egressRule(egressRule networki
 	return networkPolicyBuilder
 }
 
-func (networkPolicyBuilder *NetworkPolicyBuilder) build() networkingv1.NetworkPolicy {
-	return networkingv1.NetworkPolicy{
+func (networkPolicyBuilder *NetworkPolicyBuilder) build() *networkingv1.NetworkPolicy {
+	return &networkingv1.NetworkPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      networkPolicyBuilder.Name,
 			Namespace: networkPolicyBuilder.Namespace,
@@ -1081,8 +1075,8 @@ func (namespaceBuilder *NamespaceBuilder) label(key string, value string) *Names
 	return namespaceBuilder
 }
 
-func (namespaceBuilder *NamespaceBuilder) build() corev1.Namespace {
-	return corev1.Namespace{
+func (namespaceBuilder *NamespaceBuilder) build() *corev1.Namespace {
+	return &corev1.Namespace{
 		ObjectMeta: v1.ObjectMeta{
 			Name:   namespaceBuilder.Name,
 			Labels: namespaceBuilder.Labels,
