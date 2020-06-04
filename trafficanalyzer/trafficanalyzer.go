@@ -54,7 +54,7 @@ func newPodIsolation(pod *corev1.Pod) podIsolation {
 func AnalyzeOnChange(k8sConfigPath string, resultsChannel chan<- types.AnalysisResult) {
 	k8sClient := getK8sClient(k8sConfigPath)
 	analyzeQueue := workqueue.NewRateLimitingQueue(workqueue.DefaultItemBasedRateLimiter())
-	informerFactory := informers.NewSharedInformerFactory(k8sClient, 1*time.Minute)
+	informerFactory := informers.NewSharedInformerFactory(k8sClient, 0)
 	podInformer := informerFactory.Core().V1().Pods()
 	policiesInformer := informerFactory.Networking().V1().NetworkPolicies()
 	namespacesInformer := informerFactory.Core().V1().Namespaces()
@@ -111,7 +111,7 @@ func analyze(pods []*corev1.Pod, policies []*networkingv1.NetworkPolicy, namespa
 	podIsolations := computePodIsolations(pods, policies)
 	allowedRoutes := computeAllowedRoutes(podIsolations, namespaces)
 	elapsed := time.Since(start)
-	fmt.Printf("%s Finished analysis in %s, found %d pods and %d allowed pod-to-pod routes\n", start, elapsed, len(podIsolations), len(allowedRoutes))
+	fmt.Printf("Finished analysis in %s, found %d pods and %d allowed pod-to-pod routes\n", elapsed, len(podIsolations), len(allowedRoutes))
 	return types.AnalysisResult{
 		Pods:          fromK8sPodIsolations(podIsolations),
 		AllowedRoutes: allowedRoutes,
