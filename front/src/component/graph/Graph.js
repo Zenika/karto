@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import PropTypes from 'prop-types';
-import { createStyles, withStyles } from '@material-ui/core';
+import { makeStyles } from '@material-ui/core/styles';
 
 const GRAPH_WIDTH = 300;
 const GRAPH_HEIGHT = 180;
@@ -34,7 +34,11 @@ function d3AllowedRoute(allowedRoute) {
     return { id, source, target };
 }
 
-const styles = createStyles(theme => ({
+function ifHighlighted(node, classIfHighlighted, classIfNotHighlighted) {
+    return node.highlighted ? classIfHighlighted : classIfNotHighlighted;
+}
+
+const useStyles = makeStyles(theme => ({
     root: {
         height: '100%',
         width: '100%',
@@ -72,18 +76,106 @@ const styles = createStyles(theme => ({
     }
 }));
 
-function ifHighlighted(node, classIfHighlighted, classIfNotHighlighted) {
-    return node.highlighted ? classIfHighlighted : classIfNotHighlighted;
-}
+const Graph = ({ analysisResult }) => {
+    const classes = useStyles();
+    const svg = useRef();
+    const linksContainer = useRef();
+    const nodesContainer = useRef();
+    const labelsContainer = useRef();
+    const zoomFactor = useRef();
+    const indexedPods = useRef();
+    const indexedAllowedRoutes = useRef();
+    const d3Pods = useRef();
+    const d3AllowedRoutes = useRef();
+    const highlightedNodeId = useRef();
+    const isDragging = useRef(false);
+    const simulation = useRef();
 
-class Graph extends React.Component {
+    function handleZoom() {
+        zoomFactor.current = d3.event.transform.k;
+        svg.current.attr('transform', d3.event.transform);
 
-    init() {
+        // Compensate changes to node radius
+        const nodes = nodesContainer.current.selectAll('circle');
+        nodes.attr('r', NODE_SIZE / zoomFactor.current);
+
+        // Compensate changes to node label
+        const labels = labelsContainer.current.selectAll('text');
+        labels.attr('font-size', NODE_FONT_SIZE / zoomFactor.current);
+        labels.attr('letter-spacing', NODE_FONT_SPACING / zoomFactor.current);
+        labels.attr('dy', -NODE_FONT_SIZE / zoomFactor.current);
+
+        // Compensate changes to link width
+        const links = linksContainer.current.selectAll('line');
+        links.attr('stroke-width', LINK_WIDTH / zoomFactor.current);
+    }
+
+    function enableNodeFocus(nodeId) {
+        if (isDragging.current) {
+            // Do not focus during drag
+            return;
+        }
+        highlightedNodeId.current = nodeId;
+        const isInNeighborhood = (node1Id, node2Id) => {
+            return node1Id === node2Id || indexedAllowedRoutes.current.has(d3AllowedRouteIdFromNodeIds(node1Id, node2Id))
+                || indexedAllowedRoutes.current.has(d3AllowedRouteIdFromNodeIds(node2Id, node1Id));
+        };
+        const isLinkOfNode = (nodeId, link) => {
+            return link.source.id === nodeId || link.target.id === nodeId;
+        };
+        nodesContainer.current.selectAll('circle')
+            .attr('class', node => isInNeighborhood(nodeId, node.id)
+                ? ifHighlighted(node, 'node-highlight', 'node')
+                : ifHighlighted(node, 'node-faded-highlight', 'node-faded')
+            );
+        labelsContainer.current.selectAll('text')
+            .attr('display', node => isInNeighborhood(nodeId, node.id) ? 'block' : 'none');
+        linksContainer.current.selectAll('line')
+            .attr('class', link => isLinkOfNode(nodeId, link) ? 'link' : 'link-faded')
+            .attr('marker-end', link => isLinkOfNode(nodeId, link) ? 'url(#arrow)' : 'url(#arrow-faded)');
+    }
+
+    function disableNodeFocus() {
+        highlightedNodeId.current = null;
+        nodesContainer.current.selectAll('circle')
+            .attr('class', node => ifHighlighted(node, 'node-highlight', 'node'));
+        labelsContainer.current.selectAll('text')
+            .attr('display', 'block');
+        linksContainer.current.selectAll('line')
+            .attr('class', 'link')
+            .attr('marker-end', 'url(#arrow)');
+    }
+
+    function handleDragStart(node) {
+        if (d3.event.active === 0) {
+            // Start of first concurrent drag event
+            disableNodeFocus();
+            isDragging.current = true;
+            simulation.current.alphaTarget(0.3).restart();
+        }
+        node.fx = node.x;
+        node.fy = node.y;
+    }
+
+    function handleDragUpdate(node) {
+        node.fx = d3.event.x;
+        node.fy = d3.event.y;
+    }
+
+    function handleDragEnd() {
+        if (d3.event.active === 0) {
+            // End of last concurrent drag event
+            isDragging.current = false;
+            simulation.current.alphaTarget(0);
+        }
+    }
+
+    useEffect(() => {
         const svgRoot = d3.select('#graph').append('svg')
             .attr('width', '100%')
             .attr('height', '100%')
             .attr('viewBox', [-GRAPH_WIDTH / 2, -GRAPH_HEIGHT / 2, GRAPH_WIDTH, GRAPH_HEIGHT])
-            .call(d3.zoom().on('zoom', () => this.handleZoom()));
+            .call(d3.zoom().on('zoom', () => handleZoom()));
         const defs = svgRoot.append('defs');
         const defineArrowMarker = (id, className) => {
             defs.append('marker')
@@ -100,45 +192,45 @@ class Graph extends React.Component {
         };
         defineArrowMarker('arrow', 'link-arrow');
         defineArrowMarker('arrow-faded', 'link-arrow-faded');
-        this.svg = svgRoot.append('g');
-        this.linksContainer = this.svg.append('g').attr('class', 'linksContainer');
-        this.nodesContainer = this.svg.append('g').attr('class', 'nodesContainer');
-        this.labelsContainer = this.svg.append('g').attr('class', 'labelsContainer');
-        this.zoomFactor = 1;
-        this.indexedPods = new Map();
-        this.indexedAllowedRoutes = new Map();
-        this.d3Pods = [];
-        this.d3AllowedRoutes = [];
-        this.highlightedNodeId = null;
-        this.simulation = d3.forceSimulation(this.d3Pods)
-            .force('link', d3.forceLink(this.d3AllowedRoutes).id(d => d.id))
+        svg.current = svgRoot.append('g');
+        linksContainer.current = svg.current.append('g').attr('class', 'linksContainer');
+        nodesContainer.current = svg.current.append('g').attr('class', 'nodesContainer');
+        labelsContainer.current = svg.current.append('g').attr('class', 'labelsContainer');
+        zoomFactor.current = 1;
+        indexedPods.current = new Map();
+        indexedAllowedRoutes.current = new Map();
+        d3Pods.current = [];
+        d3AllowedRoutes.current = [];
+        highlightedNodeId.current = null;
+        simulation.current = d3.forceSimulation(d3Pods.current)
+            .force('link', d3.forceLink(d3AllowedRoutes.current).id(d => d.id))
             .force('charge', d3.forceManyBody())
             .force('x', d3.forceX())
             .force('y', d3.forceY());
-        this.simulation.on('tick', () => {
-            this.nodesContainer
+        simulation.current.on('tick', () => {
+            nodesContainer.current
                 .selectAll('circle')
                 .attr('cx', d => d.x)
                 .attr('cy', d => d.y);
-            this.linksContainer
+            linksContainer.current
                 .selectAll('line')
                 .attr('x1', d => d.source.x)
                 .attr('y1', d => d.source.y)
                 .attr('x2', d => d.target.x)
                 .attr('y2', d => d.target.y);
-            this.labelsContainer
+            labelsContainer.current
                 .selectAll('text')
                 .attr('x', d => d.x)
                 .attr('y', d => d.y);
         });
-    }
+    }, []);
 
-    update() {
+    useEffect(() => {
         // Update data
         let atLeastOneChange = false;
 
-        const newD3Pods = this.props.analysisResult.pods.map(pod => {
-            const oldPod = this.indexedPods.get(d3PodId(pod));
+        const newD3Pods = analysisResult.pods.map(pod => {
+            const oldPod = indexedPods.current.get(d3PodId(pod));
             if (oldPod) {
                 // Pod was already displayed, keep new attributes and patch with d3 data
                 return Object.assign(oldPod, d3Pod(pod));
@@ -148,15 +240,15 @@ class Graph extends React.Component {
                 return d3Pod(pod);
             }
         });
-        if (this.d3Pods.length !== newD3Pods.length) {
+        if (d3Pods.current.length !== newD3Pods.length) {
             atLeastOneChange = true;
         }
-        this.d3Pods = newD3Pods;
-        this.indexedPods.clear();
-        this.d3Pods.forEach(pod => this.indexedPods.set(pod.id, pod));
+        d3Pods.current = newD3Pods;
+        indexedPods.current.clear();
+        d3Pods.current.forEach(pod => indexedPods.current.set(pod.id, pod));
 
-        const newD3AllowedRoutes = this.props.analysisResult.allowedRoutes.map(allowedRoute => {
-            const oldAllowedRoute = this.indexedAllowedRoutes.get(d3AllowedRouteId(allowedRoute));
+        const newD3AllowedRoutes = analysisResult.allowedRoutes.map(allowedRoute => {
+            const oldAllowedRoute = indexedAllowedRoutes.current.get(d3AllowedRouteId(allowedRoute));
             if (oldAllowedRoute) {
                 // AllowedRoute was already displayed, keep new attributes and patch with d3 data
                 return Object.assign(oldAllowedRoute, d3AllowedRoute(allowedRoute));
@@ -166,139 +258,63 @@ class Graph extends React.Component {
                 return d3AllowedRoute(allowedRoute);
             }
         });
-        if (this.d3AllowedRoutes.length !== newD3AllowedRoutes.length) {
+        if (d3AllowedRoutes.current.length !== newD3AllowedRoutes.length) {
             atLeastOneChange = true;
         }
-        this.d3AllowedRoutes = newD3AllowedRoutes;
-        this.indexedAllowedRoutes.clear();
-        this.d3AllowedRoutes.forEach(allowedRoute => this.indexedAllowedRoutes.set(allowedRoute.id, allowedRoute));
+        d3AllowedRoutes.current = newD3AllowedRoutes;
+        indexedAllowedRoutes.current.clear();
+        d3AllowedRoutes.current.forEach(allowedRoute => indexedAllowedRoutes.current.set(allowedRoute.id, allowedRoute));
 
         // Update nodes
-        this.nodesContainer
+        nodesContainer.current
             .selectAll('circle')
-            .data(this.d3Pods)
+            .data(d3Pods.current)
             .join('circle')
             .attr('class', node => ifHighlighted(node, 'node-highlight', 'node'))
-            .attr('r', NODE_SIZE / this.zoomFactor)
-            .on('mouseover', () => this.focus(d3.select(d3.event.target).datum().id))
-            .on('mouseout', () => this.unFocus())
+            .attr('r', NODE_SIZE / zoomFactor.current)
+            .on('mouseover', () => enableNodeFocus(d3.select(d3.event.target).datum().id))
+            .on('mouseout', () => disableNodeFocus())
             .call(d3.drag()
-                .on('start', d => {
-                    if (d3.event.active === 0) {
-                        this.simulation.alphaTarget(0.3).restart();
-                    }
-                    d.fx = d.x;
-                    d.fy = d.y;
-                })
-                .on('drag', d => {
-                    d.fx = d3.event.x;
-                    d.fy = d3.event.y;
-                })
-                .on('end', () => {
-                    if (d3.event.active === 0) {
-                        this.simulation.alphaTarget(0);
-                    }
-                }));
+                .on('start', d => handleDragStart(d))
+                .on('drag', d => handleDragUpdate(d))
+                .on('end', () => handleDragEnd()));
 
         // Update labels
-        this.labelsContainer
+        labelsContainer.current
             .selectAll('text')
-            .data(this.d3Pods)
+            .data(d3Pods.current)
             .join('text')
             .text(d => d.displayName)
             .attr('text-anchor', 'middle')
-            .attr('font-size', NODE_FONT_SIZE / this.zoomFactor)
-            .attr('letter-spacing', NODE_FONT_SPACING / this.zoomFactor)
-            .attr('dy', -NODE_FONT_SIZE / this.zoomFactor)
+            .attr('font-size', NODE_FONT_SIZE / zoomFactor.current)
+            .attr('letter-spacing', NODE_FONT_SPACING / zoomFactor.current)
+            .attr('dy', -NODE_FONT_SIZE / zoomFactor.current)
             .attr('class', 'label');
 
         // Update links
-        this.linksContainer
+        linksContainer.current
             .selectAll('line')
-            .data(this.d3AllowedRoutes)
+            .data(d3AllowedRoutes.current)
             .join('line')
             .attr('marker-end', 'url(#arrow)')
             .attr('class', 'link')
-            .attr('stroke-width', LINK_WIDTH / this.zoomFactor);
+            .attr('stroke-width', LINK_WIDTH / zoomFactor.current);
 
         // Update simulation
-        this.simulation.nodes(this.d3Pods);
-        this.simulation.force('link').links(this.d3AllowedRoutes);
+        simulation.current.nodes(d3Pods.current);
+        simulation.current.force('link').links(d3AllowedRoutes.current);
         if (atLeastOneChange) {
-            this.simulation.alpha(1).restart();
+            simulation.current.alpha(1).restart();
         }
 
         // Restore highlight if still active
-        if (this.highlightedNodeId) {
-            this.focus(this.highlightedNodeId);
+        if (highlightedNodeId.current) {
+            enableNodeFocus(highlightedNodeId.current);
         }
-    }
+    });
 
-    handleZoom() {
-        this.zoomFactor = d3.event.transform.k;
-        this.svg.attr('transform', d3.event.transform);
-
-        // Compensate changes to node radius
-        const nodes = this.nodesContainer.selectAll('circle');
-        nodes.attr('r', NODE_SIZE / this.zoomFactor);
-
-        // Compensate changes to node label
-        const labels = this.labelsContainer.selectAll('text');
-        labels.attr('font-size', NODE_FONT_SIZE / this.zoomFactor);
-        labels.attr('letter-spacing', NODE_FONT_SPACING / this.zoomFactor);
-        labels.attr('dy', -NODE_FONT_SIZE / this.zoomFactor);
-
-        // Compensate changes to link width
-        const links = this.linksContainer.selectAll('line');
-        links.attr('stroke-width', LINK_WIDTH / this.zoomFactor);
-    }
-
-    focus(nodeId) {
-        this.highlightedNodeId = nodeId;
-        const isInNeighborhood = (node1Id, node2Id) => {
-            return node1Id === node2Id || this.indexedAllowedRoutes.has(d3AllowedRouteIdFromNodeIds(node1Id, node2Id))
-                || this.indexedAllowedRoutes.has(d3AllowedRouteIdFromNodeIds(node2Id, node1Id));
-        };
-        const isLinkOfNode = (nodeId, link) => {
-            return link.source.id === nodeId || link.target.id === nodeId;
-        };
-        this.nodesContainer.selectAll('circle')
-            .attr('class', node => isInNeighborhood(nodeId, node.id)
-                ? ifHighlighted(node, 'node-highlight', 'node')
-                : ifHighlighted(node, 'node-faded-highlight', 'node-faded')
-            );
-        this.labelsContainer.selectAll('text')
-            .attr('display', node => isInNeighborhood(nodeId, node.id) ? 'block' : 'none');
-        this.linksContainer.selectAll('line')
-            .attr('class', link => isLinkOfNode(nodeId, link) ? 'link' : 'link-faded')
-            .attr('marker-end', link => isLinkOfNode(nodeId, link) ? 'url(#arrow)' : 'url(#arrow-faded)');
-    }
-
-    unFocus() {
-        this.highlightedNodeId = null;
-        this.nodesContainer.selectAll('circle')
-            .attr('class', node => ifHighlighted(node, 'node-highlight', 'node'));
-        this.labelsContainer.selectAll('text')
-            .attr('display', 'block');
-        this.linksContainer.selectAll('line')
-            .attr('class', 'link')
-            .attr('marker-end', 'url(#arrow)');
-    }
-
-    componentDidMount() {
-        this.init();
-        this.update();
-    }
-
-    componentDidUpdate() {
-        this.update();
-    }
-
-    render() {
-        const { classes } = this.props;
-        return <div id="graph" className={classes.root}/>;
-    }
-}
+    return <div id="graph" className={classes.root}/>;
+};
 
 Graph.propTypes = {
     analysisResult: PropTypes.shape({
@@ -320,4 +336,4 @@ Graph.propTypes = {
     }).isRequired
 };
 
-export default withStyles(styles, { withTheme: true })(Graph);
+export default Graph;
