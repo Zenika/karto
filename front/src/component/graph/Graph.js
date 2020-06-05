@@ -24,14 +24,14 @@ function d3AllowedRouteIdFromNodeIds(pod1Id, pod2Id) {
 
 function d3Pod(pod) {
     const id = d3PodId(pod);
-    return { id, displayName: pod.displayName, highlighted: pod.highlighted }
+    return { id, displayName: pod.displayName, highlighted: pod.highlighted };
 }
 
 function d3AllowedRoute(allowedRoute) {
     const id = d3AllowedRouteId(allowedRoute);
     const source = d3PodId(allowedRoute.sourcePod);
     const target = d3PodId(allowedRoute.targetPod);
-    return { id, source, target }
+    return { id, source, target };
 }
 
 const styles = createStyles(theme => ({
@@ -181,7 +181,24 @@ class Graph extends React.Component {
             .attr('class', node => ifHighlighted(node, 'node-highlight', 'node'))
             .attr('r', NODE_SIZE / this.zoomFactor)
             .on('mouseover', () => this.focus(d3.select(d3.event.target).datum().id))
-            .on('mouseout', () => this.unFocus());
+            .on('mouseout', () => this.unFocus())
+            .call(d3.drag()
+                .on('start', d => {
+                    if (d3.event.active === 0) {
+                        this.simulation.alphaTarget(0.3).restart();
+                    }
+                    d.fx = d.x;
+                    d.fy = d.y;
+                })
+                .on('drag', d => {
+                    d.fx = d3.event.x;
+                    d.fy = d3.event.y;
+                })
+                .on('end', () => {
+                    if (d3.event.active === 0) {
+                        this.simulation.alphaTarget(0);
+                    }
+                }));
 
         // Update labels
         this.labelsContainer
