@@ -24,7 +24,7 @@ function d3AllowedRouteIdFromNodeIds(pod1Id, pod2Id) {
 
 function d3Pod(pod) {
     const id = d3PodId(pod);
-    return { id, displayName: pod.displayName, highlighted: pod.highlighted };
+    return { id, displayName: pod.displayName, highlighted: pod.highlighted, podData: pod };
 }
 
 function d3AllowedRoute(allowedRoute) {
@@ -76,7 +76,7 @@ const useStyles = makeStyles(theme => ({
     }
 }));
 
-const Graph = ({ analysisResult }) => {
+const Graph = ({ analysisResult, onPodFocus }) => {
     const classes = useStyles();
     const svg = useRef();
     const linksContainer = useRef();
@@ -91,7 +91,7 @@ const Graph = ({ analysisResult }) => {
     const isDragging = useRef(false);
     const simulation = useRef();
 
-    function handleZoom() {
+    const handleZoom = () => {
         zoomFactor.current = d3.event.transform.k;
         svg.current.attr('transform', d3.event.transform);
 
@@ -108,14 +108,17 @@ const Graph = ({ analysisResult }) => {
         // Compensate changes to link width
         const links = linksContainer.current.selectAll('line');
         links.attr('stroke-width', LINK_WIDTH / zoomFactor.current);
-    }
+    };
 
-    function enableNodeFocus(nodeId) {
+    const enableNodeFocus = (nodeId) => {
         if (isDragging.current) {
             // Do not focus during drag
             return;
         }
-        highlightedNodeId.current = nodeId;
+        if (highlightedNodeId.current !== nodeId) {
+            highlightedNodeId.current = nodeId;
+            onPodFocus(indexedPods.current.get(nodeId).podData);
+        }
         const isInNeighborhood = (node1Id, node2Id) => {
             return node1Id === node2Id || indexedAllowedRoutes.current.has(d3AllowedRouteIdFromNodeIds(node1Id, node2Id))
                 || indexedAllowedRoutes.current.has(d3AllowedRouteIdFromNodeIds(node2Id, node1Id));
@@ -133,9 +136,9 @@ const Graph = ({ analysisResult }) => {
         linksContainer.current.selectAll('line')
             .attr('class', link => isLinkOfNode(nodeId, link) ? 'link' : 'link-faded')
             .attr('marker-end', link => isLinkOfNode(nodeId, link) ? 'url(#arrow)' : 'url(#arrow-faded)');
-    }
-
-    function disableNodeFocus() {
+    };
+    const disableNodeFocus = () => {
+        onPodFocus(null);
         highlightedNodeId.current = null;
         nodesContainer.current.selectAll('circle')
             .attr('class', node => ifHighlighted(node, 'node-highlight', 'node'));
@@ -144,9 +147,9 @@ const Graph = ({ analysisResult }) => {
         linksContainer.current.selectAll('line')
             .attr('class', 'link')
             .attr('marker-end', 'url(#arrow)');
-    }
+    };
 
-    function handleDragStart(node) {
+    const handleDragStart = (node) => {
         if (d3.event.active === 0) {
             // Start of first concurrent drag event
             disableNodeFocus();
@@ -155,20 +158,18 @@ const Graph = ({ analysisResult }) => {
         }
         node.fx = node.x;
         node.fy = node.y;
-    }
-
-    function handleDragUpdate(node) {
+    };
+    const handleDragUpdate = (node) => {
         node.fx = d3.event.x;
         node.fy = d3.event.y;
-    }
-
-    function handleDragEnd() {
+    };
+    const handleDragEnd = () => {
         if (d3.event.active === 0) {
             // End of last concurrent drag event
             isDragging.current = false;
             simulation.current.alphaTarget(0);
         }
-    }
+    };
 
     useEffect(() => {
         const svgRoot = d3.select('#graph').append('svg')
@@ -272,7 +273,7 @@ const Graph = ({ analysisResult }) => {
             .join('circle')
             .attr('class', node => ifHighlighted(node, 'node-highlight', 'node'))
             .attr('r', NODE_SIZE / zoomFactor.current)
-            .on('mouseover', () => enableNodeFocus(d3.select(d3.event.target).datum().id))
+            .on('mouseover', d => enableNodeFocus(d.id))
             .on('mouseout', () => disableNodeFocus())
             .call(d3.drag()
                 .on('start', d => handleDragStart(d))
@@ -333,7 +334,8 @@ Graph.propTypes = {
                 namespace: PropTypes.string.isRequired
             }).isRequired
         })).isRequired
-    }).isRequired
+    }).isRequired,
+    onPodFocus: PropTypes.func.isRequired
 };
 
 export default Graph;
