@@ -30,7 +30,7 @@ https://kubernetes.io/docs/concepts/services-networking/ingress/).
 Remember to always secure the access to the application as it obviously displays sensitive data about your cluster. 
 
 ### Cleanup
-Delete everything use the same descriptor:
+Delete everything using the same descriptor:
 ```shell script
 kubectl delete -f deploy/k8s.yml
 ```
