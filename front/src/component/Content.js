@@ -12,6 +12,8 @@ import { computeAnalysisResultView, fetchAnalysisResult } from '../service/analy
 import InputControl from './controls/InputControl';
 import { AllowedRouteDetails, PodDetails } from './details/ResourceDetails';
 
+const MAX_RECOMMENDED_PODS = 100;
+const MAX_RECOMMENDED_ALLOWED_ROUTES = 1000;
 const DEFAULT_CONTROLS = {
     namespaceFilters: [],
     labelFilters: [],
@@ -21,14 +23,15 @@ const DEFAULT_CONTROLS = {
     autoRefresh: false,
     showNamespacePrefix: true,
     highlightPodsWithoutIngressIsolation: false,
-    highlightPodsWithoutEgressIsolation: false
+    highlightPodsWithoutEgressIsolation: false,
+    displayLargeDatasets: false
 };
 
-export function isFilterActive(selectedValues, allValues) {
+function isFilterActive(selectedValues, allValues) {
     return selectedValues.length !== 0 && selectedValues.length !== allValues.length;
 }
 
-export function filterLabel(filterName, selectedValues, allValues) {
+function filterLabel(filterName, selectedValues, allValues) {
     if (!isFilterActive(selectedValues, allValues)) {
         return `All ${filterName}s`;
     } else if (selectedValues.length === 1) {
@@ -38,9 +41,10 @@ export function filterLabel(filterName, selectedValues, allValues) {
     }
 }
 
-export function displaySummary(displayedPods, allPods, displayedAllowedRoutes, allAllowedRoutes) {
-    return `Displaying ${displayedPods.length}/${allPods.length} pods`
-        + ` and ${displayedAllowedRoutes.length}/${allAllowedRoutes.length} allowed routes`;
+function isSafeToDisplay(analysisResultView, displayLargeDatasets) {
+    const tooLarge = analysisResultView.pods.length > MAX_RECOMMENDED_PODS
+        || analysisResultView.allowedRoutes.length > MAX_RECOMMENDED_ALLOWED_ROUTES;
+    return displayLargeDatasets || !tooLarge;
 }
 
 const useStyles = makeStyles(theme => ({
@@ -77,8 +81,10 @@ const useStyles = makeStyles(theme => ({
         marginBottom: theme.spacing(1),
         width: '100%'
     },
-    loadingCaption: {
-        marginTop: theme.spacing(1)
+    message: {
+        marginTop: theme.spacing(1),
+        maxWidth: 500,
+        textAlign: 'center'
     },
     details: {
         position: 'absolute',
@@ -106,7 +112,7 @@ const Content = ({ className = '' }) => {
         analysisResultView: null,
         controls: Object.assign(DEFAULT_CONTROLS, getStoredControls()),
         podDetails: null,
-        allowedRouteDetails: null,
+        allowedRouteDetails: null
     });
 
     useEffect(() => {
@@ -164,21 +170,32 @@ const Content = ({ className = '' }) => {
             <main className={classes.main}>
                 {state.isLoading && <>
                     <CircularProgress thickness={1} size={60}/>
-                    <Typography className={classes.loadingCaption} variant="caption">
+                    <Typography className={classes.message} variant="caption">
                         Analyzing your cluster...
                     </Typography>
                 </>}
                 {!state.isLoading && state.analysisResultView && state.analysisResultView.pods.length === 0 && <>
-                    <Typography className={classes.loadingCaption} variant="caption">
+                    <Typography className={classes.message} variant="caption">
                         No pod to display
                     </Typography>
                 </>}
-                {!state.isLoading && state.analysisResultView && state.analysisResultView.pods.length > 0 && <>
+                {!state.isLoading && state.analysisResultView && state.analysisResultView.pods.length > 0
+                && !isSafeToDisplay(state.analysisResultView, state.controls.displayLargeDatasets) && <>
+                    <Typography className={classes.message} variant="caption">
+                        {`The dataset to display (${state.analysisResultView.pods.length} pods, `
+                        + `${state.analysisResultView.allowedRoutes.length} allowed routes) is larger than recommended `
+                        + `for an optimal experience. Apply a filter on the left to reduce the dataset, or enable the `
+                        + `"Always display large datasets" display option if you know what you are doing.`}
+                    </Typography>
+                </>}
+                {!state.isLoading && state.analysisResultView && state.analysisResultView.pods.length > 0
+                && isSafeToDisplay(state.analysisResultView, state.controls.displayLargeDatasets) && <>
                     <Graph analysisResult={state.analysisResultView} onPodFocus={onPodFocus}
                            onAllowedRouteFocus={onAllowedRouteFocus}/>
                     <Typography className={classes.graphCaption} variant="caption">
-                        {displaySummary(state.analysisResultView.pods, state.analysisResult.pods,
-                            state.analysisResultView.allowedRoutes, state.analysisResult.allowedRoutes)}
+                        {`Displaying ${state.analysisResultView.pods.length}/${state.analysisResult.pods.length} pods`
+                        + ` and ${state.analysisResultView.allowedRoutes.length}/`
+                        + `${state.analysisResult.allowedRoutes.length} allowed routes`}
                     </Typography>
                 </>}
             </main>
@@ -234,6 +251,10 @@ const Content = ({ className = '' }) => {
                         className={classes.controlsItem} name="Highlight non isolated pods (egress)"
                         checked={state.controls.highlightPodsWithoutEgressIsolation}
                         onChange={handleControlChange('highlightPodsWithoutEgressIsolation')}/>
+                    <SwitchControl
+                        className={classes.controlsItem} name="Always display large datasets"
+                        checked={state.controls.displayLargeDatasets}
+                        onChange={handleControlChange('displayLargeDatasets')}/>
                 </div>
             </aside>
             {state.podDetails && (
