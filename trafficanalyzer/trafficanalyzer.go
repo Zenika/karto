@@ -1,7 +1,6 @@
 package trafficanalyzer
 
 import (
-	"fmt"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,6 +13,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/workqueue"
+	"log"
 	"network-policy-explorer/types"
 	"sort"
 	"time"
@@ -93,7 +93,7 @@ func getK8sClient(k8sClientConfig string) *kubernetes.Clientset {
 	var err1InsideCluster, errOutsideCluster error
 	config, err1InsideCluster = rest.InClusterConfig()
 	if err1InsideCluster != nil {
-		fmt.Printf("Unable to connect to Kubernetes service, fallback to kubeconfig file")
+		log.Println("Unable to connect to Kubernetes service, fallback to kubeconfig file")
 		config, errOutsideCluster = clientcmd.BuildConfigFromFlags("", k8sClientConfig)
 		if errOutsideCluster != nil {
 			panic(errOutsideCluster.Error())
@@ -111,7 +111,7 @@ func analyze(pods []*corev1.Pod, policies []*networkingv1.NetworkPolicy, namespa
 	podIsolations := computePodIsolations(pods, policies)
 	allowedRoutes := computeAllowedRoutes(podIsolations, namespaces)
 	elapsed := time.Since(start)
-	fmt.Printf("Finished analysis in %s, found %d pods and %d allowed pod-to-pod routes\n", elapsed, len(podIsolations), len(allowedRoutes))
+	log.Printf("Finished analysis in %s, found %d pods and %d allowed pod-to-pod routes\n", elapsed, len(podIsolations), len(allowedRoutes))
 	return types.AnalysisResult{
 		Pods:          fromK8sPodIsolations(podIsolations),
 		AllowedRoutes: allowedRoutes,
@@ -340,7 +340,7 @@ func namespaceMatches(pod *corev1.Pod, policy *networkingv1.NetworkPolicy) bool 
 func selectorMatches(objectLabels map[string]string, labelSelector metav1.LabelSelector) bool {
 	selector, err := metav1.LabelSelectorAsSelector(&labelSelector)
 	if err != nil {
-		fmt.Printf("Could not parse LabelSelector %v\n", labelSelector)
+		log.Fatalf("Could not parse LabelSelector %v\n", labelSelector)
 		return false
 	}
 	return selector.Matches(labels.Set(objectLabels))
