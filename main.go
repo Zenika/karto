@@ -2,9 +2,9 @@ package main
 
 import (
 	"flag"
-	"network-policy-explorer/api"
-	"network-policy-explorer/trafficanalyzer"
-	"network-policy-explorer/types"
+	"karto/api"
+	"karto/trafficanalyzer"
+	"karto/types"
 	"os"
 	"path/filepath"
 )
