@@ -96,3 +96,6 @@ workflows:
           requires:
             - build-front
             - build-back
+          filters:
+            branches:
+              only: master
