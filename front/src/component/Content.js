@@ -10,6 +10,7 @@ import Graph from './graph/Graph';
 import { getStoredControls, storeControls } from '../service/storageService';
 import { computeAnalysisResultView, fetchAnalysisResult } from '../service/analysisResultService';
 import InputControl from './controls/InputControl';
+import { AllowedRouteDetails, PodDetails } from './details/ResourceDetails';
 
 const DEFAULT_CONTROLS = {
     namespaceFilters: [],
@@ -84,24 +85,8 @@ const useStyles = makeStyles(theme => ({
         bottom: 40,
         right: 0,
         width: 320,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-start',
         padding: `0 ${theme.spacing(2)}px`,
-        borderLeft: `1px solid ${theme.palette.primary.main}`,
-    },
-    detailsTitle: {
-        marginBottom: theme.spacing(1),
-        cursor: 'default'
-    },
-    detailsKey: {
-        marginRight: theme.spacing(1)
-    },
-    detailsValue: {
-        fontWeight: 200
-    },
-    detailsValueNested: {
-        marginLeft: theme.spacing(1)
+        borderLeft: `1px solid ${theme.palette.primary.main}`
     },
     graphCaption: {
         position: 'absolute',
@@ -120,7 +105,8 @@ const Content = ({ className = '' }) => {
         analysisResult: null,
         analysisResultView: null,
         controls: Object.assign(DEFAULT_CONTROLS, getStoredControls()),
-        details: null
+        podDetails: null,
+        allowedRouteDetails: null,
     });
 
     useEffect(() => {
@@ -159,10 +145,16 @@ const Content = ({ className = '' }) => {
     };
 
     const onPodFocus = pod => {
-        setState({
-            ...state,
-            details: pod
-        });
+        setState(oldState => ({
+            ...oldState,
+            podDetails: pod
+        }));
+    };
+    const onAllowedRouteFocus = allowedRoute => {
+        setState(oldState => ({
+            ...oldState,
+            allowedRouteDetails: allowedRoute
+        }));
     };
 
     const allNamespaces = state.analysisResult ? state.analysisResult.allNamespaces : [];
@@ -182,7 +174,8 @@ const Content = ({ className = '' }) => {
                     </Typography>
                 </>}
                 {!state.isLoading && state.analysisResultView && state.analysisResultView.pods.length > 0 && <>
-                    <Graph analysisResult={state.analysisResultView} onPodFocus={onPodFocus}/>
+                    <Graph analysisResult={state.analysisResultView} onPodFocus={onPodFocus}
+                           onAllowedRouteFocus={onAllowedRouteFocus}/>
                     <Typography className={classes.graphCaption} variant="caption">
                         {displaySummary(state.analysisResultView.pods, state.analysisResult.pods,
                             state.analysisResultView.allowedRoutes, state.analysisResult.allowedRoutes)}
@@ -243,51 +236,14 @@ const Content = ({ className = '' }) => {
                         onChange={handleControlChange('highlightPodsWithoutEgressIsolation')}/>
                 </div>
             </aside>
-            {state.details && (
+            {state.podDetails && (
                 <aside className={classes.details}>
-                    <Typography className={classes.controlsTitle} variant="h2">Pod details</Typography>
-                    <div>
-                        <Typography variant="body1" component="span"
-                                    className={classes.detailsKey}>Namespace:</Typography>
-                        <Typography variant="body1" component="span"
-                                    className={classes.detailsValue}>{state.details.namespace}</Typography>
-                    </div>
-                    <div>
-                        <Typography variant="body1" component="span" className={classes.detailsKey}>Name:</Typography>
-                        <Typography variant="body1" component="span"
-                                    className={classes.detailsValue}>{state.details.name}</Typography>
-                    </div>
-                    <div>
-                        <Typography variant="body1" component="span" className={classes.detailsKey}>Labels:</Typography>
-                        <div className={classes.detailsValueNested}>
-                            {
-                                Object.entries(state.details.labels).map(([key, value]) => (
-                                    <div>
-                                        <Typography variant="body1" component="span"
-                                                    className={classes.detailsKey}>{key}:</Typography>
-                                        <Typography variant="body1" component="span"
-                                                    className={classes.detailsValue}>{value}</Typography>
-                                    </div>
-                                ))
-                            }
-                        </div>
-                    </div>
-                    <div>
-                        <Typography variant="body1" component="span" className={classes.detailsKey}>
-                            Isolated for ingress:
-                        </Typography>
-                        <Typography variant="body1" component="span" className={classes.detailsValue}>
-                            {state.details.isIngressIsolated ? 'yes' : 'no'}
-                        </Typography>
-                    </div>
-                    <div>
-                        <Typography variant="body1" component="span" className={classes.detailsKey}>
-                            Isolated for egress:
-                        </Typography>
-                        <Typography variant="body1" component="span" className={classes.detailsValue}>
-                            {state.details.isEgressIsolated ? 'yes' : 'no'}
-                        </Typography>
-                    </div>
+                    <PodDetails podDetails={state.podDetails}/>
+                </aside>
+            )}
+            {state.allowedRouteDetails && (
+                <aside className={classes.details}>
+                    <AllowedRouteDetails allowedRouteDetails={state.allowedRouteDetails}/>
                 </aside>
             )}
         </div>

@@ -40,7 +40,7 @@ func (handler *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func healthCheck(w http.ResponseWriter, _ *http.Request) {
-	fmt.Fprintf(w, "hello\n")
+	fmt.Fprintln(w, "OK")
 }
 
 func Expose(resultsChannel <-chan types.AnalysisResult) {
@@ -51,6 +51,6 @@ func Expose(resultsChannel <-chan types.AnalysisResult) {
 	mux.Handle("/", frontendHandler)
 	mux.Handle("/api/analysisResult", apiHandler)
 	mux.HandleFunc("/health", healthCheck)
-	log.Println("Listening...")
+	log.Println("Listening to incoming requests...")
 	http.ListenAndServe(":8000", mux)
 }
