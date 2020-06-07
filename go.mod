@@ -1,4 +1,4 @@
-module network-policy-explorer
+module karto
 
 go 1.14
 

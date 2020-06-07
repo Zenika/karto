@@ -1,4 +1,4 @@
-# Network Policy Explorer
+# Karto
 
 A simple static analysis tool to explore network policies declared in a Kubernetes cluster and affected pods.
 
@@ -11,15 +11,15 @@ Simply apply the provided descriptor:
 kubectl apply -f deploy/k8s.yml
 ```
 This will:
-- create a `network-policy-explorer` namespace
-- create a `network-policy-explorer` service account with a role allowing to list all pods, namespaces and network 
+- create a `karto` namespace
+- create a `karto` service account with a role allowing to list all pods, namespaces and network 
 policies in the cluster
 - deploy an instance of the application in this namespace with this service account
 
 ### Exposition
 Once deployed, the application must be exposed. For a quick try, use `port-forward`:
 ```shell script
-kubectl -n network-policy-explorer port-forward <pod name> 8000:8000
+kubectl -n karto port-forward <pod name> 8000:8000
 ```
 The will exposed the app on your local machine on `localhost:8000`.
 
@@ -59,7 +59,7 @@ This will generate a `build` folder in `/front` that can be served statically.
 ### Backend
 To build the main executable: 
 ```shell script
-go build network-policy-explorer
+go build karto
 ```
 This executable runs on port 8080 and serves the content of `./front/build` on the `/` route and the API on the `/api`
 route. If you choose not to run the frontend in development mode, remember to always refresh the frontend content (if 

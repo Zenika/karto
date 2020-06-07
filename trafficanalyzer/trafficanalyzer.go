@@ -13,8 +13,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/workqueue"
+	"karto/types"
 	"log"
-	"network-policy-explorer/types"
 	"sort"
 	"time"
 )

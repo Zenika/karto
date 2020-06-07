@@ -3,9 +3,9 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"karto/types"
 	"log"
 	"net/http"
-	"network-policy-explorer/types"
 	"sync"
 )
 

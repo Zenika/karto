@@ -1,6 +1,6 @@
 FROM scratch
 
-COPY ./network-policy-explorer /network-policy-explorer
+COPY ./karto /karto
 COPY ./front/build /front/build
 
-ENTRYPOINT ["/network-policy-explorer"]
+ENTRYPOINT ["/karto"]
