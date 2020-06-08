@@ -18,7 +18,7 @@ const Header = ({ className = '' }) => {
     const classes = useStyles();
     return (
         <header className={classNames(classes.root, className)}>
-            <Typography variant="h1">Network Policy Explorer</Typography>
+            <Typography variant="h1">Karto</Typography>
         </header>
     );
 };
