@@ -1,3 +1,12 @@
+export const labelSelectorOperators = [
+    { op: 'eq', label: '=', args: 'single' },
+    { op: 'neq', label: '!=', args: 'single' },
+    { op: 'in', label: 'in', args: 'multiple' },
+    { op: 'notin', label: 'not in', args: 'multiple' },
+    { op: 'exists', label: 'exists', args: 'none' },
+    { op: 'notexists', label: 'not exists', args: 'none' }
+];
+
 export async function fetchAnalysisResult() {
     const response = await fetch('./api/analysisResult');
     if (response.status !== 200) {
@@ -20,12 +29,33 @@ export function computeAnalysisResultView(analysisResult, controls) {
         includeIngressNeighbors, includeEgressNeighbors
     } = controls;
 
-    const nameRegex = new RegExp(nameFilter);
+    let nameRegex;
+    try {
+        nameRegex = new RegExp(nameFilter);
+    } catch (e) {
+        nameRegex = new RegExp('.*');
+    }
     const podFilter = pod => {
         const namespaceMatches = namespaceFilters.length === 0 || namespaceFilters.includes(pod.namespace);
-        const labels = labelsToStringList(pod);
-        const labelsMatch = labelFilters.length === 0
-            || labelFilters.every(labelFilter => labels.includes(labelFilter));
+        const labelsMatch = labelFilters.filter(labelFilter => labelFilter.key !== null).every(labelFilter => {
+            const podLabelValue = pod.labels[labelFilter.key];
+            switch (labelFilter.operator.op) {
+                case 'eq':
+                    return podLabelValue === labelFilter.value;
+                case 'neq':
+                    return podLabelValue !== labelFilter.value;
+                case 'exists':
+                    return podLabelValue != null;
+                case 'notexists':
+                    return podLabelValue == null;
+                case 'in':
+                    return labelFilter.value.includes(podLabelValue);
+                case 'notin':
+                    return !labelFilter.value.includes(podLabelValue);
+                default:
+                    throw new Error(`invalid operator ${labelFilter.operator.op}`);
+            }
+        });
         const nameMatches = nameFilter === '' || nameRegex.test(pod.name);
         return namespaceMatches && labelsMatch && nameMatches;
     };
@@ -80,15 +110,23 @@ function allNamespacesOfPods(pods) {
 }
 
 function allLabelsOfPods(pods) {
-    return distinctAndSort(pods.map(labelsToStringList).flat());
+    const result = {};
+    pods.forEach(pod => {
+        Object.entries(pod.labels).forEach(([key, value]) => {
+            if (result[key] == null) {
+                result[key] = [];
+            }
+            result[key].push(value);
+        });
+    });
+    Object.entries(result).forEach(([key, value]) => {
+        result[key] = distinctAndSort(value);
+    });
+    return result;
 }
 
 function distinctAndSort(arr) {
     return [...new Set(arr)].sort();
-}
-
-function labelsToStringList(pod) {
-    return Object.entries(pod.labels).map(([key, value]) => `${key}=${value}`);
 }
 
 function podId(pod) {

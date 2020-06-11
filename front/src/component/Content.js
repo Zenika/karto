@@ -8,9 +8,14 @@ import MultiSelectControl from './controls/MultiSelectControl';
 import PropTypes from 'prop-types';
 import Graph from './graph/Graph';
 import { getStoredControls, storeControls } from '../service/storageService';
-import { computeAnalysisResultView, fetchAnalysisResult } from '../service/analysisResultService';
+import {
+    computeAnalysisResultView,
+    fetchAnalysisResult,
+    labelSelectorOperators
+} from '../service/analysisResultService';
 import InputControl from './controls/InputControl';
 import { AllowedRouteDetails, PodDetails } from './details/ResourceDetails';
+import MultiKeyValueSelectControl from './controls/MultiKeyValueSelectControl';
 
 const MAX_RECOMMENDED_PODS = 100;
 const MAX_RECOMMENDED_ALLOWED_ROUTES = 1000;
@@ -26,26 +31,6 @@ const DEFAULT_CONTROLS = {
     highlightPodsWithoutEgressIsolation: false,
     displayLargeDatasets: false
 };
-
-function isFilterActive(selectedValues, allValues) {
-    return selectedValues.length !== 0 && selectedValues.length !== allValues.length;
-}
-
-function filterLabel(filterName, selectedValues, allValues) {
-    if (!isFilterActive(selectedValues, allValues)) {
-        return `All ${filterName}s`;
-    } else if (selectedValues.length === 1) {
-        return `1 ${filterName} filter`;
-    } else {
-        return `${(selectedValues.length)} namespace filters`;
-    }
-}
-
-function isSafeToDisplay(analysisResultView, displayLargeDatasets) {
-    const tooLarge = analysisResultView.pods.length > MAX_RECOMMENDED_PODS
-        || analysisResultView.allowedRoutes.length > MAX_RECOMMENDED_ALLOWED_ROUTES;
-    return displayLargeDatasets || !tooLarge;
-}
 
 const useStyles = makeStyles(theme => ({
     root: {
@@ -114,6 +99,8 @@ const Content = ({ className = '' }) => {
         podDetails: null,
         allowedRouteDetails: null
     });
+    const allNamespaces = state.analysisResult ? state.analysisResult.allNamespaces : [];
+    const allLabels = state.analysisResult ? state.analysisResult.allLabels : {};
 
     useEffect(() => {
         const fetchAndUpdate = async () => {
@@ -139,6 +126,11 @@ const Content = ({ className = '' }) => {
         storeControls(state.controls);
     }, [state.controls]);
 
+    const isSafeToDisplay = (analysisResultView, displayLargeDatasets) => {
+        const tooLarge = analysisResultView.pods.length > MAX_RECOMMENDED_PODS
+            || analysisResultView.allowedRoutes.length > MAX_RECOMMENDED_ALLOWED_ROUTES;
+        return displayLargeDatasets || !tooLarge;
+    };
     const handleControlChange = key => newValue => {
         setState(oldState => {
             const newControls = { ...oldState.controls, [key]: newValue };
@@ -149,7 +141,6 @@ const Content = ({ className = '' }) => {
             });
         });
     };
-
     const onPodFocus = pod => {
         setState(oldState => ({
             ...oldState,
@@ -162,9 +153,50 @@ const Content = ({ className = '' }) => {
             allowedRouteDetails: allowedRoute
         }));
     };
+    const namespaceFiltersCount = () => {
+        return state.controls.namespaceFilters.length;
+    };
+    const isNamespaceFilterActive = () => {
+        const filtersCount = namespaceFiltersCount();
+        return filtersCount !== 0 && filtersCount !== allNamespaces.length;
+    };
+    const namespaceFilterLabel = () => {
+        const filtersCount = namespaceFiltersCount();
+        if (!isNamespaceFilterActive()) {
+            return `All namespaces`;
+        } else if (filtersCount === 1) {
+            return `1 namespace filter`;
+        } else {
+            return `${filtersCount} namespace filters`;
+        }
+    };
+    const labelFiltersCount = () => {
+        return state.controls.labelFilters.filter(labelFilter => labelFilter.key !== null).length;
+    };
+    const isLabelFilterActive = () => {
+        return labelFiltersCount() !== 0;
+    };
+    const labelFilterLabel = () => {
+        const filtersCount = labelFiltersCount();
+        if (!isLabelFilterActive()) {
+            return `All pod labels`;
+        } else if (filtersCount === 1) {
+            return `1 pod label filter`;
+        } else {
+            return `${filtersCount} pod label filters`;
+        }
+    };
+    const isNameFilterActive = () => {
+        return state.controls.nameFilter !== '';
+    };
+    const nameFilterLabel = () => {
+        if (!isNameFilterActive()) {
+            return `All pod names`;
+        } else {
+            return `1 pod label filter`;
+        }
+    };
 
-    const allNamespaces = state.analysisResult ? state.analysisResult.allNamespaces : [];
-    const allLabels = state.analysisResult ? state.analysisResult.allLabels : [];
     return (
         <div className={classNames(classes.root, className)}>
             <main className={classes.main}>
@@ -204,26 +236,18 @@ const Content = ({ className = '' }) => {
                 <div className={classes.controlsSection}>
                     <MultiSelectControl
                         className={classes.controlsItem} placeholder="Select a namespace"
-                        name={filterLabel('namespace', state.controls.namespaceFilters, allNamespaces)}
-                        selectAllAction={true} clearAction={true}
-                        checked={isFilterActive(state.controls.namespaceFilters, allNamespaces)}
-                        options={allNamespaces}
-                        selectedOptions={state.controls.namespaceFilters}
+                        name={namespaceFilterLabel()} checked={isNamespaceFilterActive()}
+                        options={allNamespaces} selectedOptions={state.controls.namespaceFilters}
                         onChange={handleControlChange('namespaceFilters')}/>
-                    <MultiSelectControl
-                        className={classes.controlsItem} placeholder="Select a pod label"
-                        name={filterLabel('pod label', state.controls.labelFilters, allLabels)}
-                        selectAllAction={false} clearAction={true}
-                        checked={isFilterActive(state.controls.labelFilters, allLabels)}
-                        options={allLabels}
-                        selectedOptions={state.controls.labelFilters}
-                        onChange={handleControlChange('labelFilters')}/>
+                    <MultiKeyValueSelectControl
+                        className={classes.controlsItem} keyPlaceholder="Select a label key"
+                        valuePlaceholder="Select a label value"
+                        name={labelFilterLabel()} checked={isLabelFilterActive()}
+                        options={allLabels} selectedOptions={state.controls.labelFilters}
+                        operators={labelSelectorOperators} onChange={handleControlChange('labelFilters')}/>
                     <InputControl
                         className={classes.controlsItem} placeholder="Type a pod name or regex"
-                        name={state.controls.nameFilter === '' ? 'All pod names' : '1 pod name filter'}
-                        clearAction={true}
-                        checked={state.controls.nameFilter !== ''}
-                        value={state.controls.nameFilter}
+                        name={nameFilterLabel()} checked={isNameFilterActive()} value={state.controls.nameFilter}
                         onChange={handleControlChange('nameFilter')}/>
                     <SwitchControl
                         className={classes.controlsItem} name="Include ingress neighbors"
