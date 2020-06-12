@@ -1,8 +1,10 @@
+![demo](docs/assets/karto-logo.png)
+
 # Karto
 
 A simple static analysis tool to explore and diagnosticate network policies declared in a Kubernetes cluster.
 
-![demo](README-DEMO.gif)
+![demo](docs/assets/demo.gif)
 
 ## How to use
 
