@@ -55,12 +55,21 @@ jobs:
       - run:
           name: Build backend
           command: |
+            go install github.com/markbates/pkger/cmd/pkger && pkger
             export CGO_ENABLED=0
             go build karto
+            GOOS=darwin GOARCH=amd64 go build -o karto_darwin
+            GOOS=windows GOARCH=amd64 go build -o karto.exe
       - save_cache:
           key: v3-back-dependencies-{{ checksum "go.sum" }}
           paths:
             - /home/circleci/go/pkg/mod
+      - store_artifacts:
+          path: karto
+      - store_artifacts:
+          path: karto_darwin
+      - store_artifacts:
+          path: karto.exe
       - persist_to_workspace:
           root: /home/circleci
           paths:
@@ -78,16 +87,16 @@ jobs:
           command: |
             docker build -t zenikalabs/karto .
             docker tag zenikalabs/karto zenikalabs/karto:v1
-            docker tag zenikalabs/karto zenikalabs/karto:v1.0
-            docker tag zenikalabs/karto zenikalabs/karto:v1.0.0
+            docker tag zenikalabs/karto zenikalabs/karto:v1.1
+            docker tag zenikalabs/karto zenikalabs/karto:v1.1.0
       - run:
           name: Push docker image
           command: |
             echo "$DOCKER_PASS" | docker login --username $DOCKER_USER --password-stdin
             docker push zenikalabs/karto
             docker push zenikalabs/karto:v1
-            docker push zenikalabs/karto:v1.0
-            docker push zenikalabs/karto:v1.0.0
+            docker push zenikalabs/karto:v1.1
+            docker push zenikalabs/karto:v1.1.0
 workflows:
   version: 2
   build-test-and-deploy:
@@ -98,10 +107,9 @@ workflows:
             - checkout-source
       - build-back:
           requires:
-            - checkout-source
+            - build-front
       - dockerize:
           requires:
-            - build-front
             - build-back
           filters:
             branches:
