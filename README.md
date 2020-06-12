@@ -6,7 +6,7 @@ A simple static analysis tool to explore and diagnosticate network policies decl
 
 ![demo](docs/assets/demo.gif)
 
-## How to use
+## Main features
 
 The left part of the screen contains the controls for the main view:
 - Filters: filter pods by namespace, labels and name
@@ -30,10 +30,18 @@ Hover over a route to investigate allowed traffic:
 - Ports
 - Explanation (lack of isolation or network policies allowing traffic)
 
+## Installation
 
-## Run inside your cluster
+There are two ways to install and run Karto:
+- To deploy it inside the Kubernetes cluster to analyze, proceed to the 
+[Run inside a cluster](#run-inside-a-cluster) section.
+- To run it on any machine outside the Kubernetes cluster to analyze, refer to the 
+[Run outside a cluster](#run-outside-a-cluster) section.
 
-### Deployment
+### Run inside a cluster
+
+#### Deployment
+
 Simply apply the provided descriptor:
 ```shell script
 kubectl apply -f deploy/k8s.yml
@@ -44,7 +52,8 @@ This will:
 policies in the cluster
 - deploy an instance of the application in this namespace with this service account
 
-### Exposition
+#### Exposition
+
 Once deployed, the application must be exposed. For a quick try, use `port-forward`:
 ```shell script
 kubectl -n karto port-forward <pod name> 8000:8000
@@ -55,49 +64,72 @@ For a long-term solution, investigate the use of a [LoadBalancer service](
 https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types) or an [Ingress](
 https://kubernetes.io/docs/concepts/services-networking/ingress/).
 
-Remember to always secure the access to the application as it obviously displays sensitive data about your cluster. 
+*Remember to always secure the access to the application as it obviously displays sensitive data about your cluster.* 
 
-### Cleanup
+#### Cleanup
+
 Delete everything using the same descriptor:
 ```shell script
 kubectl delete -f deploy/k8s.yml
 ```
 
+### Run outside a cluster
 
-## Run locally
+For this to work, a local `kubeconfig` file with existing connection information to the target cluster must be present
+on the machine (if you already use `kubectl` locally, you are good to go!). 
+
+Simply download the Karto binary from the [releases page](https://github.com/Zenika/karto/releases) and run it!
+
+## Development
 
 ### Prerequisites
-The following tools must be available locally:
-- [Go](https://golang.org/doc/install)
-- [NodeJS](https://nodejs.org/en/download/) 
 
-### Frontend
-To run in development mode: 
+The following tools must be available locally:
+- [Go](https://golang.org/doc/install) (tested with Go 1.14)
+- [NodeJS 10+](https://nodejs.org/en/download/) (tested with NodeJS 10)
+
+### Run the frontend in dev mode:
+
+In the `front` folder, execute:
 ```shell script
 npm start
 ```
 This will expose the app in dev mode on `localhost:3000` with a proxy to `localhost:8000` for the API calls.
 
-To compile: 
+### Run the backend locally:
+
+Simply execute: 
+```shell script
+go build karto
+./karto
+```
+
+### Test suites
+
+To run the entire backend test suite: 
+```shell script
+go test ./...
+```
+
+### Compile the go binary from source
+
+In production mode, the frontend is packaged in the go binary using [pkger](https://github.com/markbates/pkger). In this
+configuration, the frontend is served on the `/` route and the API on the `/api` route.
+
+To compile the Karto binary from source, first compile the frontend source code. In the `front` folder, execute:
 ```shell script
 npm run build
 ```
-This will generate a `build` folder in `/front` that can be served statically.
+This will generate a `build` folder in `/front`.
 
-### Backend
-To build the main executable: 
+Then, package it inside the backend:
+```shell script
+go install github.com/markbates/pkger/cmd/pkger
+pkger
+```
+This will generate a `pkged.go` file at the root with a binary content equivalent to the generated `build` folder.
+
+Finally, compile the go binary:
 ```shell script
 go build karto
-```
-This executable runs on port 8080 and serves the content of `./front/build` on the `/` route and the API on the `/api`
-route. If you choose not to run the frontend in development mode, remember to always refresh the frontend content (if 
-modified) using the npm `build` command described above.  
-
-
-## Test suites
-
-### Backend
-To run the entire test suite: 
-```shell script
-go test ./...
 ```
