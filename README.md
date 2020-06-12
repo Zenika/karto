@@ -88,7 +88,7 @@ The following tools must be available locally:
 - [Go](https://golang.org/doc/install) (tested with Go 1.14)
 - [NodeJS 10+](https://nodejs.org/en/download/) (tested with NodeJS 10)
 
-### Run the frontend in dev mode:
+### Run the frontend in dev mode
 
 In the `front` folder, execute:
 ```shell script
@@ -96,7 +96,7 @@ npm start
 ```
 This will expose the app in dev mode on `localhost:3000` with a proxy to `localhost:8000` for the API calls.
 
-### Run the backend locally:
+### Run the backend locally
 
 Simply execute: 
 ```shell script
