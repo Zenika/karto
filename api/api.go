@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/markbates/pkger"
 	"karto/types"
 	"log"
 	"net/http"
@@ -44,13 +45,17 @@ func healthCheck(w http.ResponseWriter, _ *http.Request) {
 }
 
 func Expose(resultsChannel <-chan types.AnalysisResult) {
-	frontendHandler := http.FileServer(http.Dir("./front/build"))
+	frontendHandler := http.FileServer(pkger.Dir("/front/build"))
 	apiHandler := newHandler()
 	go apiHandler.keepUpdated(resultsChannel)
 	mux := http.NewServeMux()
 	mux.Handle("/", frontendHandler)
 	mux.Handle("/api/analysisResult", apiHandler)
 	mux.HandleFunc("/health", healthCheck)
-	log.Println("Listening to incoming requests...")
-	http.ListenAndServe(":8000", mux)
+	port := ":8000"
+	log.Printf("Listening to incoming requests on %s...\n", port)
+	err := http.ListenAndServe(port, mux)
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
