@@ -58,6 +58,7 @@ func AnalyzeOnChange(k8sConfigPath string, resultsChannel chan<- types.AnalysisR
 	podInformer := informerFactory.Core().V1().Pods()
 	policiesInformer := informerFactory.Networking().V1().NetworkPolicies()
 	namespacesInformer := informerFactory.Core().V1().Namespaces()
+	servicesInformer := informerFactory.Core().V1().Services()
 	eventHandler := cache.ResourceEventHandlerFuncs{
 		AddFunc:    func(obj interface{}) { analyzeQueue.Add(nil) },
 		UpdateFunc: func(oldObj, newObj interface{}) { analyzeQueue.Add(nil) },
@@ -66,6 +67,7 @@ func AnalyzeOnChange(k8sConfigPath string, resultsChannel chan<- types.AnalysisR
 	podInformer.Informer().AddEventHandler(eventHandler)
 	policiesInformer.Informer().AddEventHandler(eventHandler)
 	namespacesInformer.Informer().AddEventHandler(eventHandler)
+	servicesInformer.Informer().AddEventHandler(eventHandler)
 	informerFactory.Start(wait.NeverStop)
 	informerFactory.WaitForCacheSync(wait.NeverStop)
 	for {
@@ -82,7 +84,11 @@ func AnalyzeOnChange(k8sConfigPath string, resultsChannel chan<- types.AnalysisR
 		if err != nil {
 			panic(err.Error())
 		}
-		resultsChannel <- analyze(pods, policies, namespaces)
+		services, err := servicesInformer.Lister().List(labels.Everything())
+		if err != nil {
+			panic(err.Error())
+		}
+		resultsChannel <- analyze(pods, policies, namespaces, services)
 		analyzeQueue.Forget(obj)
 		analyzeQueue.Done(obj)
 	}
@@ -106,15 +112,17 @@ func getK8sClient(k8sClientConfig string) *kubernetes.Clientset {
 	return k8sClient
 }
 
-func analyze(pods []*corev1.Pod, policies []*networkingv1.NetworkPolicy, namespaces []*corev1.Namespace) types.AnalysisResult {
+func analyze(pods []*corev1.Pod, policies []*networkingv1.NetworkPolicy, namespaces []*corev1.Namespace, services []*corev1.Service) types.AnalysisResult {
 	start := time.Now()
 	podIsolations := computePodIsolations(pods, policies)
 	allowedRoutes := computeAllowedRoutes(podIsolations, namespaces)
+	servicesWithTargetPods := computeServicesWithTargetPods(services, pods)
 	elapsed := time.Since(start)
 	log.Printf("Finished analysis in %s, found %d pods and %d allowed pod-to-pod routes\n", elapsed, len(podIsolations), len(allowedRoutes))
 	return types.AnalysisResult{
 		Pods:          fromK8sPodIsolations(podIsolations),
 		AllowedRoutes: allowedRoutes,
+		Services:      servicesWithTargetPods,
 	}
 }
 
@@ -188,6 +196,30 @@ func computeAllowedRoute(sourcePodIsolation podIsolation, targetPodIsolation pod
 		}
 	} else {
 		return nil
+	}
+}
+
+func computeServicesWithTargetPods(services []*corev1.Service, pods []*corev1.Pod) []types.Service {
+	servicesWithTargetPods := make([]types.Service, 0)
+	for _, service := range services {
+		serviceWithTargetPods := computeServiceWithTargetPods(service, pods)
+		servicesWithTargetPods = append(servicesWithTargetPods, serviceWithTargetPods)
+	}
+	return servicesWithTargetPods
+}
+
+func computeServiceWithTargetPods(service *corev1.Service, pods []*corev1.Pod) types.Service {
+	targetPods := make([]types.Pod, 0)
+	for _, pod := range pods {
+		selectorMatches := labelsMatches(pod.Labels, service.Spec.Selector)
+		if selectorMatches {
+			targetPods = append(targetPods, fromK8sPod(pod))
+		}
+	}
+	return types.Service{
+		Name:       service.Name,
+		Namespace:  service.Namespace,
+		TargetPods: targetPods,
 	}
 }
 
@@ -346,8 +378,15 @@ func selectorMatches(objectLabels map[string]string, labelSelector metav1.LabelS
 	return selector.Matches(labels.Set(objectLabels))
 }
 
-func fromK8sPodIsolation(podIsolation podIsolation) types.Pod {
-	return types.Pod{
+func labelsMatches(objectLabels map[string]string, matchLabels map[string]string) bool {
+	if matchLabels == nil {
+		return false
+	}
+	return selectorMatches(objectLabels, *metav1.SetAsLabelSelector(matchLabels))
+}
+
+func fromK8sPodIsolation(podIsolation podIsolation) types.PodWithIsolation {
+	return types.PodWithIsolation{
 		Name:              podIsolation.Pod.Name,
 		Namespace:         podIsolation.Pod.Namespace,
 		Labels:            podIsolation.Pod.Labels,
@@ -356,12 +395,20 @@ func fromK8sPodIsolation(podIsolation podIsolation) types.Pod {
 	}
 }
 
-func fromK8sPodIsolations(podIsolations []podIsolation) []types.Pod {
-	result := make([]types.Pod, 0)
+func fromK8sPodIsolations(podIsolations []podIsolation) []types.PodWithIsolation {
+	result := make([]types.PodWithIsolation, 0)
 	for _, podIsolation := range podIsolations {
 		result = append(result, fromK8sPodIsolation(podIsolation))
 	}
 	return result
+}
+
+func fromK8sPod(pod *corev1.Pod) types.Pod {
+	return types.Pod{
+		Name:      pod.Name,
+		Namespace: pod.Namespace,
+		Labels:    pod.Labels,
+	}
 }
 
 func fromK8sNetworkPolicy(networkPolicy networkingv1.NetworkPolicy) types.NetworkPolicy {
