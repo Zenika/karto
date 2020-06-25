@@ -16,6 +16,7 @@ import {
 import InputControl from './controls/InputControl';
 import { AllowedRouteDetails, PodDetails } from './details/ResourceDetails';
 import MultiKeyValueSelectControl from './controls/MultiKeyValueSelectControl';
+import ClusterMap from './graph/ClusterMap';
 
 const MAX_RECOMMENDED_PODS = 100;
 const MAX_RECOMMENDED_ALLOWED_ROUTES = 1000;
@@ -222,8 +223,9 @@ const Content = ({ className = '' }) => {
                 </>}
                 {!state.isLoading && state.analysisResultView && state.analysisResultView.pods.length > 0
                 && isSafeToDisplay(state.analysisResultView, state.controls.displayLargeDatasets) && <>
-                    <Graph analysisResult={state.analysisResultView} onPodFocus={onPodFocus}
-                           onAllowedRouteFocus={onAllowedRouteFocus}/>
+                    {/*<Graph analysisResult={state.analysisResultView} onPodFocus={onPodFocus}*/}
+                    {/*       onAllowedRouteFocus={onAllowedRouteFocus}/>*/}
+                    <ClusterMap analysisResult={state.analysisResultView}/>
                     <Typography className={classes.graphCaption} variant="caption">
                         {`Displaying ${state.analysisResultView.pods.length}/${state.analysisResult.pods.length} pods`
                         + ` and ${state.analysisResultView.allowedRoutes.length}/`

@@ -101,7 +101,8 @@ export function computeAnalysisResultView(analysisResult, controls) {
 
     return {
         pods: filteredPods.map(podMapper),
-        allowedRoutes: filteredAllowedRoutes
+        allowedRoutes: filteredAllowedRoutes,
+        services: analysisResult.services
     };
 }
 
