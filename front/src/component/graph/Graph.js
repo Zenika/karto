@@ -122,7 +122,7 @@ class D3Graph {
                 .selectAll('circle')
                 .attr('cx', d => d.x)
                 .attr('cy', d => d.y);
-            this.linksContainer
+            this.serviceLinksContainer
                 .selectAll('line')
                 .attr('x1', d => d.source.x)
                 .attr('y1', d => d.source.y)
@@ -204,7 +204,7 @@ class D3Graph {
             .attr('class', 'label');
 
         // Update links
-        this.linksContainer
+        this.serviceLinksContainer
             .selectAll('line')
             .data(this.d3AllowedRoutes)
             .join('line')
@@ -280,7 +280,7 @@ class D3Graph {
         labels.attr('dy', -NODE_FONT_SIZE / this.zoomFactor);
 
         // Compensate changes to link width
-        const links = this.linksContainer.selectAll('line');
+        const links = this.serviceLinksContainer.selectAll('line');
         links.attr('stroke-width', LINK_WIDTH / this.zoomFactor);
     };
 
@@ -341,7 +341,7 @@ class D3Graph {
             );
         this.labelsContainer.selectAll('text')
             .attr('display', node => shouldFocusNode(node) ? 'block' : 'none');
-        this.linksContainer.selectAll('line')
+        this.serviceLinksContainer.selectAll('line')
             .attr('class', link => shouldFocusLink(link) ? 'link' : 'link-faded')
             .attr('marker-end', link => shouldFocusLink(link) ? 'url(#arrow)' : 'url(#arrow-faded)');
     };

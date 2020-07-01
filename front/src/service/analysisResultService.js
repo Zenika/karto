@@ -65,6 +65,13 @@ export function computeAnalysisResultView(analysisResult, controls) {
         highlighted: (highlightPodsWithoutIngressIsolation && !pod.isIngressIsolated)
             || (highlightPodsWithoutEgressIsolation && !pod.isEgressIsolated)
     });
+    const serviceFilter = service => {
+        return namespaceFilters.length === 0 || namespaceFilters.includes(service.namespace);
+    };
+    const serviceMapper = service => ({
+        ...service,
+        displayName: showNamespacePrefix ? `${service.namespace}/${service.name}` : service.name
+    });
 
     // Index pods by id for faster access
     const podsById = new Map();
@@ -102,7 +109,7 @@ export function computeAnalysisResultView(analysisResult, controls) {
     return {
         pods: filteredPods.map(podMapper),
         allowedRoutes: filteredAllowedRoutes,
-        services: analysisResult.services
+        services: analysisResult.services.filter(serviceFilter).map(serviceMapper)
     };
 }
 

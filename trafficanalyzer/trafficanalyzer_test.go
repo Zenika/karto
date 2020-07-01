@@ -960,6 +960,7 @@ func Test_computeServiceWithTargetPods(t *testing.T) {
 				pods: []*corev1.Pod{
 					podBuilder().label("app", "foo").build(),
 					podBuilder().label("app", "bar").build(),
+					podBuilder().label("app", "foo").namespace("ns").build(),
 				},
 			},
 			expectedServiceWithTargetPods: types.Service{

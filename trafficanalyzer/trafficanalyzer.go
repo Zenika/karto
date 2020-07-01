@@ -138,7 +138,7 @@ func computePodIsolations(pods []*corev1.Pod, policies []*networkingv1.NetworkPo
 func computePodIsolation(pod *corev1.Pod, policies []*networkingv1.NetworkPolicy) podIsolation {
 	podIsolation := newPodIsolation(pod)
 	for _, policy := range policies {
-		namespaceMatches := namespaceMatches(pod, policy)
+		namespaceMatches := networkPolicyNamespaceMatches(pod, policy)
 		selectorMatches := selectorMatches(pod.Labels, policy.Spec.PodSelector)
 		if namespaceMatches && selectorMatches {
 			isIngress, isEgress := policyTypes(policy)
@@ -211,8 +211,9 @@ func computeServicesWithTargetPods(services []*corev1.Service, pods []*corev1.Po
 func computeServiceWithTargetPods(service *corev1.Service, pods []*corev1.Pod) types.Service {
 	targetPods := make([]types.Pod, 0)
 	for _, pod := range pods {
+		namespaceMatches := serviceNamespaceMatches(pod, service)
 		selectorMatches := labelsMatches(pod.Labels, service.Spec.Selector)
-		if selectorMatches {
+		if namespaceMatches && selectorMatches {
 			targetPods = append(targetPods, fromK8sPod(pod))
 		}
 	}
@@ -365,8 +366,12 @@ func namespaceLabelsMatches(namespaceName string, namespaces []*corev1.Namespace
 	return selectorMatches(namespace.Labels, selector)
 }
 
-func namespaceMatches(pod *corev1.Pod, policy *networkingv1.NetworkPolicy) bool {
+func networkPolicyNamespaceMatches(pod *corev1.Pod, policy *networkingv1.NetworkPolicy) bool {
 	return pod.Namespace == policy.Namespace
+}
+
+func serviceNamespaceMatches(pod *corev1.Pod, service *corev1.Service) bool {
+	return pod.Namespace == service.Namespace
 }
 
 func selectorMatches(objectLabels map[string]string, labelSelector metav1.LabelSelector) bool {
