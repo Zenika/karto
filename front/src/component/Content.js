@@ -6,7 +6,7 @@ import Typography from '@material-ui/core/Typography';
 import SwitchControl from './controls/SwitchControl';
 import MultiSelectControl from './controls/MultiSelectControl';
 import PropTypes from 'prop-types';
-import Graph from './graph/Graph';
+import NetworkPolicyMap from './map/NetworkPolicyMap';
 import { getStoredControls, storeControls } from '../service/storageService';
 import {
     computeAnalysisResultView,
@@ -16,7 +16,7 @@ import {
 import InputControl from './controls/InputControl';
 import { AllowedRouteDetails, PodDetails } from './details/ResourceDetails';
 import MultiKeyValueSelectControl from './controls/MultiKeyValueSelectControl';
-import ClusterMap from './graph/ClusterMap';
+import ClusterMap from './map/ClusterMap';
 
 const MAX_RECOMMENDED_PODS = 100;
 const MAX_RECOMMENDED_ALLOWED_ROUTES = 1000;
@@ -223,8 +223,8 @@ const Content = ({ className = '' }) => {
                 </>}
                 {!state.isLoading && state.analysisResultView && state.analysisResultView.pods.length > 0
                 && isSafeToDisplay(state.analysisResultView, state.controls.displayLargeDatasets) && <>
-                    {/*<Graph analysisResult={state.analysisResultView} onPodFocus={onPodFocus}*/}
-                    {/*       onAllowedRouteFocus={onAllowedRouteFocus}/>*/}
+                    {/*<NetworkPolicyMap analysisResult={state.analysisResultView} onPodFocus={onPodFocus}*/}
+                    {/*                  onAllowedRouteFocus={onAllowedRouteFocus}/>*/}
                     <ClusterMap analysisResult={state.analysisResultView}/>
                     <Typography className={classes.graphCaption} variant="caption">
                         {`Displaying ${state.analysisResultView.pods.length}/${state.analysisResult.pods.length} pods`
