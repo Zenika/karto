@@ -1,7 +1,7 @@
-import D3Graph from './D3Graph';
-import D3GraphLinkLayer from './D3GraphLinkLayer';
-import D3GraphItemLayer from './D3GraphItemLayer';
-import { CIRCLE_SIZE, DIAMOND_HEIGHT, DIAMOND_WIDTH, SPACING } from './D3Constants';
+import D3Graph from './d3/D3Graph';
+import D3GraphLinkLayer from './d3/D3GraphLinkLayer';
+import D3GraphItemLayer from './d3/D3GraphItemLayer';
+import { CIRCLE_SIZE, DIAMOND_HEIGHT, DIAMOND_WIDTH, SPACING } from './d3/D3Constants';
 
 function d3PodId(pod) {
     return `${pod.namespace}/${pod.name}`;
@@ -33,7 +33,7 @@ function d3ServiceLink({ service, targetPod }) {
     return { id, source, target };
 }
 
-export default class D3ClusterGraph extends D3Graph {
+export default class ClusterD3Graph extends D3Graph {
 
     constructor() {
         super();
@@ -127,6 +127,61 @@ export default class D3ClusterGraph extends D3Graph {
     }
 
     isFocused(layerName, datum) {
-        return true;
+        const isServiceOfPod = (service, podId) => {
+            return service.targetPods.includes(podId);
+        };
+        const isPodOfService = (pod, serviceId) => {
+            const service = this.servicesLayer.indexedData.get(serviceId);
+            return service.targetPods.includes(pod.id);
+        };
+        const isServiceLinkOfPod = (serviceLink, podId) => {
+            return serviceLink.target.id === podId;
+        };
+        const isServiceLinkOfService = (serviceLink, serviceId) => {
+            return serviceLink.source.id === serviceId;
+        };
+        const isPodOfServiceLink = (pod, serviceLinkId) => {
+            const serviceLink = this.serviceLinksLayer.indexedData.get(serviceLinkId);
+            return serviceLink.target.id === pod.id;
+        };
+        const isServiceOfServiceLink = (service, serviceLinkId) => {
+            const serviceLink = this.serviceLinksLayer.indexedData.get(serviceLinkId);
+            return serviceLink.source.id === service.id;
+        };
+        if (!this.focusedDatum) {
+            return true;
+        }
+        if (this.focusedDatum.layerName === this.podsLayer.name) {
+            // Current focus is on a pod
+            const focusedPodId = this.focusedDatum.id;
+            if (layerName === this.podsLayer.name) {
+                return datum.id === focusedPodId;
+            } else if (layerName === this.servicesLayer.name) {
+                return isServiceOfPod(datum, focusedPodId);
+            } else if (layerName === this.serviceLinksLayer.name) {
+                return isServiceLinkOfPod(datum, focusedPodId);
+            }
+        } else if (this.focusedDatum.layerName === this.servicesLayer.name) {
+            // Current focus is on a service
+            const focusedServiceId = this.focusedDatum.id;
+            if (layerName === this.servicesLayer.name) {
+                return datum.id === focusedServiceId;
+            } else if (layerName === this.podsLayer.name) {
+                return isPodOfService(datum, focusedServiceId);
+            } else if (layerName === this.serviceLinksLayer.name) {
+                return isServiceLinkOfService(datum, focusedServiceId);
+            }
+        } else if (this.focusedDatum.layerName === this.serviceLinksLayer.name) {
+            // Current focus is on a service link
+            const focusedServiceLinkId = this.focusedDatum.id;
+            if (layerName === this.serviceLinksLayer.name) {
+                return datum.id === focusedServiceLinkId;
+            } else if (layerName === this.podsLayer.name) {
+                return isPodOfServiceLink(datum, focusedServiceLinkId);
+            } else if (layerName === this.servicesLayer.name) {
+                return isServiceOfServiceLink(datum, focusedServiceLinkId);
+            }
+        }
+        return false;
     }
 }

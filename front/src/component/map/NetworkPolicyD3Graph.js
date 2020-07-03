@@ -1,8 +1,8 @@
 import * as d3 from 'd3';
-import D3Graph from './D3Graph';
-import D3GraphLinkLayer from './D3GraphLinkLayer';
-import D3GraphItemLayer from './D3GraphItemLayer';
-import { CIRCLE_SIZE } from './D3Constants';
+import D3Graph from './d3/D3Graph';
+import D3GraphLinkLayer from './d3/D3GraphLinkLayer';
+import D3GraphItemLayer from './d3/D3GraphItemLayer';
+import { CIRCLE_SIZE } from './d3/D3Constants';
 
 function d3PodId(pod) {
     return `${pod.namespace}/${pod.name}`;
@@ -28,7 +28,7 @@ function d3AllowedRouteIdFromPodIds(pod1Id, pod2Id) {
     return `${pod1Id}->${pod2Id}`;
 }
 
-export default class D3NetworkPolicyGraph extends D3Graph {
+export default class NetworkPolicyD3Graph extends D3Graph {
 
     constructor() {
         super();
@@ -91,19 +91,21 @@ export default class D3NetworkPolicyGraph extends D3Graph {
         }
         if (this.focusedDatum.layerName === this.podsLayer.name) {
             // Current focus is on a pod
+            const focusedPodId = this.focusedDatum.id;
             if (layerName === this.podsLayer.name) {
-                return datum.id === this.focusedDatum.id || isNeighbor(datum.id, this.focusedDatum.id);
+                return datum.id === focusedPodId || isNeighbor(datum.id, focusedPodId);
             } else if (layerName === this.allowedRoutesLayer.name) {
-                return isRouteOfPod(datum, this.focusedDatum.id);
+                return isRouteOfPod(datum, focusedPodId);
             }
         } else if (this.focusedDatum.layerName === this.allowedRoutesLayer.name) {
             // Current focus is on a route
+            const focusedAllowedRouteId = this.focusedDatum.id;
             if (layerName === this.podsLayer.name) {
-                return isPodOfRoute(datum.id, this.focusedDatum.id);
+                return isPodOfRoute(datum.id, focusedAllowedRouteId);
             } else if (layerName === this.allowedRoutesLayer.name) {
-                return datum.id === this.focusedDatum.id;
+                return datum.id === focusedAllowedRouteId;
             }
         }
-        return true;
+        return false;
     }
 }

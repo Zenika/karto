@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { makeStyles } from '@material-ui/core/styles';
-import D3NetworkPolicyGraph from './d3/D3NetworkPolicyGraph';
+import NetworkPolicyD3Graph from './NetworkPolicyD3Graph';
 
 const useStyles = makeStyles(theme => ({
     root: {
@@ -43,7 +43,7 @@ const useStyles = makeStyles(theme => ({
 
 const NetworkPolicyMap = ({ analysisResult, onPodFocus, onAllowedRouteFocus }) => {
     const classes = useStyles();
-    const d3Graph = useRef(new D3NetworkPolicyGraph());
+    const d3Graph = useRef(new NetworkPolicyD3Graph());
 
     useEffect(() => d3Graph.current.init(), []);
 
