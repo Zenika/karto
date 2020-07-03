@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { makeStyles } from '@material-ui/core/styles';
-import D3ClusterGraph from './D3ClusterGraph';
+import D3ClusterGraph from './d3/D3ClusterGraph';
 
 const useStyles = makeStyles(theme => ({
     root: {
@@ -41,13 +41,13 @@ const useStyles = makeStyles(theme => ({
     }
 }));
 
-const ClusterMap = ({ analysisResult }) => {
+const ClusterMap = ({ analysisResult, onPodFocus, onServiceFocus }) => {
     const classes = useStyles();
     const d3Graph = useRef(new D3ClusterGraph());
 
     useEffect(() => d3Graph.current.init(), []);
 
-    useEffect(() => d3Graph.current.update(analysisResult));
+    useEffect(() => d3Graph.current.update(analysisResult, { onPodFocus, onServiceFocus }));
 
     return <div id="graph" className={classes.root}/>;
 };
@@ -67,7 +67,9 @@ ClusterMap.propTypes = {
                 namespace: PropTypes.string.isRequired
             })).isRequired
         }))
-    }).isRequired
+    }).isRequired,
+    onPodFocus: PropTypes.func.isRequired,
+    onServiceFocus: PropTypes.func.isRequired
 };
 
 export default ClusterMap;

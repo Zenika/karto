@@ -154,6 +154,12 @@ const Content = ({ className = '' }) => {
             allowedRouteDetails: allowedRoute
         }));
     };
+    const onServiceFocus = service => {
+        setState(oldState => ({
+            ...oldState,
+            // podDetails: pod
+        }));
+    };
     const namespaceFiltersCount = () => {
         return state.controls.namespaceFilters.length;
     };
@@ -223,9 +229,10 @@ const Content = ({ className = '' }) => {
                 </>}
                 {!state.isLoading && state.analysisResultView && state.analysisResultView.pods.length > 0
                 && isSafeToDisplay(state.analysisResultView, state.controls.displayLargeDatasets) && <>
-                    {/*<NetworkPolicyMap analysisResult={state.analysisResultView} onPodFocus={onPodFocus}*/}
-                    {/*                  onAllowedRouteFocus={onAllowedRouteFocus}/>*/}
-                    <ClusterMap analysisResult={state.analysisResultView}/>
+                    <NetworkPolicyMap analysisResult={state.analysisResultView} onPodFocus={onPodFocus}
+                                      onAllowedRouteFocus={onAllowedRouteFocus} />
+                    {/*<ClusterMap analysisResult={state.analysisResultView} onPodFocus={onPodFocus}*/}
+                    {/*            onServiceFocus={onServiceFocus}/>*/}
                     <Typography className={classes.graphCaption} variant="caption">
                         {`Displaying ${state.analysisResultView.pods.length}/${state.analysisResult.pods.length} pods`
                         + ` and ${state.analysisResultView.allowedRoutes.length}/`

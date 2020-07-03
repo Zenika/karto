@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { makeStyles } from '@material-ui/core/styles';
-import D3NetworkPolicyGraph from './D3NetworkPolicyGraph';
+import D3NetworkPolicyGraph from './d3/D3NetworkPolicyGraph';
 
 const useStyles = makeStyles(theme => ({
     root: {
@@ -41,13 +41,13 @@ const useStyles = makeStyles(theme => ({
     }
 }));
 
-const NetworkPolicyMap = ({ analysisResult, onItemFocus, onAllowedRouteFocus }) => {
+const NetworkPolicyMap = ({ analysisResult, onPodFocus, onAllowedRouteFocus }) => {
     const classes = useStyles();
     const d3Graph = useRef(new D3NetworkPolicyGraph());
 
     useEffect(() => d3Graph.current.init(), []);
 
-    useEffect(() => d3Graph.current.update(analysisResult, onItemFocus, onAllowedRouteFocus));
+    useEffect(() => d3Graph.current.update(analysisResult, { onPodFocus, onAllowedRouteFocus }));
 
     return <div id="graph" className={classes.root}/>;
 };
