@@ -65,9 +65,6 @@ export function computeAnalysisResultView(analysisResult, controls) {
         highlighted: (highlightPodsWithoutIngressIsolation && !pod.isIngressIsolated)
             || (highlightPodsWithoutEgressIsolation && !pod.isEgressIsolated)
     });
-    const serviceFilter = service => {
-        return namespaceFilters.length === 0 || namespaceFilters.includes(service.namespace);
-    };
     const serviceMapper = service => ({
         ...service,
         displayName: showNamespacePrefix ? `${service.namespace}/${service.name}` : service.name
@@ -76,30 +73,33 @@ export function computeAnalysisResultView(analysisResult, controls) {
     // Index pods by id for faster access
     const podsById = new Map();
     analysisResult.pods.forEach(pod => podsById.set(podId(pod), pod));
-    const filteredPodsIds = new Set();
-    const neighborPodsIds = new Set();
+    const filteredPodIds = new Set();
+    const neighborPodIds = new Set();
 
     // Apply filters
     const filteredPods = analysisResult.pods.filter(podFilter);
-    filteredPods.forEach(pod => filteredPodsIds.add(podId(pod)));
+    filteredPods.forEach(pod => filteredPodIds.add(podId(pod)));
     const filteredAllowedRoutes = analysisResult.allowedRoutes.filter(allowedRoute =>
-        filteredPodsIds.has(podId(allowedRoute.sourcePod)) && filteredPodsIds.has(podId(allowedRoute.targetPod))
+        filteredPodIds.has(podId(allowedRoute.sourcePod)) && filteredPodIds.has(podId(allowedRoute.targetPod))
+    );
+    const filteredServices = analysisResult.services.filter(service =>
+        service.targetPods.some(pod => filteredPodIds.has(podId(pod)))
     );
 
     // Include neighbors
     analysisResult.allowedRoutes.forEach(allowedRoute => {
         const sourcePodId = podId(allowedRoute.sourcePod);
         const targetPodId = podId(allowedRoute.targetPod);
-        if (includeIngressNeighbors && !filteredPodsIds.has(sourcePodId) && filteredPodsIds.has(targetPodId)) {
-            if (!neighborPodsIds.has(sourcePodId)) {
-                neighborPodsIds.add(sourcePodId);
+        if (includeIngressNeighbors && !filteredPodIds.has(sourcePodId) && filteredPodIds.has(targetPodId)) {
+            if (!neighborPodIds.has(sourcePodId)) {
+                neighborPodIds.add(sourcePodId);
                 filteredPods.push(podsById.get(sourcePodId));
             }
             filteredAllowedRoutes.push(allowedRoute);
         }
-        if (includeEgressNeighbors && !filteredPodsIds.has(targetPodId) && filteredPodsIds.has(sourcePodId)) {
-            if (!neighborPodsIds.has(targetPodId)) {
-                neighborPodsIds.add(targetPodId);
+        if (includeEgressNeighbors && !filteredPodIds.has(targetPodId) && filteredPodIds.has(sourcePodId)) {
+            if (!neighborPodIds.has(targetPodId)) {
+                neighborPodIds.add(targetPodId);
                 filteredPods.push(podsById.get(targetPodId));
             }
             filteredAllowedRoutes.push(allowedRoute);
@@ -109,7 +109,7 @@ export function computeAnalysisResultView(analysisResult, controls) {
     return {
         pods: filteredPods.map(podMapper),
         allowedRoutes: filteredAllowedRoutes,
-        services: analysisResult.services.filter(serviceFilter).map(serviceMapper)
+        services: filteredServices.map(serviceMapper)
     };
 }
 

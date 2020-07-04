@@ -13,7 +13,9 @@ import {
     labelSelectorOperators
 } from '../service/analysisResultService';
 import InputControl from './control/InputControl';
-import { AllowedRouteDetails, PodDetails } from './detail/ResourceDetails';
+import AllowedRouteDetails from './detail/AllowedRouteDetails';
+import PodDetails from './detail/PodDetails';
+import ServiceDetails from './detail/ServiceDetails';
 import MultiKeyValueSelectControl from './control/MultiKeyValueSelectControl';
 import ClusterMap from './map/ClusterMap';
 import RadioGroupControl from './control/RadioGroupControl';
@@ -162,8 +164,8 @@ const Content = ({ className = '' }) => {
     };
     const onServiceFocus = service => {
         setState(oldState => ({
-            ...oldState
-            // podDetails: pod
+            ...oldState,
+            serviceDetails: service
         }));
     };
     const namespaceFiltersCount = () => {
@@ -314,12 +316,17 @@ const Content = ({ className = '' }) => {
             </aside>
             {state.podDetails && (
                 <aside className={classes.details}>
-                    <PodDetails podDetails={state.podDetails}/>
+                    <PodDetails data={state.podDetails}/>
                 </aside>
             )}
             {state.allowedRouteDetails && (
                 <aside className={classes.details}>
-                    <AllowedRouteDetails allowedRouteDetails={state.allowedRouteDetails}/>
+                    <AllowedRouteDetails data={state.allowedRouteDetails}/>
+                </aside>
+            )}
+            {state.serviceDetails && (
+                <aside className={classes.details}>
+                    <ServiceDetails data={state.serviceDetails}/>
                 </aside>
             )}
         </div>

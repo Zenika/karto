@@ -960,13 +960,28 @@ func Test_computeServiceWithTargetPods(t *testing.T) {
 				pods: []*corev1.Pod{
 					podBuilder().label("app", "foo").build(),
 					podBuilder().label("app", "bar").build(),
-					podBuilder().label("app", "foo").namespace("ns").build(),
 				},
 			},
 			expectedServiceWithTargetPods: types.Service{
 				Namespace: "default",
 				TargetPods: []types.Pod{
 					{Namespace: "default", Labels: map[string]string{"app": "foo"}},
+				},
+			},
+		},
+		{
+			name: "only pods within the same namespace are detected as target",
+			args: args{
+				service: serviceBuilder().namespace("ns").selectorLabel("app", "foo").build(),
+				pods: []*corev1.Pod{
+					podBuilder().namespace("ns").label("app", "foo").build(),
+					podBuilder().namespace("other").label("app", "foo").build(),
+				},
+			},
+			expectedServiceWithTargetPods: types.Service{
+				Namespace: "ns",
+				TargetPods: []types.Pod{
+					{Namespace: "ns", Labels: map[string]string{"app": "foo"}},
 				},
 			},
 		},

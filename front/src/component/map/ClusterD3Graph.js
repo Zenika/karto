@@ -30,7 +30,7 @@ function d3ServiceLink({ service, targetPod }) {
     const id = d3ServiceLinkId({ service, targetPod });
     const source = d3ServiceId(service);
     const target = d3PodId(targetPod);
-    return { id, source, target };
+    return { id, source, target, serviceData: service };
 }
 
 export default class ClusterD3Graph extends D3Graph {
@@ -80,13 +80,20 @@ export default class ClusterD3Graph extends D3Graph {
         this.serviceLinksLayer = new D3GraphLinkLayer({
             name: 'serviceLinks',
             element: 'line',
-            dataExtractorFn: analysisResult => analysisResult.services.map(
-                service => service.targetPods.map(
-                    targetPod => ({ service, targetPod })
-                )
-            ).flat(),
+            dataExtractorFn: analysisResult => {
+                const podIds = new Set();
+                analysisResult.pods.forEach(pod => podIds.add(d3PodId(pod)));
+                return analysisResult.services.map(service => {
+                    return service.targetPods
+                        .filter(pod => podIds.has(d3PodId(pod)))
+                        .map(targetPod => ({ service, targetPod }));
+                    }
+                ).flat();
+            },
             idFn: d3ServiceLinkId,
-            d3DatumFn: d3ServiceLink
+            d3DatumFn: d3ServiceLink,
+            sourceDatumFn: d3ServiceLink => d3ServiceLink.serviceData,
+            focusHandlerExtractorFn: focusHandlers => focusHandlers.onServiceFocus
         });
     }
 
