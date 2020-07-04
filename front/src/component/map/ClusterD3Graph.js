@@ -49,7 +49,7 @@ export default class ClusterD3Graph extends D3Graph {
                 selection
                     .attr('r', CIRCLE_SIZE)
                     .each((d, i, c) => {
-                        d.fx = d.x = 5 * SPACING;
+                        d.fx = d.x = 0;
                         d.fy = d.y = SPACING * (i - (c.length - 1) / 2);
                     });
             }
@@ -71,7 +71,7 @@ export default class ClusterD3Graph extends D3Graph {
                             const targetPods = d.targetPods.map(targetPodId =>
                                 this.podsLayer.indexedData.get(targetPodId));
                             const targetPodsAvgY = targetPods.reduce((acc, p) => acc + p.y, 0) / targetPods.length;
-                            d.fx = d.x = 0;
+                            d.fx = d.x = -3 * SPACING;
                             d.y = targetPodsAvgY;
                         }
                     });

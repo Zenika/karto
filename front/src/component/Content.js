@@ -3,24 +3,30 @@ import { makeStyles } from '@material-ui/core/styles';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import classNames from 'classnames';
 import Typography from '@material-ui/core/Typography';
-import SwitchControl from './controls/SwitchControl';
-import MultiSelectControl from './controls/MultiSelectControl';
+import SwitchControl from './control/SwitchControl';
+import MultiSelectControl from './control/MultiSelectControl';
 import PropTypes from 'prop-types';
-import NetworkPolicyMap from './map/NetworkPolicyMap';
 import { getStoredControls, storeControls } from '../service/storageService';
 import {
     computeAnalysisResultView,
     fetchAnalysisResult,
     labelSelectorOperators
 } from '../service/analysisResultService';
-import InputControl from './controls/InputControl';
-import { AllowedRouteDetails, PodDetails } from './details/ResourceDetails';
-import MultiKeyValueSelectControl from './controls/MultiKeyValueSelectControl';
+import InputControl from './control/InputControl';
+import { AllowedRouteDetails, PodDetails } from './detail/ResourceDetails';
+import MultiKeyValueSelectControl from './control/MultiKeyValueSelectControl';
 import ClusterMap from './map/ClusterMap';
+import RadioGroupControl from './control/RadioGroupControl';
+import NetworkPolicyMap from './map/NetworkPolicyMap';
 
 const MAX_RECOMMENDED_PODS = 100;
 const MAX_RECOMMENDED_ALLOWED_ROUTES = 1000;
+const VIEWS = {
+    WORKLOADS: 'Workloads',
+    NETWORK_POLICIES: 'Network policies'
+};
 const DEFAULT_CONTROLS = {
+    displayedView: VIEWS.WORKLOADS,
     namespaceFilters: [],
     labelFilters: [],
     nameFilter: '',
@@ -156,7 +162,7 @@ const Content = ({ className = '' }) => {
     };
     const onServiceFocus = service => {
         setState(oldState => ({
-            ...oldState,
+            ...oldState
             // podDetails: pod
         }));
     };
@@ -221,18 +227,27 @@ const Content = ({ className = '' }) => {
                 {!state.isLoading && state.analysisResultView && state.analysisResultView.pods.length > 0
                 && !isSafeToDisplay(state.analysisResultView, state.controls.displayLargeDatasets) && <>
                     <Typography className={classes.message} variant="caption">
-                        {`The dataset to display (${state.analysisResultView.pods.length} pods, `
-                        + `${state.analysisResultView.allowedRoutes.length} allowed routes) is larger than recommended `
-                        + `for an optimal experience. Apply a filter on the left to reduce the dataset, or enable the `
-                        + `"Always display large datasets" display option if you know what you are doing.`}
+                        {`The dataset to display is larger than recommended for an optimal experience. Apply a filter `
+                        + `on the left to reduce the dataset, or enable the "Always display large datasets" display `
+                        + `option if you know what you are doing.`}
                     </Typography>
                 </>}
                 {!state.isLoading && state.analysisResultView && state.analysisResultView.pods.length > 0
-                && isSafeToDisplay(state.analysisResultView, state.controls.displayLargeDatasets) && <>
-                    {/*<NetworkPolicyMap analysisResult={state.analysisResultView} onPodFocus={onPodFocus}*/}
-                    {/*                  onAllowedRouteFocus={onAllowedRouteFocus} />*/}
+                && isSafeToDisplay(state.analysisResultView, state.controls.displayLargeDatasets)
+                && state.controls.displayedView === VIEWS.WORKLOADS && <>
                     <ClusterMap analysisResult={state.analysisResultView} onPodFocus={onPodFocus}
                                 onServiceFocus={onServiceFocus}/>
+                    <Typography className={classes.graphCaption} variant="caption">
+                        {`Displaying ${state.analysisResultView.pods.length}/${state.analysisResult.pods.length} pods`
+                        + ` and ${state.analysisResultView.services.length}/`
+                        + `${state.analysisResult.services.length} services`}
+                    </Typography>
+                </>}
+                {!state.isLoading && state.analysisResultView && state.analysisResultView.pods.length > 0
+                && isSafeToDisplay(state.analysisResultView, state.controls.displayLargeDatasets)
+                && state.controls.displayedView === VIEWS.NETWORK_POLICIES && <>
+                    <NetworkPolicyMap analysisResult={state.analysisResultView} onPodFocus={onPodFocus}
+                                      onAllowedRouteFocus={onAllowedRouteFocus}/>
                     <Typography className={classes.graphCaption} variant="caption">
                         {`Displaying ${state.analysisResultView.pods.length}/${state.analysisResult.pods.length} pods`
                         + ` and ${state.analysisResultView.allowedRoutes.length}/`
@@ -241,6 +256,13 @@ const Content = ({ className = '' }) => {
                 </>}
             </main>
             <aside role="search" className={classes.controls}>
+                <Typography className={classes.controlsTitle} variant="h2">View</Typography>
+                <div className={classes.controlsSection}>
+                    <RadioGroupControl className={classes.controlsItem} options={Object.values(VIEWS)}
+                                       value={state.controls.displayedView}
+                                       onChange={handleControlChange('displayedView')}>
+                    </RadioGroupControl>
+                </div>
                 <Typography className={classes.controlsTitle} variant="h2">Filters</Typography>
                 <div className={classes.controlsSection}>
                     <MultiSelectControl
