@@ -4,7 +4,6 @@ import Radio from '@material-ui/core/Radio';
 import RadioGroup from '@material-ui/core/RadioGroup';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import PropTypes from 'prop-types';
-import classNames from 'classnames';
 import KeyboardArrowRight from '@material-ui/icons/KeyboardArrowRight';
 
 const useCustomRadioStyles = makeStyles(theme => ({
