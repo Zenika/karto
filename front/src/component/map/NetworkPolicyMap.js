@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { makeStyles } from '@material-ui/core/styles';
-import NetworkPolicyD3Graph from './NetworkPolicyD3Graph';
+import NetworkPolicyD3Graph from './d3/NetworkPolicyD3Graph';
 
 const useStyles = makeStyles(theme => ({
     root: {

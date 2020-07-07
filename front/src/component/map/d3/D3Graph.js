@@ -112,7 +112,7 @@ export default class D3Graph {
         this.getItemLayers().forEach(layer => {
             layer.itemSvgContainer
                 .selectAll(layer.element)
-                .data(layer.data)
+                .data(layer.data, d => d.id)
                 .join(layer.element)
                 .call(layer.applyElementCustomAttrs)
                 .attr('class', item => ifHighlighted(item, 'item-highlight', 'item'))
@@ -129,7 +129,7 @@ export default class D3Graph {
                     .on('end', () => this.handleDragEnd()));
             layer.labelSvgContainer
                 .selectAll('text')
-                .data(layer.data)
+                .data(layer.data, d => d.id)
                 .join('text')
                 .text(d => d.displayName)
                 .attr('text-anchor', 'middle')
@@ -141,7 +141,7 @@ export default class D3Graph {
         this.getLinkLayers().forEach(layer => {
             layer.linkSvgContainer
                 .selectAll(layer.element)
-                .data(layer.data)
+                .data(layer.data, d => d.id)
                 .join(layer.element)
                 .attr('marker-end', 'url(#arrow)')
                 .attr('class', 'link')

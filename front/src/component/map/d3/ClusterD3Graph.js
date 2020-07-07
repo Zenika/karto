@@ -1,7 +1,7 @@
-import D3Graph from './d3/D3Graph';
-import D3GraphLinkLayer from './d3/D3GraphLinkLayer';
-import D3GraphItemLayer from './d3/D3GraphItemLayer';
-import { CIRCLE_SIZE, DIAMOND_HEIGHT, DIAMOND_WIDTH, SPACING } from './d3/D3Constants';
+import D3Graph from './D3Graph';
+import D3GraphLinkLayer from './D3GraphLinkLayer';
+import D3GraphItemLayer from './D3GraphItemLayer';
+import { CIRCLE_SIZE, DIAMOND_HEIGHT, DIAMOND_WIDTH, SPACING } from './D3Constants';
 
 function d3PodId(pod) {
     return `${pod.namespace}/${pod.name}`;

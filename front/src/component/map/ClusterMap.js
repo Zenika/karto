@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { makeStyles } from '@material-ui/core/styles';
-import ClusterD3Graph from './ClusterD3Graph';
+import ClusterD3Graph from './d3/ClusterD3Graph';
 
 const useStyles = makeStyles(theme => ({
     root: {
