@@ -74,7 +74,7 @@ jobs:
           root: /home/circleci
           paths:
             - karto/karto
-  dockerize:
+  dockerize-and-release:
     docker:
       - image: cimg/base:stable
     working_directory: /home/circleci/karto
@@ -108,9 +108,9 @@ workflows:
       - build-back:
           requires:
             - build-front
-      - dockerize:
+      - dockerize-and-release:
           requires:
             - build-back
           filters:
             branches:
-              only: master
+              only: release
