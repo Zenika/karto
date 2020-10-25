@@ -70,6 +70,9 @@ export default class D3Graph {
         this.zoomFactor = 1;
         this.focusedDatum = null;
         this.svg = svgRoot.append('g');
+        this.svg.append('g').attr('id', 'links');
+        this.svg.append('g').attr('id', 'items');
+        this.svg.append('g').attr('id', 'labels');
         this.getLinkLayers().forEach(layer => layer.attach(this.svg));
         this.getItemLayers().forEach(layer => layer.attach(this.svg));
         this.simulation = d3.forceSimulation([])

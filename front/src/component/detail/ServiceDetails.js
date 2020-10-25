@@ -45,8 +45,8 @@ const ServiceDetails = ({ data }) => {
                 <Typography variant="body1" component="span"
                             className={classes.detailsKey}>Target pods:</Typography>
                 <div className={classes.detailsValueNested}>
-                    {data.targetPods.map(targetPod =>
-                        <Typography variant="body1" className={classes.detailsValue}>
+                    {data.targetPods.map((targetPod, i) =>
+                        <Typography key={i} variant="body1" className={classes.detailsValue}>
                             {targetPod.namespace}/{targetPod.name}
                         </Typography>
                     )}
