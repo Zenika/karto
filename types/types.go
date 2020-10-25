@@ -34,8 +34,15 @@ type Service struct {
 	TargetPods []Pod  `json:"targetPods"`
 }
 
+type ReplicaSet struct {
+	Name       string `json:"name"`
+	Namespace  string `json:"namespace"`
+	TargetPods []Pod  `json:"targetPods"`
+}
+
 type AnalysisResult struct {
 	Pods          []PodWithIsolation `json:"pods"`
 	AllowedRoutes []AllowedRoute     `json:"allowedRoutes"`
 	Services      []Service          `json:"services"`
+	ReplicaSets   []ReplicaSet       `json:"replicaSets"`
 }

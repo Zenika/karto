@@ -2,6 +2,7 @@ package trafficanalyzer
 
 import (
 	"github.com/google/go-cmp/cmp"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1014,6 +1015,79 @@ func Test_computeServiceWithTargetPods(t *testing.T) {
 	}
 }
 
+func Test_computeReplicaSetWithTargetPods(t *testing.T) {
+	type args struct {
+		replicaSet *appsv1.ReplicaSet
+		pods       []*corev1.Pod
+	}
+	tests := []struct {
+		name                             string
+		args                             args
+		expectedReplicaSetWithTargetPods *types.ReplicaSet
+	}{
+		{
+			name: "replicaSet name and namespace are propagated",
+			args: args{
+				replicaSet: replicaSetBuilder().name("rs").namespace("ns").build(),
+				pods:       []*corev1.Pod{},
+			},
+			expectedReplicaSetWithTargetPods: &types.ReplicaSet{
+				Name:       "rs",
+				Namespace:  "ns",
+				TargetPods: []types.Pod{},
+			},
+		},
+		{
+			name: "replicaSets with 0 desired replicas are ignored",
+			args: args{
+				replicaSet: replicaSetBuilder().desiredReplicas(0).build(),
+				pods:       []*corev1.Pod{},
+			},
+			expectedReplicaSetWithTargetPods: nil,
+		},
+		{
+			name: "only pods with matching labels are detected as target",
+			args: args{
+				replicaSet: replicaSetBuilder().selectorLabel("app", "foo").build(),
+				pods: []*corev1.Pod{
+					podBuilder().label("app", "foo").build(),
+					podBuilder().label("app", "bar").build(),
+				},
+			},
+			expectedReplicaSetWithTargetPods: &types.ReplicaSet{
+				Namespace: "default",
+				TargetPods: []types.Pod{
+					{Namespace: "default", Labels: map[string]string{"app": "foo"}},
+				},
+			},
+		},
+		{
+			name: "only pods within the same namespace are detected as target",
+			args: args{
+				replicaSet: replicaSetBuilder().namespace("ns").selectorLabel("app", "foo").build(),
+				pods: []*corev1.Pod{
+					podBuilder().namespace("ns").label("app", "foo").build(),
+					podBuilder().namespace("other").label("app", "foo").build(),
+				},
+			},
+			expectedReplicaSetWithTargetPods: &types.ReplicaSet{
+				Namespace: "ns",
+				TargetPods: []types.Pod{
+					{Namespace: "ns", Labels: map[string]string{"app": "foo"}},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			replicaSetWithTargetPods := computeReplicaSetWithTargetPods(tt.args.replicaSet, tt.args.pods)
+			if diff := cmp.Diff(tt.expectedReplicaSetWithTargetPods, replicaSetWithTargetPods); diff != "" {
+				t.Errorf("computeReplicaSetWithTargetPods() result mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 type PodBuilder struct {
 	Name      string
 	Namespace string
@@ -1203,6 +1277,56 @@ func (serviceBuilder *ServiceBuilder) build() *corev1.Service {
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: serviceBuilder.Selector,
+		},
+	}
+}
+
+type ReplicaSetBuilder struct {
+	Name            string
+	Namespace       string
+	DesiredReplicas int32
+	Selector        map[string]string
+}
+
+func replicaSetBuilder() *ReplicaSetBuilder {
+	return &ReplicaSetBuilder{
+		Namespace:       "default",
+		DesiredReplicas: 1,
+		Selector:        map[string]string{},
+	}
+}
+
+func (replicaSetBuilder *ReplicaSetBuilder) name(name string) *ReplicaSetBuilder {
+	replicaSetBuilder.Name = name
+	return replicaSetBuilder
+}
+
+func (replicaSetBuilder *ReplicaSetBuilder) desiredReplicas(replicas int32) *ReplicaSetBuilder {
+	replicaSetBuilder.DesiredReplicas = replicas
+	return replicaSetBuilder
+}
+
+func (replicaSetBuilder *ReplicaSetBuilder) namespace(namespace string) *ReplicaSetBuilder {
+	replicaSetBuilder.Namespace = namespace
+	return replicaSetBuilder
+}
+
+func (replicaSetBuilder *ReplicaSetBuilder) selectorLabel(key string, value string) *ReplicaSetBuilder {
+	replicaSetBuilder.Selector[key] = value
+	return replicaSetBuilder
+}
+
+func (replicaSetBuilder *ReplicaSetBuilder) build() *appsv1.ReplicaSet {
+	return &appsv1.ReplicaSet{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      replicaSetBuilder.Name,
+			Namespace: replicaSetBuilder.Namespace,
+		},
+		Spec: appsv1.ReplicaSetSpec{
+			Replicas: &replicaSetBuilder.DesiredReplicas,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: replicaSetBuilder.Selector,
+			},
 		},
 	}
 }

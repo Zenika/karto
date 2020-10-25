@@ -2,7 +2,6 @@ import * as d3 from 'd3';
 import D3Graph from './D3Graph';
 import D3GraphLinkLayer from './D3GraphLinkLayer';
 import D3GraphItemLayer from './D3GraphItemLayer';
-import { CIRCLE_SIZE } from './D3Constants';
 
 function d3PodId(pod) {
     return `${pod.namespace}/${pod.name}`;
@@ -42,7 +41,7 @@ export default class NetworkPolicyD3Graph extends D3Graph {
             focusHandlerExtractorFn: focusHandlers => focusHandlers.onPodFocus,
             applyElementCustomAttrs: selection => {
                 selection
-                    .attr('r', CIRCLE_SIZE);
+                    .attr('r', 2);
             }
         });
         this.allowedRoutesLayer = new D3GraphLinkLayer({

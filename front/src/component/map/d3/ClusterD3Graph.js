@@ -1,7 +1,7 @@
 import D3Graph from './D3Graph';
 import D3GraphLinkLayer from './D3GraphLinkLayer';
 import D3GraphItemLayer from './D3GraphItemLayer';
-import { CIRCLE_SIZE, DIAMOND_HEIGHT, DIAMOND_WIDTH, SPACING } from './D3Constants';
+import { SPACING } from './D3Constants';
 
 function d3PodId(pod) {
     return `${pod.namespace}/${pod.name}`;
@@ -13,6 +13,14 @@ function d3ServiceId(service) {
 
 function d3ServiceLinkId({ service, targetPod }) {
     return `${d3ServiceId(service)}->${d3PodId(targetPod)}`;
+}
+
+function d3ReplicaSetId(replicaSet) {
+    return `${replicaSet.namespace}/${replicaSet.name}`;
+}
+
+function d3ReplicaSetLinkId({ replicaSet, targetPod }) {
+    return `${d3ReplicaSetId(replicaSet)}->${d3PodId(targetPod)}`;
 }
 
 function d3Pod(pod) {
@@ -33,6 +41,19 @@ function d3ServiceLink({ service, targetPod }) {
     return { id, source, target, serviceData: service };
 }
 
+function d3ReplicaSet(replicaSet) {
+    const id = d3ReplicaSetId(replicaSet);
+    const targetPods = replicaSet.targetPods.map(targetPod => d3PodId(targetPod));
+    return { id, displayName: replicaSet.displayName, targetPods, replicaSetData: replicaSet };
+}
+
+function d3ReplicaSetLink({ replicaSet, targetPod }) {
+    const id = d3ReplicaSetLinkId({ replicaSet, targetPod });
+    const source = d3ReplicaSetId(replicaSet);
+    const target = d3PodId(targetPod);
+    return { id, source, target, replicaSetData: replicaSet };
+}
+
 export default class ClusterD3Graph extends D3Graph {
 
     constructor() {
@@ -47,7 +68,7 @@ export default class ClusterD3Graph extends D3Graph {
             focusHandlerExtractorFn: focusHandlers => focusHandlers.onPodFocus,
             applyElementCustomAttrs: selection => {
                 selection
-                    .attr('r', CIRCLE_SIZE)
+                    .attr('r', 2)
                     .each((d, i, c) => {
                         d.fx = d.x = 0;
                         d.fy = d.y = SPACING * (i - (c.length - 1) / 2);
@@ -64,8 +85,7 @@ export default class ClusterD3Graph extends D3Graph {
             focusHandlerExtractorFn: focusHandlers => focusHandlers.onServiceFocus,
             applyElementCustomAttrs: selection => {
                 selection
-                    .attr('points', `${-DIAMOND_WIDTH / 2},0 0,${-DIAMOND_HEIGHT / 2} ` +
-                        `${DIAMOND_WIDTH / 2},0 0,${DIAMOND_HEIGHT / 2}`)
+                    .attr('points', '-4,0 0,-2.5 4,0 0,2.5')
                     .each(d => {
                         if (d.fx == null) {
                             const targetPods = d.targetPods.map(targetPodId =>
@@ -84,9 +104,9 @@ export default class ClusterD3Graph extends D3Graph {
                 const podIds = new Set();
                 analysisResult.pods.forEach(pod => podIds.add(d3PodId(pod)));
                 return analysisResult.services.map(service => {
-                    return service.targetPods
-                        .filter(pod => podIds.has(d3PodId(pod)))
-                        .map(targetPod => ({ service, targetPod }));
+                        return service.targetPods
+                            .filter(pod => podIds.has(d3PodId(pod)))
+                            .map(targetPod => ({ service, targetPod }));
                     }
                 ).flat();
             },
@@ -95,18 +115,60 @@ export default class ClusterD3Graph extends D3Graph {
             sourceDatumFn: d3ServiceLink => d3ServiceLink.serviceData,
             focusHandlerExtractorFn: focusHandlers => focusHandlers.onServiceFocus
         });
+        this.replicaSetsLayer = new D3GraphItemLayer({
+            name: 'replicaSets',
+            element: 'path',
+            dataExtractorFn: analysisResult => analysisResult.replicaSets,
+            idFn: d3ReplicaSetId,
+            d3DatumFn: d3ReplicaSet,
+            sourceDatumFn: d3ReplicaSet => d3ReplicaSet.replicaSetData,
+            focusHandlerExtractorFn: focusHandlers => focusHandlers.onReplicaSetFocus,
+            applyElementCustomAttrs: selection => {
+                selection
+                    .attr('d', 'M-2,-2 L2,-2 L2,2 L-2,2 M2.5,-1 L3,-1 L3,3 L-1,3 L-1,2.5 L2.5,2.5 L2.5,-1')
+                    .each(d => {
+                        if (d.fx == null) {
+                            const targetPods = d.targetPods.map(targetPodId =>
+                                this.podsLayer.indexedData.get(targetPodId));
+                            const targetPodsAvgY = targetPods.reduce((acc, p) => acc + p.y, 0) / targetPods.length;
+                            d.fx = d.x = 3 * SPACING;
+                            d.y = targetPodsAvgY;
+                        }
+                    });
+            }
+        });
+        this.replicaSetLinksLayer = new D3GraphLinkLayer({
+            name: 'replicaSetLinks',
+            element: 'line',
+            dataExtractorFn: analysisResult => {
+                const podIds = new Set();
+                analysisResult.pods.forEach(pod => podIds.add(d3PodId(pod)));
+                return analysisResult.replicaSets.map(replicaSet => {
+                        return replicaSet.targetPods
+                            .filter(pod => podIds.has(d3PodId(pod)))
+                            .map(targetPod => ({ replicaSet, targetPod }));
+                    }
+                ).flat();
+            },
+            idFn: d3ReplicaSetLinkId,
+            d3DatumFn: d3ReplicaSetLink,
+            sourceDatumFn: d3ReplicaSetLink => d3ReplicaSetLink.serviceData,
+            focusHandlerExtractorFn: focusHandlers => focusHandlers.onReplicaSetFocus
+        });
     }
 
     getItemLayers() {
         return [
             this.podsLayer,
-            this.servicesLayer
+            this.servicesLayer,
+            this.replicaSetsLayer
         ];
     }
 
     getLinkLayers() {
         return [
-            this.serviceLinksLayer
+            this.serviceLinksLayer,
+            this.replicaSetLinksLayer
         ];
     }
 
@@ -141,6 +203,13 @@ export default class ClusterD3Graph extends D3Graph {
             const service = this.servicesLayer.indexedData.get(serviceId);
             return service.targetPods.includes(pod.id);
         };
+        const isReplicaSetOfPod = (replicaSet, podId) => {
+            return replicaSet.targetPods.includes(podId);
+        };
+        const isPodOfReplicaSet = (pod, replicaSetId) => {
+            const replicaSet = this.replicaSetsLayer.indexedData.get(replicaSetId);
+            return replicaSet.targetPods.includes(pod.id);
+        };
         const isServiceLinkOfPod = (serviceLink, podId) => {
             return serviceLink.target.id === podId;
         };
@@ -155,6 +224,20 @@ export default class ClusterD3Graph extends D3Graph {
             const serviceLink = this.serviceLinksLayer.indexedData.get(serviceLinkId);
             return serviceLink.source.id === service.id;
         };
+        const isReplicaSetLinkOfPod = (replicaSetLink, podId) => {
+            return replicaSetLink.target.id === podId;
+        };
+        const isReplicaSetLinkOfReplicaSet = (replicaSetLink, replicaSetId) => {
+            return replicaSetLink.source.id === replicaSetId;
+        };
+        const isPodOfReplicaSetLink = (pod, replicaSetLinkId) => {
+            const replicaSetLink = this.replicaSetLinksLayer.indexedData.get(replicaSetLinkId);
+            return replicaSetLink.target.id === pod.id;
+        };
+        const isReplicaSetOfReplicaSetLink = (replicaSet, replicaSetLinkId) => {
+            const replicaSetLink = this.replicaSetLinksLayer.indexedData.get(replicaSetLinkId);
+            return replicaSetLink.source.id === replicaSet.id;
+        };
         if (!this.focusedDatum) {
             return true;
         }
@@ -167,6 +250,10 @@ export default class ClusterD3Graph extends D3Graph {
                 return isServiceOfPod(datum, focusedPodId);
             } else if (layerName === this.serviceLinksLayer.name) {
                 return isServiceLinkOfPod(datum, focusedPodId);
+            } else if (layerName === this.replicaSetsLayer.name) {
+                return isReplicaSetOfPod(datum, focusedPodId);
+            } else if (layerName === this.replicaSetLinksLayer.name) {
+                return isReplicaSetLinkOfPod(datum, focusedPodId);
             }
         } else if (this.focusedDatum.layerName === this.servicesLayer.name) {
             // Current focus is on a service
@@ -187,6 +274,26 @@ export default class ClusterD3Graph extends D3Graph {
                 return isPodOfServiceLink(datum, focusedServiceLinkId);
             } else if (layerName === this.servicesLayer.name) {
                 return isServiceOfServiceLink(datum, focusedServiceLinkId);
+            }
+        } else if (this.focusedDatum.layerName === this.replicaSetsLayer.name) {
+            // Current focus is on a replicaSet
+            const focusedReplicaSetId = this.focusedDatum.id;
+            if (layerName === this.replicaSetsLayer.name) {
+                return datum.id === focusedReplicaSetId;
+            } else if (layerName === this.podsLayer.name) {
+                return isPodOfReplicaSet(datum, focusedReplicaSetId);
+            } else if (layerName === this.replicaSetLinksLayer.name) {
+                return isReplicaSetLinkOfReplicaSet(datum, focusedReplicaSetId);
+            }
+        } else if (this.focusedDatum.layerName === this.replicaSetLinksLayer.name) {
+            // Current focus is on a replicaSet link
+            const focusedReplicaSetLinkId = this.focusedDatum.id;
+            if (layerName === this.replicaSetLinksLayer.name) {
+                return datum.id === focusedReplicaSetLinkId;
+            } else if (layerName === this.podsLayer.name) {
+                return isPodOfReplicaSetLink(datum, focusedReplicaSetLinkId);
+            } else if (layerName === this.replicaSetsLayer.name) {
+                return isReplicaSetOfReplicaSetLink(datum, focusedReplicaSetLinkId);
             }
         }
         return false;

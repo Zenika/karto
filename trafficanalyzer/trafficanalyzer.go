@@ -1,6 +1,7 @@
 package trafficanalyzer
 
 import (
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -59,6 +60,7 @@ func AnalyzeOnChange(k8sConfigPath string, resultsChannel chan<- types.AnalysisR
 	policiesInformer := informerFactory.Networking().V1().NetworkPolicies()
 	namespacesInformer := informerFactory.Core().V1().Namespaces()
 	servicesInformer := informerFactory.Core().V1().Services()
+	replicaSetsInformer := informerFactory.Apps().V1().ReplicaSets()
 	eventHandler := cache.ResourceEventHandlerFuncs{
 		AddFunc:    func(obj interface{}) { analyzeQueue.Add(nil) },
 		UpdateFunc: func(oldObj, newObj interface{}) { analyzeQueue.Add(nil) },
@@ -68,6 +70,7 @@ func AnalyzeOnChange(k8sConfigPath string, resultsChannel chan<- types.AnalysisR
 	policiesInformer.Informer().AddEventHandler(eventHandler)
 	namespacesInformer.Informer().AddEventHandler(eventHandler)
 	servicesInformer.Informer().AddEventHandler(eventHandler)
+	replicaSetsInformer.Informer().AddEventHandler(eventHandler)
 	informerFactory.Start(wait.NeverStop)
 	informerFactory.WaitForCacheSync(wait.NeverStop)
 	for {
@@ -88,7 +91,11 @@ func AnalyzeOnChange(k8sConfigPath string, resultsChannel chan<- types.AnalysisR
 		if err != nil {
 			panic(err.Error())
 		}
-		resultsChannel <- analyze(pods, policies, namespaces, services)
+		replicaSets, err := replicaSetsInformer.Lister().List(labels.Everything())
+		if err != nil {
+			panic(err.Error())
+		}
+		resultsChannel <- analyze(pods, policies, namespaces, services, replicaSets)
 		analyzeQueue.Forget(obj)
 		analyzeQueue.Done(obj)
 	}
@@ -112,17 +119,19 @@ func getK8sClient(k8sClientConfig string) *kubernetes.Clientset {
 	return k8sClient
 }
 
-func analyze(pods []*corev1.Pod, policies []*networkingv1.NetworkPolicy, namespaces []*corev1.Namespace, services []*corev1.Service) types.AnalysisResult {
+func analyze(pods []*corev1.Pod, policies []*networkingv1.NetworkPolicy, namespaces []*corev1.Namespace, services []*corev1.Service, replicaSets []*appsv1.ReplicaSet) types.AnalysisResult {
 	start := time.Now()
 	podIsolations := computePodIsolations(pods, policies)
 	allowedRoutes := computeAllowedRoutes(podIsolations, namespaces)
 	servicesWithTargetPods := computeServicesWithTargetPods(services, pods)
+	replicaSetsWithTargetPods := computeReplicaSetsWithTargetPods(replicaSets, pods)
 	elapsed := time.Since(start)
 	log.Printf("Finished analysis in %s, found %d pods and %d allowed pod-to-pod routes\n", elapsed, len(podIsolations), len(allowedRoutes))
 	return types.AnalysisResult{
 		Pods:          fromK8sPodIsolations(podIsolations),
 		AllowedRoutes: allowedRoutes,
 		Services:      servicesWithTargetPods,
+		ReplicaSets:   replicaSetsWithTargetPods,
 	}
 }
 
@@ -220,6 +229,36 @@ func computeServiceWithTargetPods(service *corev1.Service, pods []*corev1.Pod) t
 	return types.Service{
 		Name:       service.Name,
 		Namespace:  service.Namespace,
+		TargetPods: targetPods,
+	}
+}
+
+func computeReplicaSetsWithTargetPods(replicaSets []*appsv1.ReplicaSet, pods []*corev1.Pod) []types.ReplicaSet {
+	replicaSetsWithTargetPods := make([]types.ReplicaSet, 0)
+	for _, replicaSet := range replicaSets {
+		replicaSetWithTargetPods := computeReplicaSetWithTargetPods(replicaSet, pods)
+		if replicaSetWithTargetPods != nil {
+			replicaSetsWithTargetPods = append(replicaSetsWithTargetPods, *replicaSetWithTargetPods)
+		}
+	}
+	return replicaSetsWithTargetPods
+}
+
+func computeReplicaSetWithTargetPods(replicaSet *appsv1.ReplicaSet, pods []*corev1.Pod) *types.ReplicaSet {
+	if *replicaSet.Spec.Replicas == 0 {
+		return nil
+	}
+	targetPods := make([]types.Pod, 0)
+	for _, pod := range pods {
+		namespaceMatches := replicaSetNamespaceMatches(pod, replicaSet)
+		selectorMatches := selectorMatches(pod.Labels, *replicaSet.Spec.Selector)
+		if namespaceMatches && selectorMatches {
+			targetPods = append(targetPods, fromK8sPod(pod))
+		}
+	}
+	return &types.ReplicaSet{
+		Name:       replicaSet.Name,
+		Namespace:  replicaSet.Namespace,
 		TargetPods: targetPods,
 	}
 }
@@ -372,6 +411,10 @@ func networkPolicyNamespaceMatches(pod *corev1.Pod, policy *networkingv1.Network
 
 func serviceNamespaceMatches(pod *corev1.Pod, service *corev1.Service) bool {
 	return pod.Namespace == service.Namespace
+}
+
+func replicaSetNamespaceMatches(pod *corev1.Pod, replicaSet *appsv1.ReplicaSet) bool {
+	return pod.Namespace == replicaSet.Namespace
 }
 
 func selectorMatches(objectLabels map[string]string, labelSelector metav1.LabelSelector) bool {

@@ -1,7 +1,7 @@
 export default class D3GraphLayer {
 
     constructor(layerConfig) {
-        const { name, element, dataExtractorFn, idFn, d3DatumFn, sourceDatumFn, focusHandlerExtractorFn } = layerConfig;
+        const { name, element, dataExtractorFn, idFn, d3DatumFn, sourceDatumFn, focusHandlerExtractorFn, applyElementCustomAttrs } = layerConfig;
         this.name = name;
         this.element = element;
         this.dataExtractorFn = dataExtractorFn;
@@ -9,6 +9,8 @@ export default class D3GraphLayer {
         this.d3DatumFn = d3DatumFn;
         this.sourceDatumFn = sourceDatumFn;
         this.focusHandlerExtractorFn = focusHandlerExtractorFn;
+        this.applyElementCustomAttrs = applyElementCustomAttrs || (() => {
+        });
     }
 
     attach(svgElement) {

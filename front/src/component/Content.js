@@ -20,6 +20,7 @@ import MultiKeyValueSelectControl from './control/MultiKeyValueSelectControl';
 import ClusterMap from './map/ClusterMap';
 import RadioGroupControl from './control/RadioGroupControl';
 import NetworkPolicyMap from './map/NetworkPolicyMap';
+import ReplicaSetDetails from './detail/ReplicaSetDetails';
 
 const MAX_RECOMMENDED_PODS = 100;
 const MAX_RECOMMENDED_ALLOWED_ROUTES = 1000;
@@ -168,6 +169,12 @@ const Content = ({ className = '' }) => {
             serviceDetails: service
         }));
     };
+    const onReplicaSetFocus = replicaSet => {
+        setState(oldState => ({
+            ...oldState,
+            replicaSetDetails: replicaSet
+        }));
+    };
     const namespaceFiltersCount = () => {
         return state.controls.namespaceFilters.length;
     };
@@ -238,7 +245,7 @@ const Content = ({ className = '' }) => {
                 && isSafeToDisplay(state.analysisResultView, state.controls.displayLargeDatasets)
                 && state.controls.displayedView === VIEWS.WORKLOADS && <>
                     <ClusterMap analysisResult={state.analysisResultView} onPodFocus={onPodFocus}
-                                onServiceFocus={onServiceFocus}/>
+                                onServiceFocus={onServiceFocus} onReplicaSetFocus={onReplicaSetFocus}/>
                     <Typography className={classes.graphCaption} variant="caption">
                         {`Displaying ${state.analysisResultView.pods.length}/${state.analysisResult.pods.length} pods`
                         + ` and ${state.analysisResultView.services.length}/`
@@ -327,6 +334,11 @@ const Content = ({ className = '' }) => {
             {state.serviceDetails && (
                 <aside className={classes.details}>
                     <ServiceDetails data={state.serviceDetails}/>
+                </aside>
+            )}
+            {state.replicaSetDetails && (
+                <aside className={classes.details}>
+                    <ReplicaSetDetails data={state.replicaSetDetails}/>
                 </aside>
             )}
         </div>

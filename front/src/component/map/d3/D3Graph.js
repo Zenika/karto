@@ -146,6 +146,7 @@ export default class D3Graph {
                 .selectAll(layer.element)
                 .data(layer.data, d => d.id)
                 .join(layer.element)
+                .call(layer.applyElementCustomAttrs)
                 .attr('marker-end', 'url(#arrow)')
                 .attr('class', 'link')
                 .attr('stroke-width', LINK_WIDTH / this.zoomFactor);

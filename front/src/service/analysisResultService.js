@@ -69,6 +69,10 @@ export function computeAnalysisResultView(analysisResult, controls) {
         ...service,
         displayName: showNamespacePrefix ? `${service.namespace}/${service.name}` : service.name
     });
+    const replicaSetMapper = replicaSet => ({
+        ...replicaSet,
+        displayName: showNamespacePrefix ? `${replicaSet.namespace}/${replicaSet.name}` : replicaSet.name
+    });
 
     // Index pods by id for faster access
     const podsById = new Map();
@@ -84,6 +88,9 @@ export function computeAnalysisResultView(analysisResult, controls) {
     );
     const filteredServices = analysisResult.services.filter(service =>
         service.targetPods.some(pod => filteredPodIds.has(podId(pod)))
+    );
+    const filteredReplicaSets = analysisResult.replicaSets.filter(replicaSet =>
+        replicaSet.targetPods.some(pod => filteredPodIds.has(podId(pod)))
     );
 
     // Include neighbors
@@ -109,7 +116,8 @@ export function computeAnalysisResultView(analysisResult, controls) {
     return {
         pods: filteredPods.map(podMapper),
         allowedRoutes: filteredAllowedRoutes,
-        services: filteredServices.map(serviceMapper)
+        services: filteredServices.map(serviceMapper),
+        replicaSets: filteredReplicaSets.map(replicaSetMapper)
     };
 }
 
