@@ -7,6 +7,7 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"karto/types"
 	"testing"
@@ -1088,79 +1089,71 @@ func Test_computeReplicaSetWithTargetPods(t *testing.T) {
 	}
 }
 
-//
-//func Test_computeDeploymentWithTargetReplicaSets(t *testing.T) {
-//	type args struct {
-//		deployment  *appsv1.Deployment
-//		replicaSets []*appsv1.ReplicaSet
-//	}
-//	tests := []struct {
-//		name                                    string
-//		args                                    args
-//		expectedDeploymentWithTargetReplicaSets *types.Deployment
-//	}{
-//		{
-//			name: "deployment name and namespace are propagated",
-//			args: args{
-//				deployment:  replicaSetBuilder().name("rs").namespace("ns").build(),
-//				replicaSets: []*appsv1.ReplicaSet{},
-//			},
-//			expectedDeploymentWithTargetReplicaSets: &types.Deployment{
-//				Name:              "rs",
-//				Namespace:         "ns",
-//				TargetReplicaSets: []types.ReplicaSet{},
-//			},
-//		},
-//		//{
-//		//	name: "replicaSets with 0 desired replicas are ignored",
-//		//	args: args{
-//		//		deployment:  replicaSetBuilder().desiredReplicas(0).build(),
-//		//		replicaSets: []*corev1.Pod{},
-//		//	},
-//		//	expectedDeploymentWithTargetReplicaSets: nil,
-//		//},
-//		//{
-//		//	name: "only pods with matching labels are detected as target",
-//		//	args: args{
-//		//		deployment: replicaSetBuilder().selectorLabel("app", "foo").build(),
-//		//		replicaSets: []*corev1.Pod{
-//		//			podBuilder().label("app", "foo").build(),
-//		//			podBuilder().label("app", "bar").build(),
-//		//		},
-//		//	},
-//		//	expectedDeploymentWithTargetReplicaSets: &types.Deployment{
-//		//		Namespace: "default",
-//		//		TargetReplicaSets: []types.PodRef{
-//		//			{Namespace: "default", Labels: map[string]string{"app": "foo"}},
-//		//		},
-//		//	},
-//		//},
-//		//{
-//		//	name: "only pods within the same namespace are detected as target",
-//		//	args: args{
-//		//		deployment: replicaSetBuilder().namespace("ns").selectorLabel("app", "foo").build(),
-//		//		replicaSets: []*corev1.Pod{
-//		//			podBuilder().namespace("ns").label("app", "foo").build(),
-//		//			podBuilder().namespace("other").label("app", "foo").build(),
-//		//		},
-//		//	},
-//		//	expectedDeploymentWithTargetReplicaSets: &types.Deployment{
-//		//		Namespace: "ns",
-//		//		TargetReplicaSets: []types.PodRef{
-//		//			{Namespace: "ns", Labels: map[string]string{"app": "foo"}},
-//		//		},
-//		//	},
-//		//},
-//	}
-//	for _, tt := range tests {
-//		t.Run(tt.name, func(t *testing.T) {
-//			deploymentWithTargetReplicaSets := computeDeploymentWithTargetReplicaSets(tt.args.deployment, tt.args.replicaSets)
-//			if diff := cmp.Diff(tt.expectedDeploymentWithTargetReplicaSets, deploymentWithTargetReplicaSets); diff != "" {
-//				t.Errorf("computeDeploymentWithTargetReplicaSets() result mismatch (-want +got):\n%s", diff)
-//			}
-//		})
-//	}
-//}
+func Test_computeDeploymentWithTargetReplicaSets(t *testing.T) {
+	type args struct {
+		deployment  *appsv1.Deployment
+		replicaSets []*appsv1.ReplicaSet
+	}
+	tests := []struct {
+		name                                    string
+		args                                    args
+		expectedDeploymentWithTargetReplicaSets *types.Deployment
+	}{
+		{
+			name: "deployment name and namespace are propagated",
+			args: args{
+				deployment:  deploymentBuilder().name("deploy").namespace("ns").build(),
+				replicaSets: []*appsv1.ReplicaSet{},
+			},
+			expectedDeploymentWithTargetReplicaSets: &types.Deployment{
+				Name:              "deploy",
+				Namespace:         "ns",
+				TargetReplicaSets: []types.ReplicaSetRef{},
+			},
+		},
+		{
+			name: "only replicaSets referencing deployment as owner are detected as target",
+			args: args{
+				deployment: deploymentBuilder().uid("deploy-uid").build(),
+				replicaSets: []*appsv1.ReplicaSet{
+					replicaSetBuilder().name("name1").ownerDeployment("deploy-uid").desiredReplicas(2).build(),
+					replicaSetBuilder().name("name2").ownerDeployment("other-uid").desiredReplicas(2).build(),
+					replicaSetBuilder().name("name3").build(),
+				},
+			},
+			expectedDeploymentWithTargetReplicaSets: &types.Deployment{
+				Namespace: "default",
+				TargetReplicaSets: []types.ReplicaSetRef{
+					{Name: "name1", Namespace: "default"},
+				},
+			},
+		},
+		{
+			name: "replicaSets with 0 desired replicas are ignored",
+			args: args{
+				deployment: deploymentBuilder().uid("deploy-uid").build(),
+				replicaSets: []*appsv1.ReplicaSet{
+					replicaSetBuilder().name("name1").ownerDeployment("deploy-uid").desiredReplicas(2).build(),
+					replicaSetBuilder().name("name2").ownerDeployment("deploy-uid").desiredReplicas(0).build(),
+				},
+			},
+			expectedDeploymentWithTargetReplicaSets: &types.Deployment{
+				Namespace: "default",
+				TargetReplicaSets: []types.ReplicaSetRef{
+					{Name: "name1", Namespace: "default"},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			deploymentWithTargetReplicaSets := computeDeploymentWithTargetReplicaSets(tt.args.deployment, tt.args.replicaSets)
+			if diff := cmp.Diff(tt.expectedDeploymentWithTargetReplicaSets, deploymentWithTargetReplicaSets); diff != "" {
+				t.Errorf("computeDeploymentWithTargetReplicaSets() result mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
 
 type PodBuilder struct {
 	Name      string
@@ -1358,6 +1351,7 @@ func (serviceBuilder *ServiceBuilder) build() *corev1.Service {
 type ReplicaSetBuilder struct {
 	Name            string
 	Namespace       string
+	deploymentUID   string
 	DesiredReplicas int32
 	Selector        map[string]string
 }
@@ -1375,13 +1369,13 @@ func (replicaSetBuilder *ReplicaSetBuilder) name(name string) *ReplicaSetBuilder
 	return replicaSetBuilder
 }
 
-func (replicaSetBuilder *ReplicaSetBuilder) desiredReplicas(replicas int32) *ReplicaSetBuilder {
-	replicaSetBuilder.DesiredReplicas = replicas
+func (replicaSetBuilder *ReplicaSetBuilder) namespace(namespace string) *ReplicaSetBuilder {
+	replicaSetBuilder.Namespace = namespace
 	return replicaSetBuilder
 }
 
-func (replicaSetBuilder *ReplicaSetBuilder) namespace(namespace string) *ReplicaSetBuilder {
-	replicaSetBuilder.Namespace = namespace
+func (replicaSetBuilder *ReplicaSetBuilder) desiredReplicas(replicas int32) *ReplicaSetBuilder {
+	replicaSetBuilder.DesiredReplicas = replicas
 	return replicaSetBuilder
 }
 
@@ -1390,17 +1384,62 @@ func (replicaSetBuilder *ReplicaSetBuilder) selectorLabel(key string, value stri
 	return replicaSetBuilder
 }
 
+func (replicaSetBuilder *ReplicaSetBuilder) ownerDeployment(deploymentUID string) *ReplicaSetBuilder {
+	replicaSetBuilder.deploymentUID = deploymentUID
+	return replicaSetBuilder
+}
+
 func (replicaSetBuilder *ReplicaSetBuilder) build() *appsv1.ReplicaSet {
 	return &appsv1.ReplicaSet{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      replicaSetBuilder.Name,
 			Namespace: replicaSetBuilder.Namespace,
+			OwnerReferences: []v1.OwnerReference{
+				{UID: k8stypes.UID(replicaSetBuilder.deploymentUID)},
+			},
 		},
 		Spec: appsv1.ReplicaSetSpec{
 			Replicas: &replicaSetBuilder.DesiredReplicas,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: replicaSetBuilder.Selector,
 			},
+		},
+	}
+}
+
+type DeploymentBuilder struct {
+	Name      string
+	Namespace string
+	UID       string
+}
+
+func deploymentBuilder() *DeploymentBuilder {
+	return &DeploymentBuilder{
+		Namespace: "default",
+	}
+}
+
+func (deploymentBuilder *DeploymentBuilder) name(name string) *DeploymentBuilder {
+	deploymentBuilder.Name = name
+	return deploymentBuilder
+}
+
+func (deploymentBuilder *DeploymentBuilder) namespace(namespace string) *DeploymentBuilder {
+	deploymentBuilder.Namespace = namespace
+	return deploymentBuilder
+}
+
+func (deploymentBuilder *DeploymentBuilder) uid(UID string) *DeploymentBuilder {
+	deploymentBuilder.UID = UID
+	return deploymentBuilder
+}
+
+func (deploymentBuilder *DeploymentBuilder) build() *appsv1.Deployment {
+	return &appsv1.Deployment{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      deploymentBuilder.Name,
+			Namespace: deploymentBuilder.Namespace,
+			UID:       k8stypes.UID(deploymentBuilder.UID),
 		},
 	}
 }

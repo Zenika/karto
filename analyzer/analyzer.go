@@ -52,38 +52,45 @@ func newPodIsolation(pod *corev1.Pod) podIsolation {
 	}
 }
 
+type clusterState struct {
+	Namespaces  []*corev1.Namespace
+	Pods        []*corev1.Pod
+	Services    []*corev1.Service
+	ReplicaSets []*appsv1.ReplicaSet
+	Deployments []*appsv1.Deployment
+	Policies    []*networkingv1.NetworkPolicy
+}
+
 func AnalyzeOnChange(k8sConfigPath string, resultsChannel chan<- types.AnalysisResult) {
 	k8sClient := getK8sClient(k8sConfigPath)
 	analyzeQueue := workqueue.NewRateLimitingQueue(workqueue.DefaultItemBasedRateLimiter())
 	informerFactory := informers.NewSharedInformerFactory(k8sClient, 0)
-	podInformer := informerFactory.Core().V1().Pods()
-	policiesInformer := informerFactory.Networking().V1().NetworkPolicies()
 	namespacesInformer := informerFactory.Core().V1().Namespaces()
+	podInformer := informerFactory.Core().V1().Pods()
 	servicesInformer := informerFactory.Core().V1().Services()
 	replicaSetsInformer := informerFactory.Apps().V1().ReplicaSets()
+	deploymentsInformer := informerFactory.Apps().V1().Deployments()
+	policiesInformer := informerFactory.Networking().V1().NetworkPolicies()
 	eventHandler := cache.ResourceEventHandlerFuncs{
 		AddFunc:    func(obj interface{}) { analyzeQueue.Add(nil) },
 		UpdateFunc: func(oldObj, newObj interface{}) { analyzeQueue.Add(nil) },
 		DeleteFunc: func(obj interface{}) { analyzeQueue.Add(nil) },
 	}
-	podInformer.Informer().AddEventHandler(eventHandler)
-	policiesInformer.Informer().AddEventHandler(eventHandler)
 	namespacesInformer.Informer().AddEventHandler(eventHandler)
+	podInformer.Informer().AddEventHandler(eventHandler)
 	servicesInformer.Informer().AddEventHandler(eventHandler)
 	replicaSetsInformer.Informer().AddEventHandler(eventHandler)
+	deploymentsInformer.Informer().AddEventHandler(eventHandler)
+	policiesInformer.Informer().AddEventHandler(eventHandler)
 	informerFactory.Start(wait.NeverStop)
 	informerFactory.WaitForCacheSync(wait.NeverStop)
 	for {
 		obj, _ := analyzeQueue.Get()
-		pods, err := podInformer.Lister().List(labels.Everything())
-		if err != nil {
-			panic(err.Error())
-		}
-		policies, err := policiesInformer.Lister().List(labels.Everything())
-		if err != nil {
-			panic(err.Error())
-		}
 		namespaces, err := namespacesInformer.Lister().List(labels.Everything())
+		if err != nil {
+			panic(err.Error())
+		}
+		pods, err := podInformer.Lister().List(labels.Everything())
 		if err != nil {
 			panic(err.Error())
 		}
@@ -95,7 +102,22 @@ func AnalyzeOnChange(k8sConfigPath string, resultsChannel chan<- types.AnalysisR
 		if err != nil {
 			panic(err.Error())
 		}
-		resultsChannel <- analyze(pods, policies, namespaces, services, replicaSets)
+		deployments, err := deploymentsInformer.Lister().List(labels.Everything())
+		if err != nil {
+			panic(err.Error())
+		}
+		policies, err := policiesInformer.Lister().List(labels.Everything())
+		if err != nil {
+			panic(err.Error())
+		}
+		resultsChannel <- analyze(clusterState{
+			Namespaces:  namespaces,
+			Pods:        pods,
+			Services:    services,
+			ReplicaSets: replicaSets,
+			Deployments: deployments,
+			Policies:    policies,
+		})
 		analyzeQueue.Forget(obj)
 		analyzeQueue.Done(obj)
 	}
@@ -119,20 +141,24 @@ func getK8sClient(k8sClientConfig string) *kubernetes.Clientset {
 	return k8sClient
 }
 
-func analyze(pods []*corev1.Pod, policies []*networkingv1.NetworkPolicy, namespaces []*corev1.Namespace, services []*corev1.Service, replicaSets []*appsv1.ReplicaSet) types.AnalysisResult {
+func analyze(clusterState clusterState) types.AnalysisResult {
 	start := time.Now()
-	podIsolations := computePodIsolations(pods, policies)
-	allowedRoutes := computeAllowedRoutes(podIsolations, namespaces)
-	servicesWithTargetPods := computeServicesWithTargetPods(services, pods)
-	replicaSetsWithTargetPods := computeReplicaSetsWithTargetPods(replicaSets, pods)
+	// TODO split in multiple services
+	// TODO maybe we also simplify mapper names this way?
+	podIsolations := computePodIsolations(clusterState.Pods, clusterState.Policies)
+	allowedRoutes := computeAllowedRoutes(podIsolations, clusterState.Namespaces)
+	servicesWithTargetPods := computeServicesWithTargetPods(clusterState.Services, clusterState.Pods)
+	replicaSetsWithTargetPods := computeReplicaSetsWithTargetPods(clusterState.ReplicaSets, clusterState.Pods)
+	deploymentsWithTargetReplicaSets := computeDeploymentsWithTargetReplicaSets(clusterState.Deployments, clusterState.ReplicaSets)
 	elapsed := time.Since(start)
 	log.Printf("Finished analysis in %s, found %d pods and %d allowed pod-to-pod routes\n", elapsed, len(podIsolations), len(allowedRoutes))
 	// TODO log info about other items found
 	return types.AnalysisResult{
-		Pods:          k8sPodIsolationsToPodIsolations(podIsolations),
+		Pods:          k8sPodIsolationsToPods(podIsolations),
 		AllowedRoutes: allowedRoutes,
 		Services:      servicesWithTargetPods,
 		ReplicaSets:   replicaSetsWithTargetPods,
+		Deployments:   deploymentsWithTargetReplicaSets,
 	}
 }
 
@@ -261,6 +287,37 @@ func computeReplicaSetWithTargetPods(replicaSet *appsv1.ReplicaSet, pods []*core
 		Name:       replicaSet.Name,
 		Namespace:  replicaSet.Namespace,
 		TargetPods: targetPods,
+	}
+}
+
+func computeDeploymentsWithTargetReplicaSets(deployments []*appsv1.Deployment, replicaSets []*appsv1.ReplicaSet) []types.Deployment {
+	deploymentsWithTargetReplicaSets := make([]types.Deployment, 0)
+	for _, deployment := range deployments {
+		deploymentWithTargetReplicaSets := computeDeploymentWithTargetReplicaSets(deployment, replicaSets)
+		if deploymentWithTargetReplicaSets != nil {
+			deploymentsWithTargetReplicaSets = append(deploymentsWithTargetReplicaSets, *deploymentWithTargetReplicaSets)
+		}
+	}
+	return deploymentsWithTargetReplicaSets
+}
+
+func computeDeploymentWithTargetReplicaSets(deployment *appsv1.Deployment, replicaSets []*appsv1.ReplicaSet) *types.Deployment {
+	targetReplicaSets := make([]types.ReplicaSetRef, 0)
+	for _, replicaSet := range replicaSets {
+		if *replicaSet.Spec.Replicas == 0 {
+			continue
+		}
+		for _, ownerReference := range replicaSet.OwnerReferences {
+			if ownerReference.UID == deployment.UID {
+				targetReplicaSets = append(targetReplicaSets, k8sReplicaSetToReplicaSetRef(replicaSet))
+				break
+			}
+		}
+	}
+	return &types.Deployment{
+		Name:              deployment.Name,
+		Namespace:         deployment.Namespace,
+		TargetReplicaSets: targetReplicaSets,
 	}
 }
 
@@ -434,8 +491,8 @@ func labelsMatches(objectLabels map[string]string, matchLabels map[string]string
 	return selectorMatches(objectLabels, *metav1.SetAsLabelSelector(matchLabels))
 }
 
-func k8sPodIsolationToPodIsolation(podIsolation podIsolation) types.PodWithIsolation {
-	return types.PodWithIsolation{
+func k8sPodIsolationToPod(podIsolation podIsolation) types.Pod {
+	return types.Pod{
 		Name:              podIsolation.Pod.Name,
 		Namespace:         podIsolation.Pod.Namespace,
 		Labels:            podIsolation.Pod.Labels,
@@ -444,10 +501,10 @@ func k8sPodIsolationToPodIsolation(podIsolation podIsolation) types.PodWithIsola
 	}
 }
 
-func k8sPodIsolationsToPodIsolations(podIsolations []podIsolation) []types.PodWithIsolation {
-	result := make([]types.PodWithIsolation, 0)
+func k8sPodIsolationsToPods(podIsolations []podIsolation) []types.Pod {
+	result := make([]types.Pod, 0)
 	for _, podIsolation := range podIsolations {
-		result = append(result, k8sPodIsolationToPodIsolation(podIsolation))
+		result = append(result, k8sPodIsolationToPod(podIsolation))
 	}
 	return result
 }
@@ -456,6 +513,13 @@ func k8sPodToPodRef(pod *corev1.Pod) types.PodRef {
 	return types.PodRef{
 		Name:      pod.Name,
 		Namespace: pod.Namespace,
+	}
+}
+
+func k8sReplicaSetToReplicaSetRef(replicaSet *appsv1.ReplicaSet) types.ReplicaSetRef {
+	return types.ReplicaSetRef{
+		Name:      replicaSet.Name,
+		Namespace: replicaSet.Namespace,
 	}
 }
 
