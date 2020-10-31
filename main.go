@@ -2,8 +2,8 @@ package main
 
 import (
 	"flag"
+	"karto/analyzer"
 	"karto/api"
-	"karto/trafficanalyzer"
 	"karto/types"
 	"os"
 	"path/filepath"
@@ -12,7 +12,7 @@ import (
 func main() {
 	k8sConfigPath := parseCmd()
 	analysisResultsChannel := make(chan types.AnalysisResult)
-	go trafficanalyzer.AnalyzeOnChange(k8sConfigPath, analysisResultsChannel)
+	go analyzer.AnalyzeOnChange(k8sConfigPath, analysisResultsChannel)
 	api.Expose(analysisResultsChannel)
 }
 

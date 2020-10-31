@@ -1,4 +1,4 @@
-package trafficanalyzer
+package analyzer
 
 import (
 	"github.com/google/go-cmp/cmp"
