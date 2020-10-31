@@ -174,9 +174,9 @@ func Test_computeAllowedRoute(t *testing.T) {
 				},
 			},
 			expectedAllowedRoute: &types.AllowedRoute{
-				SourcePod:       types.PodWithIsolation{Name: "Pod1", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: true, IsEgressIsolated: false},
+				SourcePod:       types.PodRef{Name: "Pod1", Namespace: "default"},
 				EgressPolicies:  []types.NetworkPolicy{},
-				TargetPod:       types.PodWithIsolation{Name: "Pod2", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: false, IsEgressIsolated: true},
+				TargetPod:       types.PodRef{Name: "Pod2", Namespace: "default"},
 				IngressPolicies: []types.NetworkPolicy{},
 				Ports:           nil,
 			},
@@ -207,9 +207,9 @@ func Test_computeAllowedRoute(t *testing.T) {
 				},
 			},
 			expectedAllowedRoute: &types.AllowedRoute{
-				SourcePod:      types.PodWithIsolation{Name: "Pod1", Namespace: "default", Labels: map[string]string{"app": "foo"}, IsIngressIsolated: false, IsEgressIsolated: false},
+				SourcePod:      types.PodRef{Name: "Pod1", Namespace: "default"},
 				EgressPolicies: []types.NetworkPolicy{},
-				TargetPod:      types.PodWithIsolation{Name: "Pod2", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: true, IsEgressIsolated: false},
+				TargetPod:      types.PodRef{Name: "Pod2", Namespace: "default"},
 				IngressPolicies: []types.NetworkPolicy{
 					{Name: "np", Namespace: "default", Labels: map[string]string{}},
 				},
@@ -269,9 +269,9 @@ func Test_computeAllowedRoute(t *testing.T) {
 				},
 			},
 			expectedAllowedRoute: &types.AllowedRoute{
-				SourcePod:      types.PodWithIsolation{Name: "Pod1", Namespace: "ns", Labels: map[string]string{}, IsIngressIsolated: false, IsEgressIsolated: false},
+				SourcePod:      types.PodRef{Name: "Pod1", Namespace: "ns"},
 				EgressPolicies: []types.NetworkPolicy{},
-				TargetPod:      types.PodWithIsolation{Name: "Pod2", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: true, IsEgressIsolated: false},
+				TargetPod:      types.PodRef{Name: "Pod2", Namespace: "default"},
 				IngressPolicies: []types.NetworkPolicy{
 					{Name: "np", Namespace: "default", Labels: map[string]string{}},
 				},
@@ -332,9 +332,9 @@ func Test_computeAllowedRoute(t *testing.T) {
 				},
 			},
 			expectedAllowedRoute: &types.AllowedRoute{
-				SourcePod:      types.PodWithIsolation{Name: "Pod1", Namespace: "ns", Labels: map[string]string{"app": "foo"}, IsIngressIsolated: false, IsEgressIsolated: false},
+				SourcePod:      types.PodRef{Name: "Pod1", Namespace: "ns"},
 				EgressPolicies: []types.NetworkPolicy{},
-				TargetPod:      types.PodWithIsolation{Name: "Pod2", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: true, IsEgressIsolated: false},
+				TargetPod:      types.PodRef{Name: "Pod2", Namespace: "default"},
 				IngressPolicies: []types.NetworkPolicy{
 					{Name: "np", Namespace: "default", Labels: map[string]string{}},
 				},
@@ -423,11 +423,11 @@ func Test_computeAllowedRoute(t *testing.T) {
 				},
 			},
 			expectedAllowedRoute: &types.AllowedRoute{
-				SourcePod: types.PodWithIsolation{Name: "Pod1", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: false, IsEgressIsolated: true},
+				SourcePod: types.PodRef{Name: "Pod1", Namespace: "default"},
 				EgressPolicies: []types.NetworkPolicy{
 					{Name: "np", Namespace: "default", Labels: map[string]string{}},
 				},
-				TargetPod:       types.PodWithIsolation{Name: "Pod2", Namespace: "default", Labels: map[string]string{"app": "foo"}, IsIngressIsolated: false, IsEgressIsolated: false},
+				TargetPod:       types.PodRef{Name: "Pod2", Namespace: "default"},
 				IngressPolicies: []types.NetworkPolicy{},
 				Ports:           nil,
 			},
@@ -485,11 +485,11 @@ func Test_computeAllowedRoute(t *testing.T) {
 				},
 			},
 			expectedAllowedRoute: &types.AllowedRoute{
-				SourcePod: types.PodWithIsolation{Name: "Pod1", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: false, IsEgressIsolated: true},
+				SourcePod: types.PodRef{Name: "Pod1", Namespace: "default"},
 				EgressPolicies: []types.NetworkPolicy{
 					{Name: "np", Namespace: "default", Labels: map[string]string{}},
 				},
-				TargetPod:       types.PodWithIsolation{Name: "Pod2", Namespace: "ns", Labels: map[string]string{}, IsIngressIsolated: false, IsEgressIsolated: false},
+				TargetPod:       types.PodRef{Name: "Pod2", Namespace: "ns"},
 				IngressPolicies: []types.NetworkPolicy{},
 				Ports:           nil,
 			},
@@ -548,11 +548,11 @@ func Test_computeAllowedRoute(t *testing.T) {
 				},
 			},
 			expectedAllowedRoute: &types.AllowedRoute{
-				SourcePod: types.PodWithIsolation{Name: "Pod1", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: false, IsEgressIsolated: true},
+				SourcePod: types.PodRef{Name: "Pod1", Namespace: "default"},
 				EgressPolicies: []types.NetworkPolicy{
 					{Name: "np", Namespace: "default", Labels: map[string]string{}},
 				},
-				TargetPod:       types.PodWithIsolation{Name: "Pod2", Namespace: "ns", Labels: map[string]string{"app": "foo"}, IsIngressIsolated: false, IsEgressIsolated: false},
+				TargetPod:       types.PodRef{Name: "Pod2", Namespace: "ns"},
 				IngressPolicies: []types.NetworkPolicy{},
 				Ports:           nil,
 			},
@@ -655,11 +655,11 @@ func Test_computeAllowedRoute(t *testing.T) {
 				},
 			},
 			expectedAllowedRoute: &types.AllowedRoute{
-				SourcePod: types.PodWithIsolation{Name: "Pod1", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: false, IsEgressIsolated: true},
+				SourcePod: types.PodRef{Name: "Pod1", Namespace: "default"},
 				EgressPolicies: []types.NetworkPolicy{
 					{Namespace: "default", Labels: map[string]string{}},
 				},
-				TargetPod: types.PodWithIsolation{Name: "Pod2", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: true, IsEgressIsolated: false},
+				TargetPod: types.PodRef{Name: "Pod2", Namespace: "default"},
 				IngressPolicies: []types.NetworkPolicy{
 					{Namespace: "default", Labels: map[string]string{}},
 				},
@@ -704,11 +704,11 @@ func Test_computeAllowedRoute(t *testing.T) {
 				},
 			},
 			expectedAllowedRoute: &types.AllowedRoute{
-				SourcePod: types.PodWithIsolation{Name: "Pod1", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: false, IsEgressIsolated: true},
+				SourcePod: types.PodRef{Name: "Pod1", Namespace: "default"},
 				EgressPolicies: []types.NetworkPolicy{
 					{Namespace: "default", Labels: map[string]string{}},
 				},
-				TargetPod: types.PodWithIsolation{Name: "Pod2", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: true, IsEgressIsolated: false},
+				TargetPod: types.PodRef{Name: "Pod2", Namespace: "default"},
 				IngressPolicies: []types.NetworkPolicy{
 					{Namespace: "default", Labels: map[string]string{}},
 				},
@@ -753,11 +753,11 @@ func Test_computeAllowedRoute(t *testing.T) {
 				},
 			},
 			expectedAllowedRoute: &types.AllowedRoute{
-				SourcePod: types.PodWithIsolation{Name: "Pod1", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: false, IsEgressIsolated: true},
+				SourcePod: types.PodRef{Name: "Pod1", Namespace: "default"},
 				EgressPolicies: []types.NetworkPolicy{
 					{Namespace: "default", Labels: map[string]string{}},
 				},
-				TargetPod: types.PodWithIsolation{Name: "Pod2", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: true, IsEgressIsolated: false},
+				TargetPod: types.PodRef{Name: "Pod2", Namespace: "default"},
 				IngressPolicies: []types.NetworkPolicy{
 					{Namespace: "default", Labels: map[string]string{}},
 				},
@@ -798,11 +798,11 @@ func Test_computeAllowedRoute(t *testing.T) {
 				},
 			},
 			expectedAllowedRoute: &types.AllowedRoute{
-				SourcePod: types.PodWithIsolation{Name: "Pod1", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: false, IsEgressIsolated: true},
+				SourcePod: types.PodRef{Name: "Pod1", Namespace: "default"},
 				EgressPolicies: []types.NetworkPolicy{
 					{Namespace: "default", Labels: map[string]string{}},
 				},
-				TargetPod: types.PodWithIsolation{Name: "Pod2", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: true, IsEgressIsolated: false},
+				TargetPod: types.PodRef{Name: "Pod2", Namespace: "default"},
 				IngressPolicies: []types.NetworkPolicy{
 					{Namespace: "default", Labels: map[string]string{}},
 				},
@@ -910,11 +910,11 @@ func Test_computeAllowedRoute(t *testing.T) {
 				},
 			},
 			expectedAllowedRoute: &types.AllowedRoute{
-				SourcePod: types.PodWithIsolation{Name: "Pod1", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: false, IsEgressIsolated: true},
+				SourcePod: types.PodRef{Name: "Pod1", Namespace: "default"},
 				EgressPolicies: []types.NetworkPolicy{
 					{Name: "eg1", Namespace: "default", Labels: map[string]string{}},
 				},
-				TargetPod: types.PodWithIsolation{Name: "Pod2", Namespace: "default", Labels: map[string]string{}, IsIngressIsolated: true, IsEgressIsolated: false},
+				TargetPod: types.PodRef{Name: "Pod2", Namespace: "default"},
 				IngressPolicies: []types.NetworkPolicy{
 					{Name: "in1", Namespace: "default", Labels: map[string]string{}},
 				},
@@ -951,7 +951,7 @@ func Test_computeServiceWithTargetPods(t *testing.T) {
 			expectedServiceWithTargetPods: types.Service{
 				Name:       "svc",
 				Namespace:  "ns",
-				TargetPods: []types.Pod{},
+				TargetPods: []types.PodRef{},
 			},
 		},
 		{
@@ -959,14 +959,14 @@ func Test_computeServiceWithTargetPods(t *testing.T) {
 			args: args{
 				service: serviceBuilder().selectorLabel("app", "foo").build(),
 				pods: []*corev1.Pod{
-					podBuilder().label("app", "foo").build(),
-					podBuilder().label("app", "bar").build(),
+					podBuilder().name("name1").label("app", "foo").build(),
+					podBuilder().name("name2").label("app", "bar").build(),
 				},
 			},
 			expectedServiceWithTargetPods: types.Service{
 				Namespace: "default",
-				TargetPods: []types.Pod{
-					{Namespace: "default", Labels: map[string]string{"app": "foo"}},
+				TargetPods: []types.PodRef{
+					{Name: "name1", Namespace: "default"},
 				},
 			},
 		},
@@ -975,14 +975,14 @@ func Test_computeServiceWithTargetPods(t *testing.T) {
 			args: args{
 				service: serviceBuilder().namespace("ns").selectorLabel("app", "foo").build(),
 				pods: []*corev1.Pod{
-					podBuilder().namespace("ns").label("app", "foo").build(),
-					podBuilder().namespace("other").label("app", "foo").build(),
+					podBuilder().name("name1").namespace("ns").label("app", "foo").build(),
+					podBuilder().name("name2").namespace("other").label("app", "foo").build(),
 				},
 			},
 			expectedServiceWithTargetPods: types.Service{
 				Namespace: "ns",
-				TargetPods: []types.Pod{
-					{Namespace: "ns", Labels: map[string]string{"app": "foo"}},
+				TargetPods: []types.PodRef{
+					{Name: "name1", Namespace: "ns"},
 				},
 			},
 		},
@@ -1001,7 +1001,7 @@ func Test_computeServiceWithTargetPods(t *testing.T) {
 			},
 			expectedServiceWithTargetPods: types.Service{
 				Namespace:  "default",
-				TargetPods: []types.Pod{},
+				TargetPods: []types.PodRef{},
 			},
 		},
 	}
@@ -1034,7 +1034,7 @@ func Test_computeReplicaSetWithTargetPods(t *testing.T) {
 			expectedReplicaSetWithTargetPods: &types.ReplicaSet{
 				Name:       "rs",
 				Namespace:  "ns",
-				TargetPods: []types.Pod{},
+				TargetPods: []types.PodRef{},
 			},
 		},
 		{
@@ -1050,14 +1050,14 @@ func Test_computeReplicaSetWithTargetPods(t *testing.T) {
 			args: args{
 				replicaSet: replicaSetBuilder().selectorLabel("app", "foo").build(),
 				pods: []*corev1.Pod{
-					podBuilder().label("app", "foo").build(),
-					podBuilder().label("app", "bar").build(),
+					podBuilder().name("name1").label("app", "foo").build(),
+					podBuilder().name("name2").label("app", "bar").build(),
 				},
 			},
 			expectedReplicaSetWithTargetPods: &types.ReplicaSet{
 				Namespace: "default",
-				TargetPods: []types.Pod{
-					{Namespace: "default", Labels: map[string]string{"app": "foo"}},
+				TargetPods: []types.PodRef{
+					{Name: "name1", Namespace: "default"},
 				},
 			},
 		},
@@ -1066,14 +1066,14 @@ func Test_computeReplicaSetWithTargetPods(t *testing.T) {
 			args: args{
 				replicaSet: replicaSetBuilder().namespace("ns").selectorLabel("app", "foo").build(),
 				pods: []*corev1.Pod{
-					podBuilder().namespace("ns").label("app", "foo").build(),
-					podBuilder().namespace("other").label("app", "foo").build(),
+					podBuilder().name("name1").namespace("ns").label("app", "foo").build(),
+					podBuilder().name("name2").namespace("other").label("app", "foo").build(),
 				},
 			},
 			expectedReplicaSetWithTargetPods: &types.ReplicaSet{
 				Namespace: "ns",
-				TargetPods: []types.Pod{
-					{Namespace: "ns", Labels: map[string]string{"app": "foo"}},
+				TargetPods: []types.PodRef{
+					{Name: "name1", Namespace: "ns"},
 				},
 			},
 		},
@@ -1087,6 +1087,80 @@ func Test_computeReplicaSetWithTargetPods(t *testing.T) {
 		})
 	}
 }
+
+//
+//func Test_computeDeploymentWithTargetReplicaSets(t *testing.T) {
+//	type args struct {
+//		deployment  *appsv1.Deployment
+//		replicaSets []*appsv1.ReplicaSet
+//	}
+//	tests := []struct {
+//		name                                    string
+//		args                                    args
+//		expectedDeploymentWithTargetReplicaSets *types.Deployment
+//	}{
+//		{
+//			name: "deployment name and namespace are propagated",
+//			args: args{
+//				deployment:  replicaSetBuilder().name("rs").namespace("ns").build(),
+//				replicaSets: []*appsv1.ReplicaSet{},
+//			},
+//			expectedDeploymentWithTargetReplicaSets: &types.Deployment{
+//				Name:              "rs",
+//				Namespace:         "ns",
+//				TargetReplicaSets: []types.ReplicaSet{},
+//			},
+//		},
+//		//{
+//		//	name: "replicaSets with 0 desired replicas are ignored",
+//		//	args: args{
+//		//		deployment:  replicaSetBuilder().desiredReplicas(0).build(),
+//		//		replicaSets: []*corev1.Pod{},
+//		//	},
+//		//	expectedDeploymentWithTargetReplicaSets: nil,
+//		//},
+//		//{
+//		//	name: "only pods with matching labels are detected as target",
+//		//	args: args{
+//		//		deployment: replicaSetBuilder().selectorLabel("app", "foo").build(),
+//		//		replicaSets: []*corev1.Pod{
+//		//			podBuilder().label("app", "foo").build(),
+//		//			podBuilder().label("app", "bar").build(),
+//		//		},
+//		//	},
+//		//	expectedDeploymentWithTargetReplicaSets: &types.Deployment{
+//		//		Namespace: "default",
+//		//		TargetReplicaSets: []types.PodRef{
+//		//			{Namespace: "default", Labels: map[string]string{"app": "foo"}},
+//		//		},
+//		//	},
+//		//},
+//		//{
+//		//	name: "only pods within the same namespace are detected as target",
+//		//	args: args{
+//		//		deployment: replicaSetBuilder().namespace("ns").selectorLabel("app", "foo").build(),
+//		//		replicaSets: []*corev1.Pod{
+//		//			podBuilder().namespace("ns").label("app", "foo").build(),
+//		//			podBuilder().namespace("other").label("app", "foo").build(),
+//		//		},
+//		//	},
+//		//	expectedDeploymentWithTargetReplicaSets: &types.Deployment{
+//		//		Namespace: "ns",
+//		//		TargetReplicaSets: []types.PodRef{
+//		//			{Namespace: "ns", Labels: map[string]string{"app": "foo"}},
+//		//		},
+//		//	},
+//		//},
+//	}
+//	for _, tt := range tests {
+//		t.Run(tt.name, func(t *testing.T) {
+//			deploymentWithTargetReplicaSets := computeDeploymentWithTargetReplicaSets(tt.args.deployment, tt.args.replicaSets)
+//			if diff := cmp.Diff(tt.expectedDeploymentWithTargetReplicaSets, deploymentWithTargetReplicaSets); diff != "" {
+//				t.Errorf("computeDeploymentWithTargetReplicaSets() result mismatch (-want +got):\n%s", diff)
+//			}
+//		})
+//	}
+//}
 
 type PodBuilder struct {
 	Name      string

@@ -127,8 +127,9 @@ func analyze(pods []*corev1.Pod, policies []*networkingv1.NetworkPolicy, namespa
 	replicaSetsWithTargetPods := computeReplicaSetsWithTargetPods(replicaSets, pods)
 	elapsed := time.Since(start)
 	log.Printf("Finished analysis in %s, found %d pods and %d allowed pod-to-pod routes\n", elapsed, len(podIsolations), len(allowedRoutes))
+	// TODO log info about other items found
 	return types.AnalysisResult{
-		Pods:          fromK8sPodIsolations(podIsolations),
+		Pods:          k8sPodIsolationsToPodIsolations(podIsolations),
 		AllowedRoutes: allowedRoutes,
 		Services:      servicesWithTargetPods,
 		ReplicaSets:   replicaSetsWithTargetPods,
@@ -197,10 +198,10 @@ func computeAllowedRoute(sourcePodIsolation podIsolation, targetPodIsolation pod
 	ports, ingressPolicies, egressPolicies := matchPoliciesByPort(ingressPoliciesByPort, egressPoliciesByPort)
 	if ports == nil || len(ports) > 0 {
 		return &types.AllowedRoute{
-			SourcePod:       fromK8sPodIsolation(sourcePodIsolation),
-			EgressPolicies:  fromK8sNetworkPolicies(egressPolicies),
-			TargetPod:       fromK8sPodIsolation(targetPodIsolation),
-			IngressPolicies: fromK8sNetworkPolicies(ingressPolicies),
+			SourcePod:       k8sPodIsolationToPodRef(sourcePodIsolation),
+			EgressPolicies:  k8sNetworkPoliciesToNetworkPolicies(egressPolicies),
+			TargetPod:       k8sPodIsolationToPodRef(targetPodIsolation),
+			IngressPolicies: k8sNetworkPoliciesToNetworkPolicies(ingressPolicies),
 			Ports:           ports,
 		}
 	} else {
@@ -218,12 +219,12 @@ func computeServicesWithTargetPods(services []*corev1.Service, pods []*corev1.Po
 }
 
 func computeServiceWithTargetPods(service *corev1.Service, pods []*corev1.Pod) types.Service {
-	targetPods := make([]types.Pod, 0)
+	targetPods := make([]types.PodRef, 0)
 	for _, pod := range pods {
 		namespaceMatches := serviceNamespaceMatches(pod, service)
 		selectorMatches := labelsMatches(pod.Labels, service.Spec.Selector)
 		if namespaceMatches && selectorMatches {
-			targetPods = append(targetPods, fromK8sPod(pod))
+			targetPods = append(targetPods, k8sPodToPodRef(pod))
 		}
 	}
 	return types.Service{
@@ -248,12 +249,12 @@ func computeReplicaSetWithTargetPods(replicaSet *appsv1.ReplicaSet, pods []*core
 	if *replicaSet.Spec.Replicas == 0 {
 		return nil
 	}
-	targetPods := make([]types.Pod, 0)
+	targetPods := make([]types.PodRef, 0)
 	for _, pod := range pods {
 		namespaceMatches := replicaSetNamespaceMatches(pod, replicaSet)
 		selectorMatches := selectorMatches(pod.Labels, *replicaSet.Spec.Selector)
 		if namespaceMatches && selectorMatches {
-			targetPods = append(targetPods, fromK8sPod(pod))
+			targetPods = append(targetPods, k8sPodToPodRef(pod))
 		}
 	}
 	return &types.ReplicaSet{
@@ -433,7 +434,7 @@ func labelsMatches(objectLabels map[string]string, matchLabels map[string]string
 	return selectorMatches(objectLabels, *metav1.SetAsLabelSelector(matchLabels))
 }
 
-func fromK8sPodIsolation(podIsolation podIsolation) types.PodWithIsolation {
+func k8sPodIsolationToPodIsolation(podIsolation podIsolation) types.PodWithIsolation {
 	return types.PodWithIsolation{
 		Name:              podIsolation.Pod.Name,
 		Namespace:         podIsolation.Pod.Namespace,
@@ -443,23 +444,29 @@ func fromK8sPodIsolation(podIsolation podIsolation) types.PodWithIsolation {
 	}
 }
 
-func fromK8sPodIsolations(podIsolations []podIsolation) []types.PodWithIsolation {
+func k8sPodIsolationsToPodIsolations(podIsolations []podIsolation) []types.PodWithIsolation {
 	result := make([]types.PodWithIsolation, 0)
 	for _, podIsolation := range podIsolations {
-		result = append(result, fromK8sPodIsolation(podIsolation))
+		result = append(result, k8sPodIsolationToPodIsolation(podIsolation))
 	}
 	return result
 }
 
-func fromK8sPod(pod *corev1.Pod) types.Pod {
-	return types.Pod{
+func k8sPodToPodRef(pod *corev1.Pod) types.PodRef {
+	return types.PodRef{
 		Name:      pod.Name,
 		Namespace: pod.Namespace,
-		Labels:    pod.Labels,
 	}
 }
 
-func fromK8sNetworkPolicy(networkPolicy networkingv1.NetworkPolicy) types.NetworkPolicy {
+func k8sPodIsolationToPodRef(podIsolation podIsolation) types.PodRef {
+	return types.PodRef{
+		Name:      podIsolation.Pod.Name,
+		Namespace: podIsolation.Pod.Namespace,
+	}
+}
+
+func k8sNetworkPolicyToNetworkPolicy(networkPolicy networkingv1.NetworkPolicy) types.NetworkPolicy {
 	return types.NetworkPolicy{
 		Name:      networkPolicy.Name,
 		Namespace: networkPolicy.Namespace,
@@ -467,10 +474,10 @@ func fromK8sNetworkPolicy(networkPolicy networkingv1.NetworkPolicy) types.Networ
 	}
 }
 
-func fromK8sNetworkPolicies(networkPolicies []*networkingv1.NetworkPolicy) []types.NetworkPolicy {
+func k8sNetworkPoliciesToNetworkPolicies(networkPolicies []*networkingv1.NetworkPolicy) []types.NetworkPolicy {
 	result := make([]types.NetworkPolicy, 0)
 	for _, networkPolicy := range networkPolicies {
-		result = append(result, fromK8sNetworkPolicy(*networkPolicy))
+		result = append(result, k8sNetworkPolicyToNetworkPolicy(*networkPolicy))
 	}
 	return result
 }

@@ -29,12 +29,19 @@ export function computeAnalysisResultView(analysisResult, controls) {
         includeIngressNeighbors, includeEgressNeighbors
     } = controls;
 
+    // Index pods by id for faster access
+    const podsById = new Map();
+    analysisResult.pods.forEach(pod => podsById.set(podId(pod), pod));
+    const filteredPodIds = new Set();
+    const neighborPodIds = new Set();
+
     let nameRegex;
     try {
         nameRegex = new RegExp(nameFilter);
     } catch (e) {
         nameRegex = new RegExp('.*');
     }
+
     const podFilter = pod => {
         const namespaceMatches = namespaceFilters.length === 0 || namespaceFilters.includes(pod.namespace);
         const labelsMatch = labelFilters.filter(labelFilter => labelFilter.key !== null).every(labelFilter => {
@@ -65,6 +72,11 @@ export function computeAnalysisResultView(analysisResult, controls) {
         highlighted: (highlightPodsWithoutIngressIsolation && !pod.isIngressIsolated)
             || (highlightPodsWithoutEgressIsolation && !pod.isEgressIsolated)
     });
+    const allowedRouteMapper = allowedRoute => ({
+        ...allowedRoute,
+        sourcePod: podsById.get(podId(allowedRoute.sourcePod)),
+        targetPod: podsById.get(podId(allowedRoute.targetPod))
+    });
     const serviceMapper = service => ({
         ...service,
         displayName: showNamespacePrefix ? `${service.namespace}/${service.name}` : service.name
@@ -73,12 +85,6 @@ export function computeAnalysisResultView(analysisResult, controls) {
         ...replicaSet,
         displayName: showNamespacePrefix ? `${replicaSet.namespace}/${replicaSet.name}` : replicaSet.name
     });
-
-    // Index pods by id for faster access
-    const podsById = new Map();
-    analysisResult.pods.forEach(pod => podsById.set(podId(pod), pod));
-    const filteredPodIds = new Set();
-    const neighborPodIds = new Set();
 
     // Apply filters
     const filteredPods = analysisResult.pods.filter(podFilter);
@@ -115,7 +121,7 @@ export function computeAnalysisResultView(analysisResult, controls) {
 
     return {
         pods: filteredPods.map(podMapper),
-        allowedRoutes: filteredAllowedRoutes,
+        allowedRoutes: filteredAllowedRoutes.map(allowedRouteMapper),
         services: filteredServices.map(serviceMapper),
         replicaSets: filteredReplicaSets.map(replicaSetMapper)
     };
