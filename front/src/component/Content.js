@@ -289,14 +289,18 @@ const Content = ({ className = '' }) => {
                         className={classes.controlsItem} placeholder="Type a pod name or regex"
                         name={nameFilterLabel()} checked={isNameFilterActive()} value={state.controls.nameFilter}
                         onChange={handleControlChange('nameFilter')}/>
-                    <SwitchControl
-                        className={classes.controlsItem} name="Include ingress neighbors"
-                        checked={state.controls.includeIngressNeighbors}
-                        onChange={handleControlChange('includeIngressNeighbors')}/>
-                    <SwitchControl
-                        className={classes.controlsItem} name="Include egress neighbors"
-                        checked={state.controls.includeEgressNeighbors}
-                        onChange={handleControlChange('includeEgressNeighbors')}/>
+                    {state.controls.displayedView === VIEWS.NETWORK_POLICIES && (
+                        <SwitchControl
+                            className={classes.controlsItem} name="Include ingress neighbors"
+                            checked={state.controls.includeIngressNeighbors}
+                            onChange={handleControlChange('includeIngressNeighbors')}/>
+                    )}
+                    {state.controls.displayedView === VIEWS.NETWORK_POLICIES && (
+                        <SwitchControl
+                            className={classes.controlsItem} name="Include egress neighbors"
+                            checked={state.controls.includeEgressNeighbors}
+                            onChange={handleControlChange('includeEgressNeighbors')}/>
+                    )}
                 </div>
                 <Typography className={classes.controlsTitle} variant="h2">Display options</Typography>
                 <div className={classes.controlsSection}>
@@ -307,14 +311,18 @@ const Content = ({ className = '' }) => {
                         className={classes.controlsItem} name="Show namespace prefix"
                         checked={state.controls.showNamespacePrefix}
                         onChange={handleControlChange('showNamespacePrefix')}/>
-                    <SwitchControl
-                        className={classes.controlsItem} name="Highlight non isolated pods (ingress)"
-                        checked={state.controls.highlightPodsWithoutIngressIsolation}
-                        onChange={handleControlChange('highlightPodsWithoutIngressIsolation')}/>
-                    <SwitchControl
-                        className={classes.controlsItem} name="Highlight non isolated pods (egress)"
-                        checked={state.controls.highlightPodsWithoutEgressIsolation}
-                        onChange={handleControlChange('highlightPodsWithoutEgressIsolation')}/>
+                    {state.controls.displayedView === VIEWS.NETWORK_POLICIES && (
+                        <SwitchControl
+                            className={classes.controlsItem} name="Highlight non isolated pods (ingress)"
+                            checked={state.controls.highlightPodsWithoutIngressIsolation}
+                            onChange={handleControlChange('highlightPodsWithoutIngressIsolation')}/>
+                    )}
+                    {state.controls.displayedView === VIEWS.NETWORK_POLICIES && (
+                        <SwitchControl
+                            className={classes.controlsItem} name="Highlight non isolated pods (egress)"
+                            checked={state.controls.highlightPodsWithoutEgressIsolation}
+                            onChange={handleControlChange('highlightPodsWithoutEgressIsolation')}/>
+                    )}
                     <SwitchControl
                         className={classes.controlsItem} name="Always display large datasets"
                         checked={state.controls.displayLargeDatasets}
