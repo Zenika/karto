@@ -21,6 +21,7 @@ import ClusterMap from './map/ClusterMap';
 import RadioGroupControl from './control/RadioGroupControl';
 import NetworkPolicyMap from './map/NetworkPolicyMap';
 import ReplicaSetDetails from './detail/ReplicaSetDetails';
+import DeploymentDetails from './detail/DeploymentDetails';
 
 const MAX_RECOMMENDED_PODS = 100;
 const MAX_RECOMMENDED_ALLOWED_ROUTES = 1000;
@@ -175,6 +176,12 @@ const Content = ({ className = '' }) => {
             replicaSetDetails: replicaSet
         }));
     };
+    const onDeploymentFocus = deployment => {
+        setState(oldState => ({
+            ...oldState,
+            deploymentDetails: deployment
+        }));
+    };
     const namespaceFiltersCount = () => {
         return state.controls.namespaceFilters.length;
     };
@@ -245,7 +252,8 @@ const Content = ({ className = '' }) => {
                 && isSafeToDisplay(state.analysisResultView, state.controls.displayLargeDatasets)
                 && state.controls.displayedView === VIEWS.WORKLOADS && <>
                     <ClusterMap analysisResult={state.analysisResultView} onPodFocus={onPodFocus}
-                                onServiceFocus={onServiceFocus} onReplicaSetFocus={onReplicaSetFocus}/>
+                                onServiceFocus={onServiceFocus} onReplicaSetFocus={onReplicaSetFocus}
+                                onDeploymentFocus={onDeploymentFocus}/>
                     <Typography className={classes.graphCaption} variant="caption">
                         {`Displaying ${state.analysisResultView.pods.length}/${state.analysisResult.pods.length} pods`
                         + ` and ${state.analysisResultView.services.length}/`
@@ -347,6 +355,11 @@ const Content = ({ className = '' }) => {
             {state.replicaSetDetails && (
                 <aside className={classes.details}>
                     <ReplicaSetDetails data={state.replicaSetDetails}/>
+                </aside>
+            )}
+            {state.deploymentDetails && (
+                <aside className={classes.details}>
+                    <DeploymentDetails data={state.deploymentDetails}/>
                 </aside>
             )}
         </div>

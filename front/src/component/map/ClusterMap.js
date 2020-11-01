@@ -41,13 +41,14 @@ const useStyles = makeStyles(theme => ({
     }
 }));
 
-const ClusterMap = ({ analysisResult, onPodFocus, onServiceFocus, onReplicaSetFocus }) => {
+const ClusterMap = ({ analysisResult, onPodFocus, onServiceFocus, onReplicaSetFocus, onDeploymentFocus }) => {
     const classes = useStyles();
     const d3Graph = useRef(new ClusterD3Graph());
 
     useEffect(() => d3Graph.current.init(), []);
 
-    useEffect(() => d3Graph.current.update(analysisResult, { onPodFocus, onServiceFocus, onReplicaSetFocus }));
+    useEffect(() => d3Graph.current.update(analysisResult, { onPodFocus, onServiceFocus,
+        onReplicaSetFocus, onDeploymentFocus }));
 
     return <div id="graph" className={classes.root}/>;
 };
@@ -70,7 +71,8 @@ ClusterMap.propTypes = {
     }).isRequired,
     onPodFocus: PropTypes.func.isRequired,
     onServiceFocus: PropTypes.func.isRequired,
-    onReplicaSetFocus: PropTypes.func.isRequired
+    onReplicaSetFocus: PropTypes.func.isRequired,
+    onDeploymentFocus: PropTypes.func.isRequired
 };
 
 export default ClusterMap;

@@ -53,7 +53,7 @@ type ReplicaSetRef struct {
 type Deployment struct {
 	Name              string          `json:"name"`
 	Namespace         string          `json:"namespace"`
-	TargetReplicaSets []ReplicaSetRef `json:"replicaSets"`
+	TargetReplicaSets []ReplicaSetRef `json:"targetReplicaSets"`
 }
 
 type AnalysisResult struct {

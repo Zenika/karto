@@ -35,6 +35,7 @@ export function computeAnalysisResultView(analysisResult, controls) {
     const podIsolationsById = new Map();
     analysisResult.podIsolations.forEach(podIsolation => podIsolationsById.set(podId(podIsolation.pod), podIsolation));
     const filteredPodIds = new Set();
+    const filteredReplicaSetIds = new Set();
     const neighborPodIds = new Set();
 
     let nameRegex;
@@ -92,6 +93,10 @@ export function computeAnalysisResultView(analysisResult, controls) {
         ...replicaSet,
         displayName: showNamespacePrefix ? `${replicaSet.namespace}/${replicaSet.name}` : replicaSet.name
     });
+    const deploymentMapper = deployment => ({
+        ...deployment,
+        displayName: showNamespacePrefix ? `${deployment.namespace}/${deployment.name}` : deployment.name
+    });
 
     // Apply filters
     const filteredPods = analysisResult.pods.filter(podFilter);
@@ -107,6 +112,10 @@ export function computeAnalysisResultView(analysisResult, controls) {
     );
     const filteredReplicaSets = analysisResult.replicaSets.filter(replicaSet =>
         replicaSet.targetPods.some(pod => filteredPodIds.has(podId(pod)))
+    );
+    filteredReplicaSets.forEach(replicaSet => filteredReplicaSetIds.add(replicaSetId(replicaSet)));
+    const filteredDeployments = analysisResult.deployments.filter(deployment =>
+        deployment.targetReplicaSets.some(replicaSet => filteredReplicaSetIds.has(replicaSetId(replicaSet)))
     );
 
     // Include ingress/egress neighbors
@@ -134,7 +143,8 @@ export function computeAnalysisResultView(analysisResult, controls) {
         podIsolations: filteredPodIsolations.map(podIsolationMapper),
         allowedRoutes: filteredAllowedRoutes.map(allowedRouteMapper),
         services: filteredServices.map(serviceMapper),
-        replicaSets: filteredReplicaSets.map(replicaSetMapper)
+        replicaSets: filteredReplicaSets.map(replicaSetMapper),
+        deployments: filteredDeployments.map(deploymentMapper)
     };
 }
 
@@ -164,4 +174,8 @@ function distinctAndSort(arr) {
 
 function podId(pod) {
     return `${pod.namespace}/${pod.name}`;
+}
+
+function replicaSetId(replicaSet) {
+    return `${replicaSet.namespace}/${replicaSet.name}`;
 }

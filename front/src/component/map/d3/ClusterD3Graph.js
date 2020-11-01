@@ -4,23 +4,31 @@ import D3GraphItemLayer from './D3GraphItemLayer';
 import { SPACING } from './D3Constants';
 
 function d3PodId(pod) {
-    return `${pod.namespace}/${pod.name}`;
+    return `pod/${pod.namespace}/${pod.name}`;
 }
 
 function d3ServiceId(service) {
-    return `${service.namespace}/${service.name}`;
+    return `service/${service.namespace}/${service.name}`;
 }
 
 function d3ServiceLinkId({ service, targetPod }) {
-    return `${d3ServiceId(service)}->${d3PodId(targetPod)}`;
+    return `serviceLink/${d3ServiceId(service)}->${d3PodId(targetPod)}`;
 }
 
 function d3ReplicaSetId(replicaSet) {
-    return `${replicaSet.namespace}/${replicaSet.name}`;
+    return `replicaSet/${replicaSet.namespace}/${replicaSet.name}`;
 }
 
 function d3ReplicaSetLinkId({ replicaSet, targetPod }) {
-    return `${d3ReplicaSetId(replicaSet)}->${d3PodId(targetPod)}`;
+    return `replicaSetLink/${d3ReplicaSetId(replicaSet)}->${d3PodId(targetPod)}`;
+}
+
+function d3DeploymentId(deployment) {
+    return `deployment/${deployment.namespace}/${deployment.name}`;
+}
+
+function d3DeploymentLinkId({ deployment, targetReplicaSet }) {
+    return `deploymentLink/${d3DeploymentId(deployment)}->${d3ReplicaSetId(targetReplicaSet)}`;
 }
 
 function d3Pod(pod) {
@@ -52,6 +60,19 @@ function d3ReplicaSetLink({ replicaSet, targetPod }) {
     const source = d3ReplicaSetId(replicaSet);
     const target = d3PodId(targetPod);
     return { id, source, target, replicaSetData: replicaSet };
+}
+
+function d3Deployment(deployment) {
+    const id = d3DeploymentId(deployment);
+    const targetReplicaSets = deployment.targetReplicaSets.map(targetReplicaSet => d3ReplicaSetId(targetReplicaSet));
+    return { id, displayName: deployment.displayName, targetReplicaSets, deploymentData: deployment };
+}
+
+function d3DeploymentLink({ deployment, targetReplicaSet }) {
+    const id = d3DeploymentLinkId({ deployment, targetReplicaSet });
+    const source = d3DeploymentId(deployment);
+    const target = d3ReplicaSetId(targetReplicaSet);
+    return { id, source, target, deploymentData: deployment };
 }
 
 export default class ClusterD3Graph extends D3Graph {
@@ -152,8 +173,48 @@ export default class ClusterD3Graph extends D3Graph {
             },
             idFn: d3ReplicaSetLinkId,
             d3DatumFn: d3ReplicaSetLink,
-            sourceDatumFn: d3ReplicaSetLink => d3ReplicaSetLink.serviceData,
+            sourceDatumFn: d3ReplicaSetLink => d3ReplicaSetLink.replicaSetData,
             focusHandlerExtractorFn: focusHandlers => focusHandlers.onReplicaSetFocus
+        });
+        this.deploymentsLayer = new D3GraphItemLayer({
+            name: 'deployments',
+            element: 'path',
+            dataExtractorFn: analysisResult => analysisResult.deployments,
+            idFn: d3DeploymentId,
+            d3DatumFn: d3Deployment,
+            sourceDatumFn: d3Deployment => d3Deployment.deploymentData,
+            focusHandlerExtractorFn: focusHandlers => focusHandlers.onDeploymentFocus,
+            applyElementCustomAttrs: selection => {
+                selection
+                    .attr('d', 'M0,1 A1,1,0,1,1,1,0 L0.5,0 L1.75,1.25 L3,0 L2.5,0 A2.5,2.5,0,1,0,0,2.5')
+                    .each(d => {
+                        if (d.fx == null) {
+                            const targetReplicaSets = d.targetReplicaSets.map(targetReplicaSetId =>
+                                this.replicaSetsLayer.indexedData.get(targetReplicaSetId));
+                            const targetReplicaSetsAvgY = targetReplicaSets.reduce((acc, p) => acc + p.y, 0) / targetReplicaSets.length;
+                            d.fx = d.x = 5 * SPACING;
+                            d.y = targetReplicaSetsAvgY;
+                        }
+                    });
+            }
+        });
+        this.deploymentLinksLayer = new D3GraphLinkLayer({
+            name: 'deploymentLinks',
+            element: 'line',
+            dataExtractorFn: analysisResult => {
+                const replicaSetIds = new Set();
+                analysisResult.replicaSets.forEach(replicaSet => replicaSetIds.add(d3ReplicaSetId(replicaSet)));
+                return analysisResult.deployments.map(deployment => {
+                        return deployment.targetReplicaSets
+                            .filter(replicaSet => replicaSetIds.has(d3ReplicaSetId(replicaSet)))
+                            .map(targetReplicaSet => ({ deployment, targetReplicaSet }));
+                    }
+                ).flat();
+            },
+            idFn: d3DeploymentLinkId,
+            d3DatumFn: d3DeploymentLink,
+            sourceDatumFn: d3DeploymentLink => d3DeploymentLink.deploymentData,
+            focusHandlerExtractorFn: focusHandlers => focusHandlers.onDeploymentFocus
         });
     }
 
@@ -161,14 +222,16 @@ export default class ClusterD3Graph extends D3Graph {
         return [
             this.podsLayer,
             this.servicesLayer,
-            this.replicaSetsLayer
+            this.replicaSetsLayer,
+            this.deploymentsLayer
         ];
     }
 
     getLinkLayers() {
         return [
             this.serviceLinksLayer,
-            this.replicaSetLinksLayer
+            this.replicaSetLinksLayer,
+            this.deploymentLinksLayer
         ];
     }
 
