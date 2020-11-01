@@ -34,7 +34,7 @@ export default class NetworkPolicyD3Graph extends D3Graph {
         this.podsLayer = new D3GraphItemLayer({
             name: 'pods',
             element: 'circle',
-            dataExtractorFn: analysisResult => analysisResult.pods,
+            dataExtractorFn: analysisResult => analysisResult.podIsolations,
             idFn: d3PodId,
             d3DatumFn: d3Pod,
             sourceDatumFn: d3Pod => d3Pod.podData,

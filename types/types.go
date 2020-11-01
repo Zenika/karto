@@ -13,6 +13,12 @@ type PodRef struct {
 	Namespace string `json:"namespace"`
 }
 
+type PodIsolation struct {
+	Pod               PodRef `json:"pod"`
+	IsIngressIsolated bool   `json:"isIngressIsolated"`
+	IsEgressIsolated  bool   `json:"isEgressIsolated"`
+}
+
 type NetworkPolicy struct {
 	Name      string            `json:"name"`
 	Namespace string            `json:"namespace"`
@@ -52,6 +58,7 @@ type Deployment struct {
 
 type AnalysisResult struct {
 	Pods          []Pod          `json:"pods"`
+	PodIsolations []PodIsolation `json:"podIsolations"`
 	AllowedRoutes []AllowedRoute `json:"allowedRoutes"`
 	Services      []Service      `json:"services"`
 	ReplicaSets   []ReplicaSet   `json:"replicaSets"`

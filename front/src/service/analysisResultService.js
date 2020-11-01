@@ -29,9 +29,11 @@ export function computeAnalysisResultView(analysisResult, controls) {
         includeIngressNeighbors, includeEgressNeighbors
     } = controls;
 
-    // Index pods by id for faster access
+    // Indices for faster access
     const podsById = new Map();
     analysisResult.pods.forEach(pod => podsById.set(podId(pod), pod));
+    const podIsolationsById = new Map();
+    analysisResult.podIsolations.forEach(podIsolation => podIsolationsById.set(podId(podIsolation.pod), podIsolation));
     const filteredPodIds = new Set();
     const neighborPodIds = new Set();
 
@@ -68,14 +70,19 @@ export function computeAnalysisResultView(analysisResult, controls) {
     };
     const podMapper = pod => ({
         ...pod,
-        displayName: showNamespacePrefix ? `${pod.namespace}/${pod.name}` : pod.name,
-        highlighted: (highlightPodsWithoutIngressIsolation && !pod.isIngressIsolated)
-            || (highlightPodsWithoutEgressIsolation && !pod.isEgressIsolated)
+        displayName: showNamespacePrefix ? `${pod.namespace}/${pod.name}` : pod.name
+    });
+    const podIsolationMapper = podIsolation => ({
+        ...podMapper(podsById.get(podId(podIsolation.pod))),
+        isIngressIsolated: podIsolation.isIngressIsolated,
+        isEgressIsolated: podIsolation.isEgressIsolated,
+        highlighted: (highlightPodsWithoutIngressIsolation && !podIsolation.isIngressIsolated)
+            || (highlightPodsWithoutEgressIsolation && !podIsolation.isEgressIsolated)
     });
     const allowedRouteMapper = allowedRoute => ({
         ...allowedRoute,
-        sourcePod: podsById.get(podId(allowedRoute.sourcePod)),
-        targetPod: podsById.get(podId(allowedRoute.targetPod))
+        sourcePod: podIsolationMapper(podIsolationsById.get(podId(allowedRoute.sourcePod))),
+        targetPod: podIsolationMapper(podIsolationsById.get(podId(allowedRoute.targetPod)))
     });
     const serviceMapper = service => ({
         ...service,
@@ -89,6 +96,9 @@ export function computeAnalysisResultView(analysisResult, controls) {
     // Apply filters
     const filteredPods = analysisResult.pods.filter(podFilter);
     filteredPods.forEach(pod => filteredPodIds.add(podId(pod)));
+    const filteredPodIsolations = analysisResult.podIsolations.filter(podIsolation =>
+        filteredPodIds.has(podId(podIsolation.pod))
+    );
     const filteredAllowedRoutes = analysisResult.allowedRoutes.filter(allowedRoute =>
         filteredPodIds.has(podId(allowedRoute.sourcePod)) && filteredPodIds.has(podId(allowedRoute.targetPod))
     );
@@ -99,21 +109,21 @@ export function computeAnalysisResultView(analysisResult, controls) {
         replicaSet.targetPods.some(pod => filteredPodIds.has(podId(pod)))
     );
 
-    // Include neighbors
+    // Include ingress/egress neighbors
     analysisResult.allowedRoutes.forEach(allowedRoute => {
         const sourcePodId = podId(allowedRoute.sourcePod);
         const targetPodId = podId(allowedRoute.targetPod);
         if (includeIngressNeighbors && !filteredPodIds.has(sourcePodId) && filteredPodIds.has(targetPodId)) {
             if (!neighborPodIds.has(sourcePodId)) {
                 neighborPodIds.add(sourcePodId);
-                filteredPods.push(podsById.get(sourcePodId));
+                filteredPodIsolations.push(podIsolationsById.get(sourcePodId));
             }
             filteredAllowedRoutes.push(allowedRoute);
         }
         if (includeEgressNeighbors && !filteredPodIds.has(targetPodId) && filteredPodIds.has(sourcePodId)) {
             if (!neighborPodIds.has(targetPodId)) {
                 neighborPodIds.add(targetPodId);
-                filteredPods.push(podsById.get(targetPodId));
+                filteredPodIsolations.push(podIsolationsById.get(targetPodId));
             }
             filteredAllowedRoutes.push(allowedRoute);
         }
@@ -121,6 +131,7 @@ export function computeAnalysisResultView(analysisResult, controls) {
 
     return {
         pods: filteredPods.map(podMapper),
+        podIsolations: filteredPodIsolations.map(podIsolationMapper),
         allowedRoutes: filteredAllowedRoutes.map(allowedRouteMapper),
         services: filteredServices.map(serviceMapper),
         replicaSets: filteredReplicaSets.map(replicaSetMapper)
