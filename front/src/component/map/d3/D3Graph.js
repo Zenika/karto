@@ -82,7 +82,7 @@ export default class D3Graph {
         this.simulation.on('tick', () => {
             this.getItemLayers().forEach(layer => {
                 layer.itemSvgContainer
-                    .selectAll(layer.element)
+                    .selectAll(layer.svgElement)
                     .attr('transform', d => `translate(${d.x},${d.y}) scale(${1 / this.zoomFactor})`);
                 layer.labelSvgContainer
                     .selectAll('text')
@@ -90,7 +90,7 @@ export default class D3Graph {
             });
             this.getLinkLayers().forEach(layer => {
                 layer.linkSvgContainer
-                    .selectAll(layer.element)
+                    .selectAll(layer.svgElement)
                     .attr('x1', d => d.source.x)
                     .attr('y1', d => d.source.y)
                     .attr('x2', d => d.target.x)
@@ -99,14 +99,14 @@ export default class D3Graph {
         });
     }
 
-    update(analysisResult, focusHandlers) {
+    update(dataSet, focusHandlers) {
         // Update focus handlers
         this.focusHandlers = focusHandlers;
 
         // Update data
         let atLeastOneChange = false;
         for (const layer of [...this.getItemLayers(), ...this.getLinkLayers()]) {
-            const changed = layer.update(analysisResult);
+            const changed = layer.update(dataSet);
             atLeastOneChange = atLeastOneChange || changed;
         }
         this.sortData();
@@ -114,10 +114,10 @@ export default class D3Graph {
         // Update display
         this.getItemLayers().forEach(layer => {
             layer.itemSvgContainer
-                .selectAll(layer.element)
+                .selectAll(layer.svgElement)
                 .data(layer.data, d => d.id)
-                .join(layer.element)
-                .call(layer.applyElementCustomAttrs)
+                .join(layer.svgElement)
+                .call(layer.svgElementAttributesApplier)
                 .attr('class', item => ifHighlighted(item, 'item-highlight', 'item'))
                 .attr('transform', d => {
                     if (d.x || d.y) {
@@ -143,10 +143,10 @@ export default class D3Graph {
         });
         this.getLinkLayers().forEach(layer => {
             layer.linkSvgContainer
-                .selectAll(layer.element)
+                .selectAll(layer.svgElement)
                 .data(layer.data, d => d.id)
-                .join(layer.element)
-                .call(layer.applyElementCustomAttrs)
+                .join(layer.svgElement)
+                .call(layer.svgElementAttributesApplier)
                 .attr('marker-end', 'url(#arrow)')
                 .attr('class', 'link')
                 .attr('stroke-width', LINK_WIDTH / this.zoomFactor);
@@ -174,7 +174,7 @@ export default class D3Graph {
         this.getItemLayers().forEach(layer => {
             // Compensate changes to shape size
             layer.itemSvgContainer
-                .selectAll(layer.element)
+                .selectAll(layer.svgElement)
                 .attr('transform', d => `translate(${d.x},${d.y}) scale(${1 / this.zoomFactor})`);
             // Compensate changes to label size
             layer.labelSvgContainer
@@ -186,7 +186,7 @@ export default class D3Graph {
         this.getLinkLayers().forEach(layer => {
             // Compensate changes to line width
             layer.linkSvgContainer
-                .selectAll(layer.element)
+                .selectAll(layer.svgElement)
                 .attr('stroke-width', LINK_WIDTH / this.zoomFactor);
         });
     };
@@ -263,20 +263,20 @@ export default class D3Graph {
     applyFocus() {
         this.getItemLayers().forEach(layer => {
             layer.itemSvgContainer
-                .selectAll(layer.element)
-                .attr('class', d => this.isFocused(layer.name, d)
+                .selectAll(layer.svgElement)
+                .attr('class', d => this.isFocused(this.focusedDatum, layer.name, d)
                     ? ifHighlighted(d, 'item-highlight', 'item')
                     : ifHighlighted(d, 'item-faded-highlight', 'item-faded')
                 );
             layer.labelSvgContainer
                 .selectAll('text')
-                .attr('display', d => this.isFocused(layer.name, d) ? 'block' : 'none');
+                .attr('display', d => this.isFocused(this.focusedDatum, layer.name, d) ? 'block' : 'none');
         });
         this.getLinkLayers().forEach(layer => {
             layer.linkSvgContainer
-                .selectAll(layer.element)
-                .attr('class', d => this.isFocused(layer.name, d) ? 'link' : 'link-faded')
-                .attr('marker-end', d => this.isFocused(layer.name, d) ? 'url(#arrow)' : 'url(#arrow-faded)');
+                .selectAll(layer.svgElement)
+                .attr('class', d => this.isFocused(this.focusedDatum, layer.name, d) ? 'link' : 'link-faded')
+                .attr('marker-end', d => this.isFocused(this.focusedDatum, layer.name, d) ? 'url(#arrow)' : 'url(#arrow-faded)');
         });
     };
 
@@ -324,7 +324,7 @@ export default class D3Graph {
 
     }
 
-    isFocused(layerName, item) {
-        return true;
+    isFocused(currentTarget, candidateLayerName, candidateDatum) {
+        return currentTarget == null || currentTarget.id === candidateDatum.id;
     }
 }

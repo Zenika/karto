@@ -1,15 +1,13 @@
 export default class D3GraphLayer {
 
     constructor(layerConfig) {
-        const { name, element, dataExtractorFn, idFn, d3DatumFn, sourceDatumFn, focusHandlerExtractorFn, applyElementCustomAttrs } = layerConfig;
-        this.name = name;
-        this.element = element;
-        this.dataExtractorFn = dataExtractorFn;
-        this.idFn = idFn;
-        this.d3DatumFn = d3DatumFn;
-        this.sourceDatumFn = sourceDatumFn;
-        this.focusHandlerExtractorFn = focusHandlerExtractorFn;
-        this.applyElementCustomAttrs = applyElementCustomAttrs || (() => {
+        this.name = layerConfig.name;
+        this.svgElement = layerConfig.svgElement;
+        this.dataExtractor = layerConfig.dataExtractor;
+        this.d3IdFn = layerConfig.d3IdFn;
+        this.d3DatumMapper = layerConfig.d3DatumMapper;
+        this.focusHandler = layerConfig.focusHandler;
+        this.svgElementAttributesApplier = layerConfig.svgElementAttributesApplier || (() => {
         });
     }
 
@@ -18,17 +16,17 @@ export default class D3GraphLayer {
         this.indexedData = new Map();
     }
 
-    update(analysisResult) {
+    update(dataSet) {
         let dataChanged = false;
-        const newData = this.dataExtractorFn(analysisResult).map(datum => {
-            const oldDatum = this.indexedData.get(this.idFn(datum));
+        const newData = this.dataExtractor(dataSet).map(datum => {
+            const oldDatum = this.indexedData.get(this.d3IdFn(datum));
             if (oldDatum) {
                 // Datum was already displayed, keep new attributes and patch with d3 data
-                return Object.assign(oldDatum, this.d3DatumFn(datum));
+                return Object.assign(oldDatum, this.d3DatumMapper(datum));
             } else {
                 // Datum is new
                 dataChanged = true;
-                return this.d3DatumFn(datum);
+                return this.d3DatumMapper(datum);
             }
         });
         if (this.data.length !== newData.length) {
@@ -41,11 +39,11 @@ export default class D3GraphLayer {
     }
 
     focusDatum(id, focusHandlers) {
-        if (!this.focusHandlerExtractorFn) {
+        if (!this.focusHandler) {
             return;
         }
-        const focusHandler = this.focusHandlerExtractorFn(focusHandlers);
-        const datum = this.sourceDatumFn(this.indexedData.get(id));
+        const focusHandler = focusHandlers[this.focusHandler];
+        const datum = this.indexedData.get(id).sourceData;
         focusHandler(datum);
     }
 }

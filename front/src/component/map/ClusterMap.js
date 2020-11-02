@@ -41,20 +41,20 @@ const useStyles = makeStyles(theme => ({
     }
 }));
 
-const ClusterMap = ({ analysisResult, onPodFocus, onServiceFocus, onReplicaSetFocus, onDeploymentFocus }) => {
+const ClusterMap = ({ dataSet, onPodFocus, onServiceFocus, onReplicaSetFocus, onDeploymentFocus }) => {
     const classes = useStyles();
     const d3Graph = useRef(new ClusterD3Graph());
 
     useEffect(() => d3Graph.current.init(), []);
 
-    useEffect(() => d3Graph.current.update(analysisResult, { onPodFocus, onServiceFocus,
+    useEffect(() => d3Graph.current.update(dataSet, { onPodFocus, onServiceFocus,
         onReplicaSetFocus, onDeploymentFocus }));
 
     return <div id="graph" className={classes.root}/>;
 };
 
 ClusterMap.propTypes = {
-    analysisResult: PropTypes.shape({
+    dataSet: PropTypes.shape({
         pods: PropTypes.arrayOf(PropTypes.shape({
             displayName: PropTypes.string.isRequired,
             name: PropTypes.string.isRequired,

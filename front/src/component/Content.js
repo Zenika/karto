@@ -8,7 +8,7 @@ import MultiSelectControl from './control/MultiSelectControl';
 import PropTypes from 'prop-types';
 import { getStoredControls, storeControls } from '../service/storageService';
 import {
-    computeAnalysisResultView,
+    computeDataSet,
     fetchAnalysisResult,
     labelSelectorOperators
 } from '../service/analysisResultService';
@@ -105,7 +105,7 @@ const Content = ({ className = '' }) => {
     const [state, setState] = useState({
         isLoading: true,
         analysisResult: null,
-        analysisResultView: null,
+        dataSet: null,
         controls: Object.assign(DEFAULT_CONTROLS, getStoredControls()),
         podDetails: null,
         allowedRouteDetails: null
@@ -120,7 +120,7 @@ const Content = ({ className = '' }) => {
                 ...oldState,
                 isLoading: false,
                 analysisResult: analysisResult,
-                analysisResultView: computeAnalysisResultView(analysisResult, oldState.controls)
+                dataSet: computeDataSet(analysisResult, oldState.controls)
             }));
         };
         fetchAndUpdate();
@@ -137,9 +137,9 @@ const Content = ({ className = '' }) => {
         storeControls(state.controls);
     }, [state.controls]);
 
-    const isSafeToDisplay = (analysisResultView, displayLargeDatasets) => {
-        const tooLarge = analysisResultView.pods.length > MAX_RECOMMENDED_PODS
-            || analysisResultView.allowedRoutes.length > MAX_RECOMMENDED_ALLOWED_ROUTES;
+    const isSafeToDisplay = (dataSet, displayLargeDatasets) => {
+        const tooLarge = dataSet.pods.length > MAX_RECOMMENDED_PODS
+            || dataSet.allowedRoutes.length > MAX_RECOMMENDED_ALLOWED_ROUTES;
         return displayLargeDatasets || !tooLarge;
     };
     const handleControlChange = key => newValue => {
@@ -148,7 +148,7 @@ const Content = ({ className = '' }) => {
             return ({
                 ...oldState,
                 controls: newControls,
-                analysisResultView: computeAnalysisResultView(oldState.analysisResult, newControls)
+                dataSet: computeDataSet(oldState.analysisResult, newControls)
             });
         });
     };
@@ -235,39 +235,40 @@ const Content = ({ className = '' }) => {
                         Analyzing your cluster...
                     </Typography>
                 </>}
-                {!state.isLoading && state.analysisResultView && state.analysisResultView.pods.length === 0 && <>
+                {!state.isLoading && state.dataSet && state.dataSet.pods.length === 0 && <>
                     <Typography className={classes.message} variant="caption">
                         No pod to display
                     </Typography>
                 </>}
-                {!state.isLoading && state.analysisResultView && state.analysisResultView.pods.length > 0
-                && !isSafeToDisplay(state.analysisResultView, state.controls.displayLargeDatasets) && <>
+                {!state.isLoading && state.dataSet && state.dataSet.pods.length > 0
+                && !isSafeToDisplay(state.dataSet, state.controls.displayLargeDatasets) && <>
                     <Typography className={classes.message} variant="caption">
                         {`The dataset to display is larger than recommended for an optimal experience. Apply a filter `
                         + `on the left to reduce the dataset, or enable the "Always display large datasets" display `
                         + `option if you know what you are doing.`}
                     </Typography>
                 </>}
-                {!state.isLoading && state.analysisResultView && state.analysisResultView.pods.length > 0
-                && isSafeToDisplay(state.analysisResultView, state.controls.displayLargeDatasets)
+                {!state.isLoading && state.dataSet && state.dataSet.pods.length > 0
+                && isSafeToDisplay(state.dataSet, state.controls.displayLargeDatasets)
                 && state.controls.displayedView === VIEWS.WORKLOADS && <>
-                    <ClusterMap analysisResult={state.analysisResultView} onPodFocus={onPodFocus}
+                    <ClusterMap dataSet={state.dataSet} onPodFocus={onPodFocus}
                                 onServiceFocus={onServiceFocus} onReplicaSetFocus={onReplicaSetFocus}
                                 onDeploymentFocus={onDeploymentFocus}/>
                     <Typography className={classes.graphCaption} variant="caption">
-                        {`Displaying ${state.analysisResultView.pods.length}/${state.analysisResult.pods.length} pods`
-                        + ` and ${state.analysisResultView.services.length}/`
-                        + `${state.analysisResult.services.length} services`}
+                        {`Displaying ${state.dataSet.pods.length}/${state.analysisResult.pods.length} pods, `
+                        + `${state.dataSet.services.length}/${state.analysisResult.services.length} services, `
+                        + `${state.dataSet.replicaSets.length}/${state.analysisResult.replicaSets.length} replicaSets and `
+                        + `${state.dataSet.deployments.length}/${state.analysisResult.deployments.length} deployments`}
                     </Typography>
                 </>}
-                {!state.isLoading && state.analysisResultView && state.analysisResultView.pods.length > 0
-                && isSafeToDisplay(state.analysisResultView, state.controls.displayLargeDatasets)
+                {!state.isLoading && state.dataSet && state.dataSet.pods.length > 0
+                && isSafeToDisplay(state.dataSet, state.controls.displayLargeDatasets)
                 && state.controls.displayedView === VIEWS.NETWORK_POLICIES && <>
-                    <NetworkPolicyMap analysisResult={state.analysisResultView} onPodFocus={onPodFocus}
+                    <NetworkPolicyMap dataSet={state.dataSet} onPodFocus={onPodFocus}
                                       onAllowedRouteFocus={onAllowedRouteFocus}/>
                     <Typography className={classes.graphCaption} variant="caption">
-                        {`Displaying ${state.analysisResultView.pods.length}/${state.analysisResult.pods.length} pods`
-                        + ` and ${state.analysisResultView.allowedRoutes.length}/`
+                        {`Displaying ${state.dataSet.pods.length}/${state.analysisResult.pods.length} pods`
+                        + ` and ${state.dataSet.allowedRoutes.length}/`
                         + `${state.analysisResult.allowedRoutes.length} allowed routes`}
                     </Typography>
                 </>}

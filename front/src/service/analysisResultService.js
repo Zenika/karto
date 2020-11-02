@@ -19,7 +19,7 @@ export async function fetchAnalysisResult() {
     return result;
 }
 
-export function computeAnalysisResultView(analysisResult, controls) {
+export function computeDataSet(analysisResult, controls) {
     if (analysisResult == null) {
         return null;
     }

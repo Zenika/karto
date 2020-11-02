@@ -41,19 +41,19 @@ const useStyles = makeStyles(theme => ({
     }
 }));
 
-const NetworkPolicyMap = ({ analysisResult, onPodFocus, onAllowedRouteFocus }) => {
+const NetworkPolicyMap = ({ dataSet, onPodFocus, onAllowedRouteFocus }) => {
     const classes = useStyles();
     const d3Graph = useRef(new NetworkPolicyD3Graph());
 
     useEffect(() => d3Graph.current.init(), []);
 
-    useEffect(() => d3Graph.current.update(analysisResult, { onPodFocus, onAllowedRouteFocus }));
+    useEffect(() => d3Graph.current.update(dataSet, { onPodFocus, onAllowedRouteFocus }));
 
     return <div id="graph" className={classes.root}/>;
 };
 
 NetworkPolicyMap.propTypes = {
-    analysisResult: PropTypes.shape({
+    dataSet: PropTypes.shape({
         pods: PropTypes.arrayOf(PropTypes.shape({
             displayName: PropTypes.string.isRequired,
             name: PropTypes.string.isRequired,
