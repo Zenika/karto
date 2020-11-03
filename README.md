@@ -4,13 +4,13 @@
 
 A simple static analysis tool to explore a Kubernetes cluster.
 
+## Observe your cluster state, in real time!
+
+![deployment-demo](docs/assets/deployment-demo.gif)
+
 ## Diagnosticate network policies
 
 ![network-policy-demo](docs/assets/network-policy-demo.gif)
-
-## Observe changes live!
-
-![deployment-demo](docs/assets/deployment-demo.gif)
 
 ## Main features
 
