@@ -128,7 +128,7 @@ const Content = ({ className = '' }) => {
         if (state.controls.autoRefresh) {
             const interval = setInterval(() => {
                 fetchAndUpdate();
-            }, 5000);
+            }, 2000);
             return () => clearInterval(interval);
         }
     }, [state.controls.autoRefresh]);
