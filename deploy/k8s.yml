@@ -12,8 +12,9 @@ rules:
   - apiGroups:
       - ""
     resources:
-      - pods
       - namespaces
+      - pods
+      - services
     verbs:
       - get
       - list
@@ -23,6 +24,16 @@ rules:
       - "networking.k8s.io"
     resources:
       - networkpolicies
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - "extensions"
+      - "apps"
+    resources:
+      - replicasets
+      - deployments
     verbs:
       - get
       - list
