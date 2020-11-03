@@ -1,22 +1,12 @@
-package trafficanalyzer
+package traffic
 
 import (
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/informers"
-	"k8s.io/client-go/kubernetes"
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/workqueue"
+	"karto/analyzer/utils"
 	"karto/types"
-	"log"
 	"sort"
-	"time"
 )
 
 var portWildcard int32 = -1
@@ -51,87 +41,26 @@ func newPodIsolation(pod *corev1.Pod) podIsolation {
 	}
 }
 
-func AnalyzeOnChange(k8sConfigPath string, resultsChannel chan<- types.AnalysisResult) {
-	k8sClient := getK8sClient(k8sConfigPath)
-	analyzeQueue := workqueue.NewRateLimitingQueue(workqueue.DefaultItemBasedRateLimiter())
-	informerFactory := informers.NewSharedInformerFactory(k8sClient, 0)
-	podInformer := informerFactory.Core().V1().Pods()
-	policiesInformer := informerFactory.Networking().V1().NetworkPolicies()
-	namespacesInformer := informerFactory.Core().V1().Namespaces()
-	eventHandler := cache.ResourceEventHandlerFuncs{
-		AddFunc:    func(obj interface{}) { analyzeQueue.Add(nil) },
-		UpdateFunc: func(oldObj, newObj interface{}) { analyzeQueue.Add(nil) },
-		DeleteFunc: func(obj interface{}) { analyzeQueue.Add(nil) },
-	}
-	podInformer.Informer().AddEventHandler(eventHandler)
-	policiesInformer.Informer().AddEventHandler(eventHandler)
-	namespacesInformer.Informer().AddEventHandler(eventHandler)
-	informerFactory.Start(wait.NeverStop)
-	informerFactory.WaitForCacheSync(wait.NeverStop)
-	for {
-		obj, _ := analyzeQueue.Get()
-		pods, err := podInformer.Lister().List(labels.Everything())
-		if err != nil {
-			panic(err.Error())
-		}
-		policies, err := policiesInformer.Lister().List(labels.Everything())
-		if err != nil {
-			panic(err.Error())
-		}
-		namespaces, err := namespacesInformer.Lister().List(labels.Everything())
-		if err != nil {
-			panic(err.Error())
-		}
-		resultsChannel <- analyze(pods, policies, namespaces)
-		analyzeQueue.Forget(obj)
-		analyzeQueue.Done(obj)
-	}
+func Analyze(pods []*corev1.Pod, namespaces []*corev1.Namespace, networkPolicies []*networkingv1.NetworkPolicy) ([]types.PodIsolation, []types.AllowedRoute) {
+	podIsolations := podIsolationsOfAllPods(pods, networkPolicies)
+	allowedRoutes := allowedRoutesOfAllPods(podIsolations, namespaces)
+	return toPodIsolations(podIsolations), allowedRoutes
 }
 
-func getK8sClient(k8sClientConfig string) *kubernetes.Clientset {
-	var config *rest.Config
-	var err1InsideCluster, errOutsideCluster error
-	config, err1InsideCluster = rest.InClusterConfig()
-	if err1InsideCluster != nil {
-		log.Println("Unable to connect to Kubernetes service, fallback to kubeconfig file")
-		config, errOutsideCluster = clientcmd.BuildConfigFromFlags("", k8sClientConfig)
-		if errOutsideCluster != nil {
-			panic(errOutsideCluster.Error())
-		}
-	}
-	k8sClient, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
-	return k8sClient
-}
-
-func analyze(pods []*corev1.Pod, policies []*networkingv1.NetworkPolicy, namespaces []*corev1.Namespace) types.AnalysisResult {
-	start := time.Now()
-	podIsolations := computePodIsolations(pods, policies)
-	allowedRoutes := computeAllowedRoutes(podIsolations, namespaces)
-	elapsed := time.Since(start)
-	log.Printf("Finished analysis in %s, found %d pods and %d allowed pod-to-pod routes\n", elapsed, len(podIsolations), len(allowedRoutes))
-	return types.AnalysisResult{
-		Pods:          fromK8sPodIsolations(podIsolations),
-		AllowedRoutes: allowedRoutes,
-	}
-}
-
-func computePodIsolations(pods []*corev1.Pod, policies []*networkingv1.NetworkPolicy) []podIsolation {
+func podIsolationsOfAllPods(pods []*corev1.Pod, policies []*networkingv1.NetworkPolicy) []podIsolation {
 	podIsolations := make([]podIsolation, 0)
 	for _, pod := range pods {
-		podIsolation := computePodIsolation(pod, policies)
+		podIsolation := podIsolationOf(pod, policies)
 		podIsolations = append(podIsolations, podIsolation)
 	}
 	return podIsolations
 }
 
-func computePodIsolation(pod *corev1.Pod, policies []*networkingv1.NetworkPolicy) podIsolation {
+func podIsolationOf(pod *corev1.Pod, policies []*networkingv1.NetworkPolicy) podIsolation {
 	podIsolation := newPodIsolation(pod)
 	for _, policy := range policies {
-		namespaceMatches := namespaceMatches(pod, policy)
-		selectorMatches := selectorMatches(pod.Labels, policy.Spec.PodSelector)
+		namespaceMatches := networkPolicyNamespaceMatches(pod, policy)
+		selectorMatches := utils.SelectorMatches(pod.Labels, policy.Spec.PodSelector)
 		if namespaceMatches && selectorMatches {
 			isIngress, isEgress := policyTypes(policy)
 			if isIngress {
@@ -157,7 +86,7 @@ func policyTypes(policy *networkingv1.NetworkPolicy) (bool, bool) {
 	return isIngress, isEgress
 }
 
-func computeAllowedRoutes(podIsolations []podIsolation, namespaces []*corev1.Namespace) []types.AllowedRoute {
+func allowedRoutesOfAllPods(podIsolations []podIsolation, namespaces []*corev1.Namespace) []types.AllowedRoute {
 	allowedRoutes := make([]types.AllowedRoute, 0)
 	for i, sourcePodIsolation := range podIsolations {
 		for j, targetPodIsolation := range podIsolations {
@@ -165,7 +94,7 @@ func computeAllowedRoutes(podIsolations []podIsolation, namespaces []*corev1.Nam
 				// Ignore traffic to itself
 				continue
 			}
-			allowedRoute := computeAllowedRoute(sourcePodIsolation, targetPodIsolation, namespaces)
+			allowedRoute := allowedRouteBetween(sourcePodIsolation, targetPodIsolation, namespaces)
 			if allowedRoute != nil {
 				allowedRoutes = append(allowedRoutes, *allowedRoute)
 			}
@@ -174,16 +103,16 @@ func computeAllowedRoutes(podIsolations []podIsolation, namespaces []*corev1.Nam
 	return allowedRoutes
 }
 
-func computeAllowedRoute(sourcePodIsolation podIsolation, targetPodIsolation podIsolation, namespaces []*corev1.Namespace) *types.AllowedRoute {
+func allowedRouteBetween(sourcePodIsolation podIsolation, targetPodIsolation podIsolation, namespaces []*corev1.Namespace) *types.AllowedRoute {
 	ingressPoliciesByPort := ingressPoliciesByPort(sourcePodIsolation.Pod, targetPodIsolation, namespaces)
 	egressPoliciesByPort := egressPoliciesByPort(targetPodIsolation.Pod, sourcePodIsolation, namespaces)
 	ports, ingressPolicies, egressPolicies := matchPoliciesByPort(ingressPoliciesByPort, egressPoliciesByPort)
 	if ports == nil || len(ports) > 0 {
 		return &types.AllowedRoute{
-			SourcePod:       fromK8sPodIsolation(sourcePodIsolation),
-			EgressPolicies:  fromK8sNetworkPolicies(egressPolicies),
-			TargetPod:       fromK8sPodIsolation(targetPodIsolation),
-			IngressPolicies: fromK8sNetworkPolicies(ingressPolicies),
+			SourcePod:       toPodRef(sourcePodIsolation),
+			EgressPolicies:  toNetworkPolicies(egressPolicies),
+			TargetPod:       toPodRef(targetPodIsolation),
+			IngressPolicies: toNetworkPolicies(ingressPolicies),
 			Ports:           ports,
 		}
 	} else {
@@ -318,7 +247,7 @@ func matchPoliciesByPort(ingressPoliciesByPort map[int32][]*networkingv1.Network
 
 func networkRuleMatches(pod *corev1.Pod, policyPeer networkingv1.NetworkPolicyPeer, namespaces []*corev1.Namespace) bool {
 	namespaceMatches := policyPeer.NamespaceSelector == nil || namespaceLabelsMatches(pod.Namespace, namespaces, *policyPeer.NamespaceSelector)
-	selectorMatches := policyPeer.PodSelector == nil || selectorMatches(pod.Labels, *policyPeer.PodSelector)
+	selectorMatches := policyPeer.PodSelector == nil || utils.SelectorMatches(pod.Labels, *policyPeer.PodSelector)
 	return selectorMatches && namespaceMatches
 }
 
@@ -330,52 +259,48 @@ func namespaceLabelsMatches(namespaceName string, namespaces []*corev1.Namespace
 			break
 		}
 	}
-	return selectorMatches(namespace.Labels, selector)
+	return utils.SelectorMatches(namespace.Labels, selector)
 }
 
-func namespaceMatches(pod *corev1.Pod, policy *networkingv1.NetworkPolicy) bool {
+func networkPolicyNamespaceMatches(pod *corev1.Pod, policy *networkingv1.NetworkPolicy) bool {
 	return pod.Namespace == policy.Namespace
 }
 
-func selectorMatches(objectLabels map[string]string, labelSelector metav1.LabelSelector) bool {
-	selector, err := metav1.LabelSelectorAsSelector(&labelSelector)
-	if err != nil {
-		log.Fatalf("Could not parse LabelSelector %v\n", labelSelector)
-		return false
+func toPodIsolations(podIsolations []podIsolation) []types.PodIsolation {
+	result := make([]types.PodIsolation, 0)
+	for _, podIsolation := range podIsolations {
+		result = append(result, toPodIsolation(podIsolation))
 	}
-	return selector.Matches(labels.Set(objectLabels))
+	return result
 }
 
-func fromK8sPodIsolation(podIsolation podIsolation) types.Pod {
-	return types.Pod{
-		Name:              podIsolation.Pod.Name,
-		Namespace:         podIsolation.Pod.Namespace,
-		Labels:            podIsolation.Pod.Labels,
+func toPodIsolation(podIsolation podIsolation) types.PodIsolation {
+	return types.PodIsolation{
+		Pod:               toPodRef(podIsolation),
 		IsIngressIsolated: podIsolation.IsIngressIsolated(),
 		IsEgressIsolated:  podIsolation.IsEgressIsolated(),
 	}
 }
 
-func fromK8sPodIsolations(podIsolations []podIsolation) []types.Pod {
-	result := make([]types.Pod, 0)
-	for _, podIsolation := range podIsolations {
-		result = append(result, fromK8sPodIsolation(podIsolation))
+func toPodRef(podIsolation podIsolation) types.PodRef {
+	return types.PodRef{
+		Name:      podIsolation.Pod.Name,
+		Namespace: podIsolation.Pod.Namespace,
+	}
+}
+
+func toNetworkPolicies(networkPolicies []*networkingv1.NetworkPolicy) []types.NetworkPolicy {
+	result := make([]types.NetworkPolicy, 0)
+	for _, networkPolicy := range networkPolicies {
+		result = append(result, toNetworkPolicy(*networkPolicy))
 	}
 	return result
 }
 
-func fromK8sNetworkPolicy(networkPolicy networkingv1.NetworkPolicy) types.NetworkPolicy {
+func toNetworkPolicy(networkPolicy networkingv1.NetworkPolicy) types.NetworkPolicy {
 	return types.NetworkPolicy{
 		Name:      networkPolicy.Name,
 		Namespace: networkPolicy.Namespace,
 		Labels:    networkPolicy.Labels,
 	}
-}
-
-func fromK8sNetworkPolicies(networkPolicies []*networkingv1.NetworkPolicy) []types.NetworkPolicy {
-	result := make([]types.NetworkPolicy, 0)
-	for _, networkPolicy := range networkPolicies {
-		result = append(result, fromK8sNetworkPolicy(*networkPolicy))
-	}
-	return result
 }

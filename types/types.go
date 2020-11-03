@@ -8,6 +8,17 @@ type Pod struct {
 	IsEgressIsolated  bool              `json:"isEgressIsolated"`
 }
 
+type PodRef struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+}
+
+type PodIsolation struct {
+	Pod               PodRef `json:"pod"`
+	IsIngressIsolated bool   `json:"isIngressIsolated"`
+	IsEgressIsolated  bool   `json:"isEgressIsolated"`
+}
+
 type NetworkPolicy struct {
 	Name      string            `json:"name"`
 	Namespace string            `json:"namespace"`
@@ -15,14 +26,41 @@ type NetworkPolicy struct {
 }
 
 type AllowedRoute struct {
-	SourcePod       Pod             `json:"sourcePod"`
+	SourcePod       PodRef          `json:"sourcePod"`
 	EgressPolicies  []NetworkPolicy `json:"egressPolicies"`
-	TargetPod       Pod             `json:"targetPod"`
+	TargetPod       PodRef          `json:"targetPod"`
 	IngressPolicies []NetworkPolicy `json:"ingressPolicies"`
 	Ports           []int32         `json:"ports"`
 }
 
+type Service struct {
+	Name       string   `json:"name"`
+	Namespace  string   `json:"namespace"`
+	TargetPods []PodRef `json:"targetPods"`
+}
+
+type ReplicaSet struct {
+	Name       string   `json:"name"`
+	Namespace  string   `json:"namespace"`
+	TargetPods []PodRef `json:"targetPods"`
+}
+
+type ReplicaSetRef struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+}
+
+type Deployment struct {
+	Name              string          `json:"name"`
+	Namespace         string          `json:"namespace"`
+	TargetReplicaSets []ReplicaSetRef `json:"targetReplicaSets"`
+}
+
 type AnalysisResult struct {
 	Pods          []Pod          `json:"pods"`
+	PodIsolations []PodIsolation `json:"podIsolations"`
 	AllowedRoutes []AllowedRoute `json:"allowedRoutes"`
+	Services      []Service      `json:"services"`
+	ReplicaSets   []ReplicaSet   `json:"replicaSets"`
+	Deployments   []Deployment   `json:"deployments"`
 }

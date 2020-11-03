@@ -19,7 +19,7 @@ export async function fetchAnalysisResult() {
     return result;
 }
 
-export function computeAnalysisResultView(analysisResult, controls) {
+export function computeDataSet(analysisResult, controls) {
     if (analysisResult == null) {
         return null;
     }
@@ -29,12 +29,22 @@ export function computeAnalysisResultView(analysisResult, controls) {
         includeIngressNeighbors, includeEgressNeighbors
     } = controls;
 
+    // Indices for faster access
+    const podsById = new Map();
+    analysisResult.pods.forEach(pod => podsById.set(podId(pod), pod));
+    const podIsolationsById = new Map();
+    analysisResult.podIsolations.forEach(podIsolation => podIsolationsById.set(podId(podIsolation.pod), podIsolation));
+    const filteredPodIds = new Set();
+    const filteredReplicaSetIds = new Set();
+    const neighborPodIds = new Set();
+
     let nameRegex;
     try {
         nameRegex = new RegExp(nameFilter);
     } catch (e) {
         nameRegex = new RegExp('.*');
     }
+
     const podFilter = pod => {
         const namespaceMatches = namespaceFilters.length === 0 || namespaceFilters.includes(pod.namespace);
         const labelsMatch = labelFilters.filter(labelFilter => labelFilter.key !== null).every(labelFilter => {
@@ -61,39 +71,68 @@ export function computeAnalysisResultView(analysisResult, controls) {
     };
     const podMapper = pod => ({
         ...pod,
-        displayName: showNamespacePrefix ? `${pod.namespace}/${pod.name}` : pod.name,
-        highlighted: (highlightPodsWithoutIngressIsolation && !pod.isIngressIsolated)
-            || (highlightPodsWithoutEgressIsolation && !pod.isEgressIsolated)
+        displayName: showNamespacePrefix ? `${pod.namespace}/${pod.name}` : pod.name
     });
-
-    // Index pods by id for faster access
-    const podsById = new Map();
-    analysisResult.pods.forEach(pod => podsById.set(podId(pod), pod));
-    const filteredPodsIds = new Set();
-    const neighborPodsIds = new Set();
+    const podIsolationMapper = podIsolation => ({
+        ...podMapper(podsById.get(podId(podIsolation.pod))),
+        isIngressIsolated: podIsolation.isIngressIsolated,
+        isEgressIsolated: podIsolation.isEgressIsolated,
+        highlighted: (highlightPodsWithoutIngressIsolation && !podIsolation.isIngressIsolated)
+            || (highlightPodsWithoutEgressIsolation && !podIsolation.isEgressIsolated)
+    });
+    const allowedRouteMapper = allowedRoute => ({
+        ...allowedRoute,
+        sourcePod: podIsolationMapper(podIsolationsById.get(podId(allowedRoute.sourcePod))),
+        targetPod: podIsolationMapper(podIsolationsById.get(podId(allowedRoute.targetPod)))
+    });
+    const serviceMapper = service => ({
+        ...service,
+        displayName: showNamespacePrefix ? `${service.namespace}/${service.name}` : service.name
+    });
+    const replicaSetMapper = replicaSet => ({
+        ...replicaSet,
+        displayName: showNamespacePrefix ? `${replicaSet.namespace}/${replicaSet.name}` : replicaSet.name
+    });
+    const deploymentMapper = deployment => ({
+        ...deployment,
+        displayName: showNamespacePrefix ? `${deployment.namespace}/${deployment.name}` : deployment.name
+    });
 
     // Apply filters
     const filteredPods = analysisResult.pods.filter(podFilter);
-    filteredPods.forEach(pod => filteredPodsIds.add(podId(pod)));
+    filteredPods.forEach(pod => filteredPodIds.add(podId(pod)));
+    const filteredPodIsolations = analysisResult.podIsolations.filter(podIsolation =>
+        filteredPodIds.has(podId(podIsolation.pod))
+    );
     const filteredAllowedRoutes = analysisResult.allowedRoutes.filter(allowedRoute =>
-        filteredPodsIds.has(podId(allowedRoute.sourcePod)) && filteredPodsIds.has(podId(allowedRoute.targetPod))
+        filteredPodIds.has(podId(allowedRoute.sourcePod)) && filteredPodIds.has(podId(allowedRoute.targetPod))
+    );
+    const filteredServices = analysisResult.services.filter(service =>
+        service.targetPods.some(pod => filteredPodIds.has(podId(pod)))
+    );
+    const filteredReplicaSets = analysisResult.replicaSets.filter(replicaSet =>
+        replicaSet.targetPods.some(pod => filteredPodIds.has(podId(pod)))
+    );
+    filteredReplicaSets.forEach(replicaSet => filteredReplicaSetIds.add(replicaSetId(replicaSet)));
+    const filteredDeployments = analysisResult.deployments.filter(deployment =>
+        deployment.targetReplicaSets.some(replicaSet => filteredReplicaSetIds.has(replicaSetId(replicaSet)))
     );
 
-    // Include neighbors
+    // Include ingress/egress neighbors
     analysisResult.allowedRoutes.forEach(allowedRoute => {
         const sourcePodId = podId(allowedRoute.sourcePod);
         const targetPodId = podId(allowedRoute.targetPod);
-        if (includeIngressNeighbors && !filteredPodsIds.has(sourcePodId) && filteredPodsIds.has(targetPodId)) {
-            if (!neighborPodsIds.has(sourcePodId)) {
-                neighborPodsIds.add(sourcePodId);
-                filteredPods.push(podsById.get(sourcePodId));
+        if (includeIngressNeighbors && !filteredPodIds.has(sourcePodId) && filteredPodIds.has(targetPodId)) {
+            if (!neighborPodIds.has(sourcePodId)) {
+                neighborPodIds.add(sourcePodId);
+                filteredPodIsolations.push(podIsolationsById.get(sourcePodId));
             }
             filteredAllowedRoutes.push(allowedRoute);
         }
-        if (includeEgressNeighbors && !filteredPodsIds.has(targetPodId) && filteredPodsIds.has(sourcePodId)) {
-            if (!neighborPodsIds.has(targetPodId)) {
-                neighborPodsIds.add(targetPodId);
-                filteredPods.push(podsById.get(targetPodId));
+        if (includeEgressNeighbors && !filteredPodIds.has(targetPodId) && filteredPodIds.has(sourcePodId)) {
+            if (!neighborPodIds.has(targetPodId)) {
+                neighborPodIds.add(targetPodId);
+                filteredPodIsolations.push(podIsolationsById.get(targetPodId));
             }
             filteredAllowedRoutes.push(allowedRoute);
         }
@@ -101,7 +140,11 @@ export function computeAnalysisResultView(analysisResult, controls) {
 
     return {
         pods: filteredPods.map(podMapper),
-        allowedRoutes: filteredAllowedRoutes
+        podIsolations: filteredPodIsolations.map(podIsolationMapper),
+        allowedRoutes: filteredAllowedRoutes.map(allowedRouteMapper),
+        services: filteredServices.map(serviceMapper),
+        replicaSets: filteredReplicaSets.map(replicaSetMapper),
+        deployments: filteredDeployments.map(deploymentMapper)
     };
 }
 
@@ -131,4 +174,8 @@ function distinctAndSort(arr) {
 
 function podId(pod) {
     return `${pod.namespace}/${pod.name}`;
+}
+
+function replicaSetId(replicaSet) {
+    return `${replicaSet.namespace}/${replicaSet.name}`;
 }

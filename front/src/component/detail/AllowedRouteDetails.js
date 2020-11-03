@@ -24,69 +24,7 @@ const useStyles = makeStyles(theme => ({
     }
 }));
 
-const PodDetails = ({ podDetails }) => {
-    const classes = useStyles();
-
-    return (
-        <>
-            <Typography className={classes.detailsTitle} variant="h2">Pod details</Typography>
-            <div>
-                <Typography variant="body1" component="span"
-                            className={classes.detailsKey}>Namespace:</Typography>
-                <Typography variant="body1" component="span"
-                            className={classes.detailsValue}>{podDetails.namespace}</Typography>
-            </div>
-            <div>
-                <Typography variant="body1" component="span" className={classes.detailsKey}>Name:</Typography>
-                <Typography variant="body1" component="span"
-                            className={classes.detailsValue}>{podDetails.name}</Typography>
-            </div>
-            <div>
-                <Typography variant="body1" component="span" className={classes.detailsKey}>Labels:</Typography>
-                <div className={classes.detailsValueNested}>
-                    {
-                        Object.entries(podDetails.labels).map(([key, value]) => (
-                            <div key={key}>
-                                <Typography variant="body1" component="span"
-                                            className={classes.detailsKey}>{key}:</Typography>
-                                <Typography variant="body1" component="span"
-                                            className={classes.detailsValue}>{value}</Typography>
-                            </div>
-                        ))
-                    }
-                </div>
-            </div>
-            <div>
-                <Typography variant="body1" component="span" className={classes.detailsKey}>
-                    Isolated for ingress:
-                </Typography>
-                <Typography variant="body1" component="span" className={classes.detailsValue}>
-                    {podDetails.isIngressIsolated ? 'yes' : 'no'}
-                </Typography>
-            </div>
-            <div>
-                <Typography variant="body1" component="span" className={classes.detailsKey}>
-                    Isolated for egress:
-                </Typography>
-                <Typography variant="body1" component="span" className={classes.detailsValue}>
-                    {podDetails.isEgressIsolated ? 'yes' : 'no'}
-                </Typography>
-            </div>
-        </>
-    );
-};
-
-PodDetails.propTypes = {
-    podDetails: PropTypes.shape({
-        namespace: PropTypes.string.isRequired,
-        name: PropTypes.string.isRequired,
-        labels: PropTypes.object.isRequired,
-        isEgressIsolated: PropTypes.bool.isRequired,
-        isIngressIsolated: PropTypes.bool.isRequired
-    }).isRequired
-};
-
-const AllowedRouteDetails = ({ allowedRouteDetails }) => {
+const AllowedRouteDetails = ({ data }) => {
     const classes = useStyles();
 
     return (
@@ -95,21 +33,21 @@ const AllowedRouteDetails = ({ allowedRouteDetails }) => {
             <div>
                 <Typography variant="body1" component="span" className={classes.detailsKey}>Source pod:</Typography>
                 <Typography variant="body1" component="span"
-                            className={classes.detailsValue}>{allowedRouteDetails.sourcePod.namespace}/
-                    {allowedRouteDetails.sourcePod.name}</Typography>
+                            className={classes.detailsValue}>{data.sourcePod.namespace}/
+                    {data.sourcePod.name}</Typography>
             </div>
             <div>
                 <Typography variant="body1" component="span" className={classes.detailsKey}>Target pod:</Typography>
                 <Typography variant="body1" component="span"
-                            className={classes.detailsValue}>{allowedRouteDetails.targetPod.namespace}/
-                    {allowedRouteDetails.targetPod.name}</Typography>
+                            className={classes.detailsValue}>{data.targetPod.namespace}/
+                    {data.targetPod.name}</Typography>
             </div>
             <div>
                 <Typography variant="body1" component="span"
                             className={classes.detailsKey}>Ports:</Typography>
                 <Typography variant="body1" component="span"
                             className={classes.detailsValue}>
-                    {allowedRouteDetails.ports ? allowedRouteDetails.ports.join(', ') : 'all'}
+                    {data.ports ? data.ports.join(', ') : 'all'}
                 </Typography>
             </div>
             <div>
@@ -119,9 +57,9 @@ const AllowedRouteDetails = ({ allowedRouteDetails }) => {
                         <Typography variant="body1" className={classes.detailsKey}>
                             Policies allowing egress from source:</Typography>
                         {
-                            allowedRouteDetails.sourcePod.isEgressIsolated ? (
+                            data.sourcePod.isEgressIsolated ? (
                                 <Typography variant="body1" className={classes.detailsValue}>{
-                                    allowedRouteDetails.egressPolicies
+                                    data.egressPolicies
                                         .map(policy => `${policy.namespace}/${policy.name}`)
                                         .join(', ')
                                 }</Typography>
@@ -134,9 +72,9 @@ const AllowedRouteDetails = ({ allowedRouteDetails }) => {
                         <Typography variant="body1" className={classes.detailsKey}>
                             Policies allowing ingress to target:</Typography>
                         {
-                            allowedRouteDetails.targetPod.isIngressIsolated ? (
+                            data.targetPod.isIngressIsolated ? (
                                 <Typography variant="body1" className={classes.detailsValue}>{
-                                    allowedRouteDetails.ingressPolicies
+                                    data.ingressPolicies
                                         .map(policy => `${policy.namespace}/${policy.name}`)
                                         .join(', ')
                                 }</Typography>
@@ -152,7 +90,7 @@ const AllowedRouteDetails = ({ allowedRouteDetails }) => {
 };
 
 AllowedRouteDetails.propTypes = {
-    allowedRouteDetails: PropTypes.shape({
+    data: PropTypes.shape({
         sourcePod: PropTypes.shape({
             namespace: PropTypes.string.isRequired,
             name: PropTypes.string.isRequired,
@@ -179,7 +117,4 @@ AllowedRouteDetails.propTypes = {
     }).isRequired
 };
 
-export {
-    PodDetails,
-    AllowedRouteDetails
-};
+export default AllowedRouteDetails;

@@ -3,23 +3,34 @@ import { makeStyles } from '@material-ui/core/styles';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import classNames from 'classnames';
 import Typography from '@material-ui/core/Typography';
-import SwitchControl from './controls/SwitchControl';
-import MultiSelectControl from './controls/MultiSelectControl';
+import SwitchControl from './control/SwitchControl';
+import MultiSelectControl from './control/MultiSelectControl';
 import PropTypes from 'prop-types';
-import Graph from './graph/Graph';
 import { getStoredControls, storeControls } from '../service/storageService';
 import {
-    computeAnalysisResultView,
+    computeDataSet,
     fetchAnalysisResult,
     labelSelectorOperators
 } from '../service/analysisResultService';
-import InputControl from './controls/InputControl';
-import { AllowedRouteDetails, PodDetails } from './details/ResourceDetails';
-import MultiKeyValueSelectControl from './controls/MultiKeyValueSelectControl';
+import InputControl from './control/InputControl';
+import AllowedRouteDetails from './detail/AllowedRouteDetails';
+import PodDetails from './detail/PodDetails';
+import ServiceDetails from './detail/ServiceDetails';
+import MultiKeyValueSelectControl from './control/MultiKeyValueSelectControl';
+import ClusterMap from './map/ClusterMap';
+import RadioGroupControl from './control/RadioGroupControl';
+import NetworkPolicyMap from './map/NetworkPolicyMap';
+import ReplicaSetDetails from './detail/ReplicaSetDetails';
+import DeploymentDetails from './detail/DeploymentDetails';
 
 const MAX_RECOMMENDED_PODS = 100;
 const MAX_RECOMMENDED_ALLOWED_ROUTES = 1000;
+const VIEWS = {
+    WORKLOADS: 'Workloads',
+    NETWORK_POLICIES: 'Network policies'
+};
 const DEFAULT_CONTROLS = {
+    displayedView: VIEWS.WORKLOADS,
     namespaceFilters: [],
     labelFilters: [],
     nameFilter: '',
@@ -94,7 +105,7 @@ const Content = ({ className = '' }) => {
     const [state, setState] = useState({
         isLoading: true,
         analysisResult: null,
-        analysisResultView: null,
+        dataSet: null,
         controls: Object.assign(DEFAULT_CONTROLS, getStoredControls()),
         podDetails: null,
         allowedRouteDetails: null
@@ -109,7 +120,7 @@ const Content = ({ className = '' }) => {
                 ...oldState,
                 isLoading: false,
                 analysisResult: analysisResult,
-                analysisResultView: computeAnalysisResultView(analysisResult, oldState.controls)
+                dataSet: computeDataSet(analysisResult, oldState.controls)
             }));
         };
         fetchAndUpdate();
@@ -117,7 +128,7 @@ const Content = ({ className = '' }) => {
         if (state.controls.autoRefresh) {
             const interval = setInterval(() => {
                 fetchAndUpdate();
-            }, 5000);
+            }, 2000);
             return () => clearInterval(interval);
         }
     }, [state.controls.autoRefresh]);
@@ -126,9 +137,9 @@ const Content = ({ className = '' }) => {
         storeControls(state.controls);
     }, [state.controls]);
 
-    const isSafeToDisplay = (analysisResultView, displayLargeDatasets) => {
-        const tooLarge = analysisResultView.pods.length > MAX_RECOMMENDED_PODS
-            || analysisResultView.allowedRoutes.length > MAX_RECOMMENDED_ALLOWED_ROUTES;
+    const isSafeToDisplay = (dataSet, displayLargeDatasets) => {
+        const tooLarge = dataSet.pods.length > MAX_RECOMMENDED_PODS
+            || dataSet.allowedRoutes.length > MAX_RECOMMENDED_ALLOWED_ROUTES;
         return displayLargeDatasets || !tooLarge;
     };
     const handleControlChange = key => newValue => {
@@ -137,7 +148,7 @@ const Content = ({ className = '' }) => {
             return ({
                 ...oldState,
                 controls: newControls,
-                analysisResultView: computeAnalysisResultView(oldState.analysisResult, newControls)
+                dataSet: computeDataSet(oldState.analysisResult, newControls)
             });
         });
     };
@@ -151,6 +162,24 @@ const Content = ({ className = '' }) => {
         setState(oldState => ({
             ...oldState,
             allowedRouteDetails: allowedRoute
+        }));
+    };
+    const onServiceFocus = service => {
+        setState(oldState => ({
+            ...oldState,
+            serviceDetails: service
+        }));
+    };
+    const onReplicaSetFocus = replicaSet => {
+        setState(oldState => ({
+            ...oldState,
+            replicaSetDetails: replicaSet
+        }));
+    };
+    const onDeploymentFocus = deployment => {
+        setState(oldState => ({
+            ...oldState,
+            deploymentDetails: deployment
         }));
     };
     const namespaceFiltersCount = () => {
@@ -206,32 +235,52 @@ const Content = ({ className = '' }) => {
                         Analyzing your cluster...
                     </Typography>
                 </>}
-                {!state.isLoading && state.analysisResultView && state.analysisResultView.pods.length === 0 && <>
+                {!state.isLoading && state.dataSet && state.dataSet.pods.length === 0 && <>
                     <Typography className={classes.message} variant="caption">
                         No pod to display
                     </Typography>
                 </>}
-                {!state.isLoading && state.analysisResultView && state.analysisResultView.pods.length > 0
-                && !isSafeToDisplay(state.analysisResultView, state.controls.displayLargeDatasets) && <>
+                {!state.isLoading && state.dataSet && state.dataSet.pods.length > 0
+                && !isSafeToDisplay(state.dataSet, state.controls.displayLargeDatasets) && <>
                     <Typography className={classes.message} variant="caption">
-                        {`The dataset to display (${state.analysisResultView.pods.length} pods, `
-                        + `${state.analysisResultView.allowedRoutes.length} allowed routes) is larger than recommended `
-                        + `for an optimal experience. Apply a filter on the left to reduce the dataset, or enable the `
-                        + `"Always display large datasets" display option if you know what you are doing.`}
+                        {`The dataset to display is larger than recommended for an optimal experience. Apply a filter `
+                        + `on the left to reduce the dataset, or enable the "Always display large datasets" display `
+                        + `option if you know what you are doing.`}
                     </Typography>
                 </>}
-                {!state.isLoading && state.analysisResultView && state.analysisResultView.pods.length > 0
-                && isSafeToDisplay(state.analysisResultView, state.controls.displayLargeDatasets) && <>
-                    <Graph analysisResult={state.analysisResultView} onPodFocus={onPodFocus}
-                           onAllowedRouteFocus={onAllowedRouteFocus}/>
+                {!state.isLoading && state.dataSet && state.dataSet.pods.length > 0
+                && isSafeToDisplay(state.dataSet, state.controls.displayLargeDatasets)
+                && state.controls.displayedView === VIEWS.WORKLOADS && <>
+                    <ClusterMap dataSet={state.dataSet} onPodFocus={onPodFocus}
+                                onServiceFocus={onServiceFocus} onReplicaSetFocus={onReplicaSetFocus}
+                                onDeploymentFocus={onDeploymentFocus}/>
                     <Typography className={classes.graphCaption} variant="caption">
-                        {`Displaying ${state.analysisResultView.pods.length}/${state.analysisResult.pods.length} pods`
-                        + ` and ${state.analysisResultView.allowedRoutes.length}/`
+                        {`Displaying ${state.dataSet.pods.length}/${state.analysisResult.pods.length} pods, `
+                        + `${state.dataSet.services.length}/${state.analysisResult.services.length} services, `
+                        + `${state.dataSet.replicaSets.length}/${state.analysisResult.replicaSets.length} replicaSets and `
+                        + `${state.dataSet.deployments.length}/${state.analysisResult.deployments.length} deployments`}
+                    </Typography>
+                </>}
+                {!state.isLoading && state.dataSet && state.dataSet.pods.length > 0
+                && isSafeToDisplay(state.dataSet, state.controls.displayLargeDatasets)
+                && state.controls.displayedView === VIEWS.NETWORK_POLICIES && <>
+                    <NetworkPolicyMap dataSet={state.dataSet} onPodFocus={onPodFocus}
+                                      onAllowedRouteFocus={onAllowedRouteFocus}/>
+                    <Typography className={classes.graphCaption} variant="caption">
+                        {`Displaying ${state.dataSet.pods.length}/${state.analysisResult.pods.length} pods`
+                        + ` and ${state.dataSet.allowedRoutes.length}/`
                         + `${state.analysisResult.allowedRoutes.length} allowed routes`}
                     </Typography>
                 </>}
             </main>
             <aside role="search" className={classes.controls}>
+                <Typography className={classes.controlsTitle} variant="h2">View</Typography>
+                <div className={classes.controlsSection}>
+                    <RadioGroupControl className={classes.controlsItem} options={Object.values(VIEWS)}
+                                       value={state.controls.displayedView}
+                                       onChange={handleControlChange('displayedView')}>
+                    </RadioGroupControl>
+                </div>
                 <Typography className={classes.controlsTitle} variant="h2">Filters</Typography>
                 <div className={classes.controlsSection}>
                     <MultiSelectControl
@@ -249,14 +298,18 @@ const Content = ({ className = '' }) => {
                         className={classes.controlsItem} placeholder="Type a pod name or regex"
                         name={nameFilterLabel()} checked={isNameFilterActive()} value={state.controls.nameFilter}
                         onChange={handleControlChange('nameFilter')}/>
-                    <SwitchControl
-                        className={classes.controlsItem} name="Include ingress neighbors"
-                        checked={state.controls.includeIngressNeighbors}
-                        onChange={handleControlChange('includeIngressNeighbors')}/>
-                    <SwitchControl
-                        className={classes.controlsItem} name="Include egress neighbors"
-                        checked={state.controls.includeEgressNeighbors}
-                        onChange={handleControlChange('includeEgressNeighbors')}/>
+                    {state.controls.displayedView === VIEWS.NETWORK_POLICIES && (
+                        <SwitchControl
+                            className={classes.controlsItem} name="Include ingress neighbors"
+                            checked={state.controls.includeIngressNeighbors}
+                            onChange={handleControlChange('includeIngressNeighbors')}/>
+                    )}
+                    {state.controls.displayedView === VIEWS.NETWORK_POLICIES && (
+                        <SwitchControl
+                            className={classes.controlsItem} name="Include egress neighbors"
+                            checked={state.controls.includeEgressNeighbors}
+                            onChange={handleControlChange('includeEgressNeighbors')}/>
+                    )}
                 </div>
                 <Typography className={classes.controlsTitle} variant="h2">Display options</Typography>
                 <div className={classes.controlsSection}>
@@ -267,14 +320,18 @@ const Content = ({ className = '' }) => {
                         className={classes.controlsItem} name="Show namespace prefix"
                         checked={state.controls.showNamespacePrefix}
                         onChange={handleControlChange('showNamespacePrefix')}/>
-                    <SwitchControl
-                        className={classes.controlsItem} name="Highlight non isolated pods (ingress)"
-                        checked={state.controls.highlightPodsWithoutIngressIsolation}
-                        onChange={handleControlChange('highlightPodsWithoutIngressIsolation')}/>
-                    <SwitchControl
-                        className={classes.controlsItem} name="Highlight non isolated pods (egress)"
-                        checked={state.controls.highlightPodsWithoutEgressIsolation}
-                        onChange={handleControlChange('highlightPodsWithoutEgressIsolation')}/>
+                    {state.controls.displayedView === VIEWS.NETWORK_POLICIES && (
+                        <SwitchControl
+                            className={classes.controlsItem} name="Highlight non isolated pods (ingress)"
+                            checked={state.controls.highlightPodsWithoutIngressIsolation}
+                            onChange={handleControlChange('highlightPodsWithoutIngressIsolation')}/>
+                    )}
+                    {state.controls.displayedView === VIEWS.NETWORK_POLICIES && (
+                        <SwitchControl
+                            className={classes.controlsItem} name="Highlight non isolated pods (egress)"
+                            checked={state.controls.highlightPodsWithoutEgressIsolation}
+                            onChange={handleControlChange('highlightPodsWithoutEgressIsolation')}/>
+                    )}
                     <SwitchControl
                         className={classes.controlsItem} name="Always display large datasets"
                         checked={state.controls.displayLargeDatasets}
@@ -283,12 +340,27 @@ const Content = ({ className = '' }) => {
             </aside>
             {state.podDetails && (
                 <aside className={classes.details}>
-                    <PodDetails podDetails={state.podDetails}/>
+                    <PodDetails data={state.podDetails}/>
                 </aside>
             )}
             {state.allowedRouteDetails && (
                 <aside className={classes.details}>
-                    <AllowedRouteDetails allowedRouteDetails={state.allowedRouteDetails}/>
+                    <AllowedRouteDetails data={state.allowedRouteDetails}/>
+                </aside>
+            )}
+            {state.serviceDetails && (
+                <aside className={classes.details}>
+                    <ServiceDetails data={state.serviceDetails}/>
+                </aside>
+            )}
+            {state.replicaSetDetails && (
+                <aside className={classes.details}>
+                    <ReplicaSetDetails data={state.replicaSetDetails}/>
+                </aside>
+            )}
+            {state.deploymentDetails && (
+                <aside className={classes.details}>
+                    <DeploymentDetails data={state.deploymentDetails}/>
                 </aside>
             )}
         </div>
