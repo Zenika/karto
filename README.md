@@ -2,13 +2,20 @@
 
 # Karto
 
-A simple static analysis tool to explore and diagnosticate network policies declared in a Kubernetes cluster.
+A simple static analysis tool to explore a Kubernetes cluster.
 
-![demo](docs/assets/demo.gif)
+## Diagnosticate network policies
+
+![network-policy-demo](docs/assets/network-policy-demo.gif)
+
+## Observe changes live!
+
+![deployment-demo](docs/assets/deployment-demo.gif)
 
 ## Main features
 
 The left part of the screen contains the controls for the main view:
+- View: choose your view (workload or network policies)
 - Filters: filter pods by namespace, labels and name
 - Include ingress neighbors: display pods that can reach those in the current selection 
 - Include egress neighbors: display pods that can be reached by those in the current selection
@@ -21,14 +28,7 @@ The main view shows the graph of pods and allowed routes in your selection:
 - Zoom in and out by scrolling
 - Drag and drop pods to draw the perfect map of your cluster
 
-Hover over a pod to display details:
-- Name, namespace and labels
-- Isolation (ingress/egress)
-
-Hover over a route to investigate allowed traffic:
-- Source/target pod
-- Ports
-- Explanation (lack of isolation or network policies allowing traffic)
+Hover over an item to display details: name, namespace, labels, isolation (ingress/egress)... and more!
 
 ## Installation
 
