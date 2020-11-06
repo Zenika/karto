@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"karto/analyzer"
 	"karto/api"
 	"karto/types"
@@ -9,14 +10,21 @@ import (
 	"path/filepath"
 )
 
+var version = "1.2.0"
+
 func main() {
-	k8sConfigPath := parseCmd()
+	versionFlag, k8sConfigPath := parseCmd()
+	if versionFlag {
+		fmt.Printf("Karto v%s\n", version)
+		os.Exit(0)
+	}
 	analysisResultsChannel := make(chan types.AnalysisResult)
 	go analyzer.AnalyzeOnChange(k8sConfigPath, analysisResultsChannel)
 	api.Expose(analysisResultsChannel)
 }
 
-func parseCmd() string {
+func parseCmd() (bool, string) {
+	versionFlag := flag.Bool("version", false, "prints Karto's current version")
 	home := os.Getenv("HOME")
 	if home == "" {
 		home = os.Getenv("USERPROFILE")
@@ -29,5 +37,5 @@ func parseCmd() string {
 	}
 	flag.Parse()
 
-	return *k8sConfigPath
+	return *versionFlag, *k8sConfigPath
 }
