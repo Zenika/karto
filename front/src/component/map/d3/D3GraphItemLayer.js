@@ -8,17 +8,15 @@ export default class D3GraphItemLayer extends D3GraphLayer {
         this.labelSvgContainer = labelLayersContainer.append('g').attr('class', `${this.name}-labels`);
     }
 
-    updateElements(newElementHandler) {
-        super.updateElements(newElementHandler);
+    updateElements(newElementAttributesApplier) {
+        super.updateElements(newElementAttributesApplier);
         this.itemSvgContainer
             .selectAll(this.svgElement)
             .data(this.data, d => d.id)
-            .join(enter => enter
-                .append(this.svgElement)
-                .call(d => this.svgElementAttributesApplier(d))
-                .attr('class', item => item.highlighted ? 'item-highlight' : 'item')
-                .call(newElementHandler)
-            );
+            .join(this.svgElement)
+            .call(this.svgElementAttributesApplier)
+            .attr('class', item => item.highlighted ? 'item-highlight' : 'item')
+            .call(newElementAttributesApplier);
         this.labelSvgContainer
             .selectAll('text')
             .data(this.data, d => d.id)
@@ -49,5 +47,35 @@ export default class D3GraphItemLayer extends D3GraphLayer {
             .attr('font-size', FONT_SIZE / zoomFactor)
             .attr('letter-spacing', FONT_SPACING / zoomFactor)
             .attr('dy', -FONT_SIZE / zoomFactor);
+    }
+
+    getItemsAsPointGeometries() {
+        return this.data.map(item => ({ ...item, layerName: this.name }));
+    }
+
+    pinItemAtCurrentPosition(item) {
+        item.fx = item.x;
+        item.fy = item.y;
+    }
+
+    pinItemAtPosition(item, x, y) {
+        item.fx = x;
+        item.fy = y;
+    }
+
+    applyFocus(focusPolicy) {
+        super.applyFocus(focusPolicy);
+        this.itemSvgContainer
+            .selectAll(this.svgElement)
+            .attr('class', d => {
+                if (focusPolicy(d)) {
+                    return d.highlighted ? 'item-highlight' : 'item';
+                } else {
+                    return d.highlighted ? 'item-faded-highlight' : 'item-faded';
+                }
+            });
+        this.labelSvgContainer
+            .selectAll('text')
+            .attr('display', d => focusPolicy(d) ? 'block' : 'none');
     }
 }

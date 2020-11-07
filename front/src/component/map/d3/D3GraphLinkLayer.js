@@ -1,5 +1,5 @@
 import D3GraphLayer from './D3GraphLayer';
-import { LINK_WIDTH } from './D3Constants';
+import { LINK_ARROW_DEF_ID, LINK_ARROW_FADED_DEF_ID, LINK_WIDTH } from './D3Constants';
 
 export default class D3GraphLinkLayer extends D3GraphLayer {
 
@@ -7,16 +7,15 @@ export default class D3GraphLinkLayer extends D3GraphLayer {
         this.linkSvgContainer = linkLayersContainer.append('g').attr('class', this.name);
     }
 
-    updateElements(newElementHandler) {
-        super.updateElements(newElementHandler);
+    updateElements(newElementAttributesApplier) {
+        super.updateElements(newElementAttributesApplier);
         this.linkSvgContainer
             .selectAll(this.svgElement)
             .data(this.data, d => d.id)
-            .join(enter => enter.append(this.svgElement)
-                .call(this.svgElementAttributesApplier)
-                .attr('class', 'link')
-                .call(newElementHandler)
-            );
+            .join(this.svgElement)
+            .call(this.svgElementAttributesApplier)
+            .attr('class', 'link')
+            .call(newElementAttributesApplier);
     }
 
     updateElementsPositionAndScale(zoomFactor) {
@@ -28,5 +27,26 @@ export default class D3GraphLinkLayer extends D3GraphLayer {
             .attr('x2', d => d.target.x || null)
             .attr('y2', d => d.target.y || null)
             .attr('stroke-width', LINK_WIDTH / zoomFactor);
+    }
+
+    getLinksAsSegmentGeometries() {
+        return this.data.map(link => ({
+            ...link,
+            x1: link.source.x,
+            y1: link.source.y,
+            x2: link.target.x,
+            y2: link.target.y,
+            layerName: this.name
+        }));
+    }
+
+    applyFocus(focusPolicy) {
+        super.applyFocus(focusPolicy);
+        this.linkSvgContainer
+            .selectAll(this.svgElement)
+            .attr('class', d => focusPolicy(d) ? 'link' : 'link-faded')
+            .attr('marker-end', d => focusPolicy(d)
+                ? `url(#${LINK_ARROW_DEF_ID})`
+                : `url(#${LINK_ARROW_FADED_DEF_ID})`);
     }
 }

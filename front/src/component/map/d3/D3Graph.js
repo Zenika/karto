@@ -1,11 +1,14 @@
 import * as d3 from 'd3';
-import { FOCUS_THRESHOLD, GRAPH_HEIGHT, GRAPH_WIDTH } from './D3Constants';
-import { closestPointTo, closestSegmentTo } from './geometryUtils';
-
-const LINK_ARROW_DEF_ID = 'arrow';
-const LINK_ARROW_FADED_DEF_ID = 'arrow-faded';
-const LINK_FORCE = 'link';
-const CHARGE_FORCE = 'charge';
+import {
+    CHARGE_FORCE,
+    FOCUS_THRESHOLD,
+    GRAPH_HEIGHT,
+    GRAPH_WIDTH,
+    LINK_ARROW_DEF_ID,
+    LINK_ARROW_FADED_DEF_ID,
+    LINK_FORCE
+} from './D3Constants';
+import { closestPointTo, closestSegmentTo } from '../geometry/geometryUtils';
 
 export default class D3Graph {
 
@@ -24,7 +27,37 @@ export default class D3Graph {
         this.restorePreviousFocus();
     }
 
-    // Level 1 - abstract
+    getLayers() {
+        return [...this.getItemLayers(), ...this.getLinkLayers()];
+    }
+
+    getLayer(name) {
+        return this.getLayers().find(layer => layer.name === name);
+    }
+
+    getItemLayers() {
+        // Overridden by children classes
+        return [];
+    }
+
+    getLinkLayers() {
+        // Overridden by children classes
+        return [];
+    }
+
+    configureSimulation(simulation) {
+        // Overridden by children classes
+    }
+
+    sortLayersDataForNiceDisplay() {
+        // Overridden by children classes
+    }
+
+    isFocused(currentTarget, candidateLayerName, candidateDatum) {
+        // Overridden by children classes
+        return currentTarget == null || currentTarget.id === candidateDatum.id;
+    }
+
     initStructure() {
         const svgRoot = this.createContainerLayout();
         this.attachZoomHandlerTo(svgRoot);
@@ -49,6 +82,11 @@ export default class D3Graph {
         this.getItemLayers().forEach(layer => layer.attachTo(itemLayersContainer, labelLayersContainer));
     }
 
+    initForceSimulation() {
+        const onTick = () => this.renderAllLayers();
+        this.simulation = this.createForceSimulationEngine(onTick);
+    }
+
     updateAllLayers(dataSet) {
         const dataChanged = this.updateAllLayersData(dataSet);
         this.updateLinkLayersElements();
@@ -58,27 +96,24 @@ export default class D3Graph {
 
     updateAllLayersData(dataSet) {
         let atLeastOneChange = false;
-        for (const layer of this.getLayers()) {
+        this.getLayers().forEach(layer => {
             const changed = layer.updateData(dataSet);
             atLeastOneChange = atLeastOneChange || changed;
-        }
+        });
         this.sortLayersDataForNiceDisplay();
         return atLeastOneChange;
     }
 
     updateLinkLayersElements() {
-        const newElementHandler = d3Selection => this.addLinkArrowTo(d3Selection);
-        this.getLinkLayers().forEach(layer => layer.updateElements(newElementHandler));
+        this.getLinkLayers().forEach(layer => layer.updateElements(
+            d3Selection => this.addLinkArrowTo(d3Selection))
+        );
     }
 
     updateItemAndLabelLayersElements() {
-        const newElementHandler = d3Selection => this.attachDragHandlerTo(d3Selection);
-        this.getItemLayers().forEach(layer => layer.updateElements(newElementHandler));
-    }
-
-    initForceSimulation() {
-        const onTick = () => this.renderAllLayers();
-        this.simulation = this.createForceSimulationEngine(onTick);
+        this.getItemLayers().forEach(layer => layer.updateElements(
+            d3Selection => this.attachDragHandlerTo(layer, d3Selection))
+        );
     }
 
     renderAllLayers() {
@@ -93,12 +128,11 @@ export default class D3Graph {
     }
 
     restorePreviousFocus() {
-        if (this.focusedDatum) {
-            this.focusOnDatum(this.focusedDatum.layerName, this.focusedDatum.id);
+        if (this.focusedElement) {
+            this.applyFocusRules();
         }
     }
 
-    // Level 2 - d3 implem
     createContainerLayout() {
         return d3.select('#graph').append('svg')
             .attr('width', '100%')
@@ -110,6 +144,12 @@ export default class D3Graph {
         d3Selection.call(d3.zoom().on('zoom', () => this.handleZoom()));
     }
 
+    handleZoom() {
+        this.zoomFactor = d3.event.transform.k;
+        this.svg.attr('transform', d3.event.transform);
+        this.renderAllLayers();
+    };
+
     attachMouseMouveHandlerTo(d3Selection) {
         d3Selection.on('mousemove', () => {
             const mouse = d3.mouse(d3.event.currentTarget);
@@ -118,10 +158,46 @@ export default class D3Graph {
         });
     }
 
+    handleMouseMove([x, y]) {
+        const mousePositionAsPoint = { x, y };
+        const focusUpperBound = FOCUS_THRESHOLD / this.zoomFactor;
+        const elementToFocus = this.getItemClosestTo(mousePositionAsPoint, focusUpperBound)
+            || this.getLinkClosestTo(mousePositionAsPoint, focusUpperBound);
+        if (elementToFocus) {
+            this.focusOnElement(elementToFocus);
+        } else {
+            this.unFocus();
+        }
+    }
+
+    getItemClosestTo(targetPoint, upperBound) {
+        const itemPoints = this.getItemLayers().map(layer => layer.getItemsAsPointGeometries()).flat();
+        return closestPointTo(targetPoint, itemPoints, upperBound);
+    }
+
+    getLinkClosestTo(targetPoint, upperBound) {
+        const linkSegments = this.getLinkLayers().map(layer => layer.getLinksAsSegmentGeometries()).flat();
+        return closestSegmentTo(targetPoint, linkSegments, upperBound);
+    }
+
     attachSharedDefinitionsTo(d3Selection) {
         const defs = d3Selection.append('defs');
         this.defineArrowMarker(defs, LINK_ARROW_DEF_ID, 'link-arrow');
         this.defineArrowMarker(defs, LINK_ARROW_FADED_DEF_ID, 'link-arrow-faded');
+    }
+
+    defineArrowMarker(d3DefsSelection, id, className) {
+        d3DefsSelection.append('marker')
+            .attr('id', id)
+            .attr('viewBox', '0 -5 10 10')
+            .attr('refX', 20)
+            .attr('refY', 0)
+            .attr('markerWidth', 10)
+            .attr('markerHeight', 10)
+            .attr('orient', 'auto')
+            .append('path')
+            .attr('d', 'M0,-5L10,0L0,5L0,-5')
+            .attr('class', className);
     }
 
     createContentLayout(d3Selection) {
@@ -140,15 +216,39 @@ export default class D3Graph {
         return this.svg.append('g').attr('id', 'labels');
     }
 
-    attachDragHandlerTo(d3Selection) {
+    attachDragHandlerTo(layer, d3Selection) {
         d3Selection.call(d3.drag()
-            .on('start', d => this.handleDragStart(d))
-            .on('drag', d => this.handleDragUpdate(d))
-            .on('end', d => this.handleDragEnd(d)));
+            .on('start', d => this.handleDragStart(layer, d))
+            .on('drag', d => this.handleDragUpdate(layer, d))
+            .on('end', () => this.handleDragEnd()));
     }
 
-    addLinkArrowTo(d3Selection) {
-        return d3Selection.attr('marker-end', `url(#${LINK_ARROW_DEF_ID})`);
+    handleDragStart(layer, item) {
+        if (this.isFirstOfSimultaneousDragEvents(d3.event)) {
+            this.unFocus();
+            this.isDragging = true;
+            this.maintainSimulationRunning();
+        }
+        layer.pinItemAtCurrentPosition(item);
+    };
+
+    handleDragUpdate(layer, item) {
+        layer.pinItemAtPosition(item, d3.event.x, d3.event.y);
+    };
+
+    handleDragEnd() {
+        if (this.isLastOfSimultaneousDragEvents(d3.event)) {
+            this.isDragging = false;
+            this.stopMaintainingSimulationRunning();
+        }
+    };
+
+    isFirstOfSimultaneousDragEvents(d3Event) {
+        return d3Event.active === 0;
+    }
+
+    isLastOfSimultaneousDragEvents(d3Event) {
+        return d3Event.active === 0;
     }
 
     createForceSimulationEngine(onTick) {
@@ -171,160 +271,50 @@ export default class D3Graph {
         this.simulation.alpha(1).restart();
     }
 
-    // Level 3 - Utils
-    handleZoom() {
-        this.zoomFactor = d3.event.transform.k;
-        this.svg.attr('transform', d3.event.transform);
-        this.renderAllLayers();
-    };
-
-    handleMouseMove([x, y]) {
-        const mousePoint = { x, y };
-
-        // Check if mouse is close enough to an item to focus it
-        const itemPoints = this.getItemLayers()
-            .map(layer => layer.data.map(item => ({
-                ...item,
-                layerName: layer.name
-            })))
-            .flat();
-        const closestItem = closestPointTo(mousePoint, itemPoints, FOCUS_THRESHOLD / this.zoomFactor);
-        if (closestItem) {
-            this.focusOnDatum(closestItem.layerName, closestItem.id);
-            return;
-        }
-
-        // Check if mouse is close enough to a link to focus it
-        const linkSegments = this.getLinkLayers()
-            .map(layer => layer.data.map(link => ({
-                ...link,
-                x1: link.source.x,
-                y1: link.source.y,
-                x2: link.target.x,
-                y2: link.target.y,
-                layerName: layer.name
-            })))
-            .flat();
-        const closestLink = closestSegmentTo(mousePoint, linkSegments, FOCUS_THRESHOLD / this.zoomFactor);
-        if (closestLink) {
-            this.focusOnDatum(closestLink.layerName, closestLink.id);
-            return;
-        }
-
-        // Unfocus everything is mouse is not close to anything
-        this.unFocus();
+    maintainSimulationRunning() {
+        this.simulation.alphaTarget(0.3).restart();
     }
 
-    defineArrowMarker(d3DefsSelection, id, className) {
-        d3DefsSelection.append('marker')
-            .attr('id', id)
-            .attr('viewBox', '0 -5 10 10')
-            .attr('refX', 20)
-            .attr('refY', 0)
-            .attr('markerWidth', 10)
-            .attr('markerHeight', 10)
-            .attr('orient', 'auto')
-            .append('path')
-            .attr('d', 'M0,-5L10,0L0,5L0,-5')
-            .attr('class', className);
+    stopMaintainingSimulationRunning() {
+        this.simulation.alphaTarget(0);
     }
 
-    focusOnDatum(layerName, id) {
+    addLinkArrowTo(d3Selection) {
+        return d3Selection.attr('marker-end', `url(#${LINK_ARROW_DEF_ID})`);
+    }
+
+    focusOnElement(element) {
         if (this.isDragging) {
-            // Do not focus during drag
             return;
         }
-        const layer = this.getLayer(layerName);
-        if (this.focusedDatum == null || this.focusedDatum.layerName !== layerName
-            || this.focusedDatum.id !== id) {
+        if (!this.isAlreadyFocused(element.id)) {
             this.unFocus();
-            this.focusedDatum = { layerName, id };
-            layer.focusDatum(id, this.focusHandlers);
+            this.focusedElement = element;
+            const layer = this.getLayer(element.layerName);
+            layer.onElementFocused(element.id, this.focusHandlers);
         }
-        this.applyFocus();
+        this.applyFocusRules();
     };
+
+    isAlreadyFocused(elementId) {
+        return this.focusedElement != null && this.focusedElement.id === elementId;
+    }
 
     unFocus() {
-        if (this.focusedDatum == null && this.highlightedLinkId == null) {
+        if (this.focusedElement == null) {
             return;
         }
-        this.focusedDatum = null;
+        this.focusedElement = null;
         Object.values(this.focusHandlers).forEach(focusHandler => focusHandler(null));
-        this.applyFocus();
+        this.applyFocusRules();
     };
 
-    applyFocus() {
-        this.getItemLayers().forEach(layer => {
-            layer.itemSvgContainer
-                .selectAll(layer.svgElement)
-                .attr('class', d => {
-                    if (this.isFocused(this.focusedDatum, layer.name, d)) {
-                        return d.highlighted ? 'item-highlight' : 'item';
-                    } else {
-                        return d.highlighted ? 'item-faded-highlight' : 'item-faded';
-                    }
-                });
-            layer.labelSvgContainer
-                .selectAll('text')
-                .attr('display', d => this.isFocused(this.focusedDatum, layer.name, d) ? 'block' : 'none');
-        });
-        this.getLinkLayers().forEach(layer => {
-            layer.linkSvgContainer
-                .selectAll(layer.svgElement)
-                .attr('class', d => this.isFocused(this.focusedDatum, layer.name, d) ? 'link' : 'link-faded')
-                .attr('marker-end', d => this.isFocused(this.focusedDatum, layer.name, d) ? 'url(#arrow)' : 'url(#arrow-faded)');
-        });
-    };
-
-    handleDragStart(item) {
-        if (d3.event.active === 0) {
-            // Start of first concurrent drag event
-            this.unFocus();
-            this.isDragging = true;
-            this.simulation.alphaTarget(0.3).restart();
+    applyFocusRules() {
+        if (this.isDragging) {
+            return;
         }
-        item.fx = item.x;
-        item.fy = item.y;
+        this.getLayers().forEach(layer => layer.applyFocus(
+            datum => this.isFocused(this.focusedElement, layer.name, datum))
+        );
     };
-
-    handleDragUpdate(item) {
-        item.fx = d3.event.x;
-        item.fy = d3.event.y;
-    };
-
-    handleDragEnd() {
-        if (d3.event.active === 0) {
-            // End of last concurrent drag event
-            this.isDragging = false;
-            this.simulation.alphaTarget(0);
-        }
-    };
-
-    getLayers() {
-        return [...this.getItemLayers(), ...this.getLinkLayers()];
-    }
-
-    getLayer(name) {
-        return this.getLayers().find(layer => layer.name === name);
-    }
-
-    getItemLayers() {
-        return [];
-    }
-
-    getLinkLayers() {
-        return [];
-    }
-
-    configureSimulation(simulation) {
-
-    }
-
-    sortLayersDataForNiceDisplay() {
-
-    }
-
-    isFocused(currentTarget, candidateLayerName, candidateDatum) {
-        return currentTarget == null || currentTarget.id === candidateDatum.id;
-    }
 }

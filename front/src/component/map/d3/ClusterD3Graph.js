@@ -90,8 +90,10 @@ export default class ClusterD3Graph extends D3Graph {
                 selection
                     .attr('r', 2)
                     .each((d, i, c) => {
-                        d.fx = d.x = 0;
-                        d.fy = d.y = SPACING * (i - (c.length - 1) / 2);
+                        if (d.fx == null) {
+                            d.fx = d.x = 0;
+                            d.fy = d.y = SPACING * (i - (c.length - 1) / 2);
+                        }
                     });
             }
         });
@@ -229,6 +231,10 @@ export default class ClusterD3Graph extends D3Graph {
     }
 
     sortLayersDataForNiceDisplay() {
+        return this.sortPodsFollowingOrderOfTheirService();
+    }
+
+    sortPodsFollowingOrderOfTheirService() {
         const indexedPodsToService = new Map();
         this.servicesLayer.data.forEach((service, i) => {
             service.index = i;

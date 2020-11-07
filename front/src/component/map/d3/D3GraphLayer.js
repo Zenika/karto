@@ -35,7 +35,7 @@ export default class D3GraphLayer {
         return dataChanged;
     }
 
-    updateElements(newElementHandler) {
+    updateElements(newElementAttributesApplier) {
 
     }
 
@@ -43,12 +43,16 @@ export default class D3GraphLayer {
 
     }
 
-    focusDatum(id, focusHandlers) {
+    onElementFocused(id, focusHandlers) {
         if (!this.focusHandler) {
             return;
         }
         const focusHandler = focusHandlers[this.focusHandler];
         const datum = this.indexedData.get(id).sourceData;
         focusHandler(datum);
+    }
+
+    applyFocus(focusPolicy) {
+
     }
 }

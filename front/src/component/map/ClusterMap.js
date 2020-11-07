@@ -11,14 +11,8 @@ const useStyles = makeStyles(theme => ({
         '& .item': {
             fill: theme.palette.secondary.main
         },
-        '& .item-highlight': {
-            fill: theme.palette.warning.main
-        },
         '& .item-faded': {
             fill: theme.palette.secondary.dark
-        },
-        '& .item-faded-highlight': {
-            fill: theme.palette.warning.dark
         },
         '& .label': {
             fill: theme.palette.text.primary,
