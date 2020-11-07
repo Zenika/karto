@@ -228,7 +228,7 @@ export default class ClusterD3Graph extends D3Graph {
         ];
     }
 
-    sortData() {
+    sortLayersDataForNiceDisplay() {
         const indexedPodsToService = new Map();
         this.servicesLayer.data.forEach((service, i) => {
             service.index = i;

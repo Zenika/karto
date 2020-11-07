@@ -1,158 +1,181 @@
 import * as d3 from 'd3';
-import { FOCUS_THRESHOLD, FONT_SIZE, FONT_SPACING, GRAPH_HEIGHT, GRAPH_WIDTH, LINK_WIDTH } from './D3Constants';
+import { FOCUS_THRESHOLD, GRAPH_HEIGHT, GRAPH_WIDTH } from './D3Constants';
 import { closestPointTo, closestSegmentTo } from './geometryUtils';
+
+const LINK_ARROW_DEF_ID = 'arrow';
+const LINK_ARROW_FADED_DEF_ID = 'arrow-faded';
+const LINK_FORCE = 'link';
+const CHARGE_FORCE = 'charge';
 
 export default class D3Graph {
 
+    // Main
     init() {
-        const svgRoot = d3.select('#graph').append('svg')
-            .attr('width', '100%')
-            .attr('height', '100%')
-            .attr('viewBox', [-GRAPH_WIDTH / 2, -GRAPH_HEIGHT / 2, GRAPH_WIDTH, GRAPH_HEIGHT])
-            .on('mousemove', () => {
-                const mouse = d3.mouse(d3.event.currentTarget);
-                const zoomTransform = d3.zoomTransform(svgRoot.node());
-                this.handleMouseMove(zoomTransform.invert(mouse));
-            })
-            .call(d3.zoom().on('zoom', () => this.handleZoom()));
-        const defs = svgRoot.append('defs');
-        const defineArrowMarker = (id, className) => {
-            defs.append('marker')
-                .attr('id', id)
-                .attr('viewBox', '0 -5 10 10')
-                .attr('refX', 20)
-                .attr('refY', 0)
-                .attr('markerWidth', 10)
-                .attr('markerHeight', 10)
-                .attr('orient', 'auto')
-                .append('path')
-                .attr('d', 'M0,-5L10,0L0,5L0,-5')
-                .attr('class', className);
-        };
-        defineArrowMarker('arrow', 'link-arrow');
-        defineArrowMarker('arrow-faded', 'link-arrow-faded');
         this.zoomFactor = 1;
-        this.focusedDatum = null;
-        this.svg = svgRoot.append('g');
-        this.svg.append('g').attr('id', 'links');
-        this.svg.append('g').attr('id', 'items');
-        this.svg.append('g').attr('id', 'labels');
-        this.getLinkLayers().forEach(layer => layer.attach(this.svg));
-        this.getItemLayers().forEach(layer => layer.attach(this.svg));
-        this.simulation = d3.forceSimulation([])
-            .force('link', d3.forceLink([]).id(d => d.id))
-            .force('charge', d3.forceManyBody());
-        this.configureSimulation(this.simulation);
-        this.simulation.on('tick', () => {
-            this.getItemLayers().forEach(layer => {
-                layer.itemSvgContainer
-                    .selectAll(layer.svgElement)
-                    .attr('transform', d => `translate(${d.x},${d.y}) scale(${1 / this.zoomFactor})`);
-                layer.labelSvgContainer
-                    .selectAll('text')
-                    .attr('transform', d => `translate(${d.x},${d.y})`);
-            });
-            this.getLinkLayers().forEach(layer => {
-                layer.linkSvgContainer
-                    .selectAll(layer.svgElement)
-                    .attr('x1', d => d.source.x)
-                    .attr('y1', d => d.source.y)
-                    .attr('x2', d => d.target.x)
-                    .attr('y2', d => d.target.y);
-            });
-        });
+        this.initStructure();
+        this.initLayers();
+        this.initForceSimulation();
     }
 
     update(dataSet, focusHandlers) {
-        // Update focus handlers
         this.focusHandlers = focusHandlers;
+        const dataChanged = this.updateAllLayers(dataSet);
+        this.updateForceSimulation(dataChanged);
+        this.restorePreviousFocus();
+    }
 
-        // Update data
+    // Level 1 - abstract
+    initStructure() {
+        const svgRoot = this.createContainerLayout();
+        this.attachZoomHandlerTo(svgRoot);
+        this.attachMouseMouveHandlerTo(svgRoot);
+        this.attachSharedDefinitionsTo(svgRoot);
+        this.svg = this.createContentLayout(svgRoot);
+    }
+
+    initLayers() {
+        this.initLinkLayers();
+        this.initItemAndLabelLayers();
+    }
+
+    initLinkLayers() {
+        const linkLayersContainer = this.createLinkLayersContainer();
+        this.getLinkLayers().forEach(layer => layer.attachTo(linkLayersContainer));
+    }
+
+    initItemAndLabelLayers() {
+        const itemLayersContainer = this.createItemLayersContainer();
+        const labelLayersContainer = this.createLabelLayersContainer();
+        this.getItemLayers().forEach(layer => layer.attachTo(itemLayersContainer, labelLayersContainer));
+    }
+
+    updateAllLayers(dataSet) {
+        const dataChanged = this.updateAllLayersData(dataSet);
+        this.updateLinkLayersElements();
+        this.updateItemAndLabelLayersElements();
+        return dataChanged;
+    }
+
+    updateAllLayersData(dataSet) {
         let atLeastOneChange = false;
-        for (const layer of [...this.getItemLayers(), ...this.getLinkLayers()]) {
-            const changed = layer.update(dataSet);
+        for (const layer of this.getLayers()) {
+            const changed = layer.updateData(dataSet);
             atLeastOneChange = atLeastOneChange || changed;
         }
-        this.sortData();
+        this.sortLayersDataForNiceDisplay();
+        return atLeastOneChange;
+    }
 
-        // Update display
-        this.getItemLayers().forEach(layer => {
-            layer.itemSvgContainer
-                .selectAll(layer.svgElement)
-                .data(layer.data, d => d.id)
-                .join(layer.svgElement)
-                .call(layer.svgElementAttributesApplier)
-                .attr('class', item => item.highlighted ? 'item-highlight' : 'item')
-                .attr('transform', d => {
-                    if (d.x || d.y) {
-                        return `translate(${d.x},${d.y}) scale(${1 / this.zoomFactor})`;
-                    } else {
-                        return `scale(${1 / this.zoomFactor})`;
-                    }
-                })
-                .call(d3.drag()
-                    .on('start', d => this.handleDragStart(d))
-                    .on('drag', d => this.handleDragUpdate(d))
-                    .on('end', () => this.handleDragEnd()));
-            layer.labelSvgContainer
-                .selectAll('text')
-                .data(layer.data, d => d.id)
-                .join('text')
-                .text(d => d.displayName)
-                .attr('text-anchor', 'middle')
-                .attr('font-size', FONT_SIZE / this.zoomFactor)
-                .attr('letter-spacing', FONT_SPACING / this.zoomFactor)
-                .attr('dy', -FONT_SIZE / this.zoomFactor)
-                .attr('class', 'label');
-        });
-        this.getLinkLayers().forEach(layer => {
-            layer.linkSvgContainer
-                .selectAll(layer.svgElement)
-                .data(layer.data, d => d.id)
-                .join(layer.svgElement)
-                .call(layer.svgElementAttributesApplier)
-                .attr('marker-end', 'url(#arrow)')
-                .attr('class', 'link')
-                .attr('stroke-width', LINK_WIDTH / this.zoomFactor);
-        });
+    updateLinkLayersElements() {
+        const newElementHandler = d3Selection => this.addLinkArrowTo(d3Selection);
+        this.getLinkLayers().forEach(layer => layer.updateElements(newElementHandler));
+    }
 
-        // Update simulation
-        const itemsData = this.getItemLayers().map(layer => layer.data).flat();
-        const linksData = this.getLinkLayers().map(layer => layer.data).flat();
-        this.simulation.nodes(itemsData);
-        this.simulation.force('link').links(linksData);
-        if (atLeastOneChange) {
-            this.simulation.alpha(1).restart();
+    updateItemAndLabelLayersElements() {
+        const newElementHandler = d3Selection => this.attachDragHandlerTo(d3Selection);
+        this.getItemLayers().forEach(layer => layer.updateElements(newElementHandler));
+    }
+
+    initForceSimulation() {
+        const onTick = () => this.renderAllLayers();
+        this.simulation = this.createForceSimulationEngine(onTick);
+    }
+
+    renderAllLayers() {
+        this.getLayers().forEach(layer => layer.updateElementsPositionAndScale(this.zoomFactor));
+    }
+
+    updateForceSimulation(dataChanged) {
+        this.updateForceSimulationData();
+        if (dataChanged) {
+            this.restartSimulation();
         }
+    }
 
-        // Restore highlight if still active
+    restorePreviousFocus() {
         if (this.focusedDatum) {
             this.focusOnDatum(this.focusedDatum.layerName, this.focusedDatum.id);
         }
     }
 
+    // Level 2 - d3 implem
+    createContainerLayout() {
+        return d3.select('#graph').append('svg')
+            .attr('width', '100%')
+            .attr('height', '100%')
+            .attr('viewBox', [-GRAPH_WIDTH / 2, -GRAPH_HEIGHT / 2, GRAPH_WIDTH, GRAPH_HEIGHT]);
+    }
+
+    attachZoomHandlerTo(d3Selection) {
+        d3Selection.call(d3.zoom().on('zoom', () => this.handleZoom()));
+    }
+
+    attachMouseMouveHandlerTo(d3Selection) {
+        d3Selection.on('mousemove', () => {
+            const mouse = d3.mouse(d3.event.currentTarget);
+            const zoomTransform = d3.zoomTransform(d3Selection.node());
+            this.handleMouseMove(zoomTransform.invert(mouse));
+        });
+    }
+
+    attachSharedDefinitionsTo(d3Selection) {
+        const defs = d3Selection.append('defs');
+        this.defineArrowMarker(defs, LINK_ARROW_DEF_ID, 'link-arrow');
+        this.defineArrowMarker(defs, LINK_ARROW_FADED_DEF_ID, 'link-arrow-faded');
+    }
+
+    createContentLayout(d3Selection) {
+        return d3Selection.append('g');
+    }
+
+    createLinkLayersContainer() {
+        return this.svg.append('g').attr('id', 'links');
+    }
+
+    createItemLayersContainer() {
+        return this.svg.append('g').attr('id', 'items');
+    }
+
+    createLabelLayersContainer() {
+        return this.svg.append('g').attr('id', 'labels');
+    }
+
+    attachDragHandlerTo(d3Selection) {
+        d3Selection.call(d3.drag()
+            .on('start', d => this.handleDragStart(d))
+            .on('drag', d => this.handleDragUpdate(d))
+            .on('end', d => this.handleDragEnd(d)));
+    }
+
+    addLinkArrowTo(d3Selection) {
+        return d3Selection.attr('marker-end', `url(#${LINK_ARROW_DEF_ID})`);
+    }
+
+    createForceSimulationEngine(onTick) {
+        const simulation = d3.forceSimulation([])
+            .force(LINK_FORCE, d3.forceLink([]).id(d => d.id))
+            .force(CHARGE_FORCE, d3.forceManyBody());
+        this.configureSimulation(simulation);
+        simulation.on('tick', onTick);
+        return simulation;
+    }
+
+    updateForceSimulationData() {
+        const itemsData = this.getItemLayers().map(layer => layer.data).flat();
+        const linksData = this.getLinkLayers().map(layer => layer.data).flat();
+        this.simulation.nodes(itemsData);
+        this.simulation.force(LINK_FORCE).links(linksData);
+    }
+
+    restartSimulation() {
+        this.simulation.alpha(1).restart();
+    }
+
+    // Level 3 - Utils
     handleZoom() {
         this.zoomFactor = d3.event.transform.k;
         this.svg.attr('transform', d3.event.transform);
-
-        this.getItemLayers().forEach(layer => {
-            // Compensate changes to shape size
-            layer.itemSvgContainer
-                .selectAll(layer.svgElement)
-                .attr('transform', d => `translate(${d.x},${d.y}) scale(${1 / this.zoomFactor})`);
-            // Compensate changes to label size
-            layer.labelSvgContainer
-                .selectAll('text')
-                .attr('font-size', FONT_SIZE / this.zoomFactor)
-                .attr('letter-spacing', FONT_SPACING / this.zoomFactor)
-                .attr('dy', -FONT_SIZE / this.zoomFactor);
-        });
-        this.getLinkLayers().forEach(layer => {
-            // Compensate changes to line width
-            layer.linkSvgContainer
-                .selectAll(layer.svgElement)
-                .attr('stroke-width', LINK_WIDTH / this.zoomFactor);
-        });
+        this.renderAllLayers();
     };
 
     handleMouseMove([x, y]) {
@@ -190,6 +213,20 @@ export default class D3Graph {
 
         // Unfocus everything is mouse is not close to anything
         this.unFocus();
+    }
+
+    defineArrowMarker(d3DefsSelection, id, className) {
+        d3DefsSelection.append('marker')
+            .attr('id', id)
+            .attr('viewBox', '0 -5 10 10')
+            .attr('refX', 20)
+            .attr('refY', 0)
+            .attr('markerWidth', 10)
+            .attr('markerHeight', 10)
+            .attr('orient', 'auto')
+            .append('path')
+            .attr('d', 'M0,-5L10,0L0,5L0,-5')
+            .attr('class', className);
     }
 
     focusOnDatum(layerName, id) {
@@ -263,8 +300,12 @@ export default class D3Graph {
         }
     };
 
+    getLayers() {
+        return [...this.getItemLayers(), ...this.getLinkLayers()];
+    }
+
     getLayer(name) {
-        return [...this.getItemLayers(), ...this.getLinkLayers()].find(layer => layer.name === name);
+        return this.getLayers().find(layer => layer.name === name);
     }
 
     getItemLayers() {
@@ -279,7 +320,7 @@ export default class D3Graph {
 
     }
 
-    sortData() {
+    sortLayersDataForNiceDisplay() {
 
     }
 
