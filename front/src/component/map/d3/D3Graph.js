@@ -1,42 +1,6 @@
 import * as d3 from 'd3';
 import { FOCUS_THRESHOLD, FONT_SIZE, FONT_SPACING, GRAPH_HEIGHT, GRAPH_WIDTH, LINK_WIDTH } from './D3Constants';
-
-function distancePointToSegment(x, y, x1, y1, x2, y2) {
-    // https://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment#answer-6853926
-    const A = x - x1;
-    const B = y - y1;
-    const C = x2 - x1;
-    const D = y2 - y1;
-    const dot = A * C + B * D;
-    const len_sq = C * C + D * D;
-    let param = -1;
-    if (len_sq !== 0) //in case of 0 length line
-        param = dot / len_sq;
-    let xx, yy;
-    if (param < 0) {
-        xx = x1;
-        yy = y1;
-    } else if (param > 1) {
-        xx = x2;
-        yy = y2;
-    } else {
-        xx = x1 + param * C;
-        yy = y1 + param * D;
-    }
-    const dx = x - xx;
-    const dy = y - yy;
-    return Math.sqrt(dx * dx + dy * dy);
-}
-
-function distancePointToPoint(x, y, x1, y1) {
-    const dx = x1 - x;
-    const dy = y1 - y;
-    return Math.sqrt(dx * dx + dy * dy);
-}
-
-function ifHighlighted(item, classIfHighlighted, classIfNotHighlighted) {
-    return item.highlighted ? classIfHighlighted : classIfNotHighlighted;
-}
+import { closestPointTo, closestSegmentTo } from './geometryUtils';
 
 export default class D3Graph {
 
@@ -118,7 +82,7 @@ export default class D3Graph {
                 .data(layer.data, d => d.id)
                 .join(layer.svgElement)
                 .call(layer.svgElementAttributesApplier)
-                .attr('class', item => ifHighlighted(item, 'item-highlight', 'item'))
+                .attr('class', item => item.highlighted ? 'item-highlight' : 'item')
                 .attr('transform', d => {
                     if (d.x || d.y) {
                         return `translate(${d.x},${d.y}) scale(${1 / this.zoomFactor})`;
@@ -192,43 +156,35 @@ export default class D3Graph {
     };
 
     handleMouseMove([x, y]) {
+        const mousePoint = { x, y };
+
         // Check if mouse is close enough to an item to focus it
-        let closestItemId = null;
-        let closestItemLayerName = null;
-        let distanceToClosestItem = null;
-        for (const layer of this.getItemLayers()) {
-            for (const datum of layer.data) {
-                const distance = distancePointToPoint(x, y, datum.x, datum.y);
-                if (closestItemId == null || distance < distanceToClosestItem) {
-                    closestItemId = datum.id;
-                    closestItemLayerName = layer.name;
-                    distanceToClosestItem = distance;
-                }
-            }
-        }
-        if (closestItemId && distanceToClosestItem < FOCUS_THRESHOLD / this.zoomFactor) {
-            this.focusOnDatum(closestItemLayerName, closestItemId);
+        const itemPoints = this.getItemLayers()
+            .map(layer => layer.data.map(item => ({
+                ...item,
+                layerName: layer.name
+            })))
+            .flat();
+        const closestItem = closestPointTo(mousePoint, itemPoints, FOCUS_THRESHOLD / this.zoomFactor);
+        if (closestItem) {
+            this.focusOnDatum(closestItem.layerName, closestItem.id);
             return;
         }
 
         // Check if mouse is close enough to a link to focus it
-        let closestLinkId = null;
-        let closestLinkLayerName = null;
-        let distanceToClosestLink = null;
-        for (const layer of this.getLinkLayers()) {
-            for (const datum of layer.data) {
-                const source = datum.source;
-                const target = datum.target;
-                const distance = distancePointToSegment(x, y, source.x, source.y, target.x, target.y);
-                if (closestLinkId == null || distance < distanceToClosestLink) {
-                    closestLinkId = datum.id;
-                    closestLinkLayerName = layer.name;
-                    distanceToClosestLink = distance;
-                }
-            }
-        }
-        if (closestLinkId && distanceToClosestLink < FOCUS_THRESHOLD / this.zoomFactor) {
-            this.focusOnDatum(closestLinkLayerName, closestLinkId);
+        const linkSegments = this.getLinkLayers()
+            .map(layer => layer.data.map(link => ({
+                ...link,
+                x1: link.source.x,
+                y1: link.source.y,
+                x2: link.target.x,
+                y2: link.target.y,
+                layerName: layer.name
+            })))
+            .flat();
+        const closestLink = closestSegmentTo(mousePoint, linkSegments, FOCUS_THRESHOLD / this.zoomFactor);
+        if (closestLink) {
+            this.focusOnDatum(closestLink.layerName, closestLink.id);
             return;
         }
 
@@ -264,10 +220,13 @@ export default class D3Graph {
         this.getItemLayers().forEach(layer => {
             layer.itemSvgContainer
                 .selectAll(layer.svgElement)
-                .attr('class', d => this.isFocused(this.focusedDatum, layer.name, d)
-                    ? ifHighlighted(d, 'item-highlight', 'item')
-                    : ifHighlighted(d, 'item-faded-highlight', 'item-faded')
-                );
+                .attr('class', d => {
+                    if (this.isFocused(this.focusedDatum, layer.name, d)) {
+                        return d.highlighted ? 'item-highlight' : 'item';
+                    } else {
+                        return d.highlighted ? 'item-faded-highlight' : 'item-faded';
+                    }
+                });
             layer.labelSvgContainer
                 .selectAll('text')
                 .attr('display', d => this.isFocused(this.focusedDatum, layer.name, d) ? 'block' : 'none');
