@@ -9,14 +9,11 @@ export default class D3GraphLayer {
         this.focusHandler = layerConfig.focusHandler;
         this.svgElementAttributesApplier = layerConfig.svgElementAttributesApplier || (() => {
         });
-    }
-
-    attach(svgElement) {
         this.data = [];
         this.indexedData = new Map();
     }
 
-    update(dataSet) {
+    updateData(dataSet) {
         let dataChanged = false;
         const newData = this.dataExtractor(dataSet).map(datum => {
             const oldDatum = this.indexedData.get(this.d3IdFn(datum));
@@ -38,12 +35,24 @@ export default class D3GraphLayer {
         return dataChanged;
     }
 
-    focusDatum(id, focusHandlers) {
+    updateElements(newElementAttributesApplier) {
+
+    }
+
+    updateElementsPositionAndScale(zoomFactor) {
+
+    }
+
+    onElementFocused(id, focusHandlers) {
         if (!this.focusHandler) {
             return;
         }
         const focusHandler = focusHandlers[this.focusHandler];
         const datum = this.indexedData.get(id).sourceData;
         focusHandler(datum);
+    }
+
+    applyFocus(focusPolicy) {
+
     }
 }
