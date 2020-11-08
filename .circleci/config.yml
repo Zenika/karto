@@ -32,6 +32,10 @@ jobs:
           key: v3-front-dependencies-{{ checksum "front/package.json" }}
       - run:
           working_directory: front
+          name: Run tests
+          command: yarn test
+      - run:
+          working_directory: front
           name: Build frontend
           command: yarn build
       - persist_to_workspace:
