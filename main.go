@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"karto/analyzer"
 	"karto/api"
 	"karto/types"
 	"os"
@@ -18,8 +17,10 @@ func main() {
 		fmt.Printf("Karto v%s\n", version)
 		os.Exit(0)
 	}
+	container := dependencyInjection()
+	analysisScheduler := container.AnalysisScheduler
 	analysisResultsChannel := make(chan types.AnalysisResult)
-	go analyzer.AnalyzeOnChange(k8sConfigPath, analysisResultsChannel)
+	go analysisScheduler.AnalyzeOnClusterChange(k8sConfigPath, analysisResultsChannel)
 	api.Expose(analysisResultsChannel)
 }
 

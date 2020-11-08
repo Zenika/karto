@@ -21,6 +21,24 @@ import (
 	"time"
 )
 
+type AnalysisScheduler interface {
+	AnalyzeOnClusterChange(k8sConfigPath string, resultsChannel chan<- types.AnalysisResult)
+}
+
+type analysisSchedulerImpl struct {
+	podAnalyzer      pod.Analyzer
+	trafficAnalyzer  traffic.Analyzer
+	workloadAnalyzer workload.Analyzer
+}
+
+func NewAnalysisScheduler(podAnalyzer pod.Analyzer, trafficAnalyzer traffic.Analyzer, workloadAnalyzer workload.Analyzer) AnalysisScheduler {
+	return analysisSchedulerImpl{
+		podAnalyzer:      podAnalyzer,
+		trafficAnalyzer:  trafficAnalyzer,
+		workloadAnalyzer: workloadAnalyzer,
+	}
+}
+
 type clusterState struct {
 	Namespaces  []*corev1.Namespace
 	Pods        []*corev1.Pod
@@ -30,8 +48,8 @@ type clusterState struct {
 	Policies    []*networkingv1.NetworkPolicy
 }
 
-func AnalyzeOnChange(k8sConfigPath string, resultsChannel chan<- types.AnalysisResult) {
-	k8sClient := getK8sClient(k8sConfigPath)
+func (analysisScheduler analysisSchedulerImpl) AnalyzeOnClusterChange(k8sConfigPath string, resultsChannel chan<- types.AnalysisResult) {
+	k8sClient := analysisScheduler.getK8sClient(k8sConfigPath)
 	analyzeQueue := workqueue.NewRateLimitingQueue(workqueue.DefaultItemBasedRateLimiter())
 	informerFactory := informers.NewSharedInformerFactory(k8sClient, 0)
 	namespacesInformer := informerFactory.Core().V1().Namespaces()
@@ -79,7 +97,7 @@ func AnalyzeOnChange(k8sConfigPath string, resultsChannel chan<- types.AnalysisR
 		if err != nil {
 			panic(err.Error())
 		}
-		resultsChannel <- analyze(clusterState{
+		resultsChannel <- analysisScheduler.analyze(clusterState{
 			Namespaces:  namespaces,
 			Pods:        pods,
 			Services:    services,
@@ -92,7 +110,7 @@ func AnalyzeOnChange(k8sConfigPath string, resultsChannel chan<- types.AnalysisR
 	}
 }
 
-func getK8sClient(k8sClientConfig string) *kubernetes.Clientset {
+func (analysisScheduler analysisSchedulerImpl) getK8sClient(k8sClientConfig string) *kubernetes.Clientset {
 	var config *rest.Config
 	var err1InsideCluster, errOutsideCluster error
 	config, err1InsideCluster = rest.InClusterConfig()
@@ -110,11 +128,11 @@ func getK8sClient(k8sClientConfig string) *kubernetes.Clientset {
 	return k8sClient
 }
 
-func analyze(clusterState clusterState) types.AnalysisResult {
+func (analysisScheduler analysisSchedulerImpl) analyze(clusterState clusterState) types.AnalysisResult {
 	start := time.Now()
-	pods := pod.Analyze(clusterState.Pods)
-	podIsolations, allowedRoutes := traffic.Analyze(clusterState.Pods, clusterState.Namespaces, clusterState.Policies)
-	services, replicaSets, deployments := workload.Analyze(clusterState.Pods, clusterState.Services, clusterState.ReplicaSets, clusterState.Deployments)
+	pods := analysisScheduler.podAnalyzer.Analyze(clusterState.Pods)
+	podIsolations, allowedRoutes := analysisScheduler.trafficAnalyzer.Analyze(clusterState.Pods, clusterState.Namespaces, clusterState.Policies)
+	services, replicaSets, deployments := analysisScheduler.workloadAnalyzer.Analyze(clusterState.Pods, clusterState.Services, clusterState.ReplicaSets, clusterState.Deployments)
 	elapsed := time.Since(start)
 	log.Printf("Finished analysis in %s, found: %d pods, %d allowed routes, %d services, %d replicaSets and %d deployments\n",
 		elapsed, len(pods), len(allowedRoutes), len(services), len(replicaSets), len(deployments))

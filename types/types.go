@@ -1,11 +1,9 @@
 package types
 
 type Pod struct {
-	Name              string            `json:"name"`
-	Namespace         string            `json:"namespace"`
-	Labels            map[string]string `json:"labels"`
-	IsIngressIsolated bool              `json:"isIngressIsolated"`
-	IsEgressIsolated  bool              `json:"isEgressIsolated"`
+	Name      string            `json:"name"`
+	Namespace string            `json:"namespace"`
+	Labels    map[string]string `json:"labels"`
 }
 
 type PodRef struct {

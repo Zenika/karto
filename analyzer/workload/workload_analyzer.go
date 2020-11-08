@@ -7,29 +7,39 @@ import (
 	"karto/types"
 )
 
-func Analyze(pods []*corev1.Pod, services []*corev1.Service, replicaSets []*appsv1.ReplicaSet, deployments []*appsv1.Deployment) ([]types.Service, []types.ReplicaSet, []types.Deployment) {
-	servicesWithTargetPods := allServicesWithTargetPods(services, pods)
-	replicaSetsWithTargetPods := allReplicaSetsWithTargetPods(replicaSets, pods)
-	deploymentsWithTargetReplicaSets := allDeploymentsWithTargetReplicaSets(deployments, replicaSets)
+type Analyzer interface {
+	Analyze(pods []*corev1.Pod, services []*corev1.Service, replicaSets []*appsv1.ReplicaSet, deployments []*appsv1.Deployment) ([]types.Service, []types.ReplicaSet, []types.Deployment)
+}
+
+type analyzerImpl struct{}
+
+func NewAnalyzer() Analyzer {
+	return analyzerImpl{}
+}
+
+func (analyzer analyzerImpl) Analyze(pods []*corev1.Pod, services []*corev1.Service, replicaSets []*appsv1.ReplicaSet, deployments []*appsv1.Deployment) ([]types.Service, []types.ReplicaSet, []types.Deployment) {
+	servicesWithTargetPods := analyzer.allServicesWithTargetPods(services, pods)
+	replicaSetsWithTargetPods := analyzer.allReplicaSetsWithTargetPods(replicaSets, pods)
+	deploymentsWithTargetReplicaSets := analyzer.allDeploymentsWithTargetReplicaSets(deployments, replicaSets)
 	return servicesWithTargetPods, replicaSetsWithTargetPods, deploymentsWithTargetReplicaSets
 }
 
-func allServicesWithTargetPods(services []*corev1.Service, pods []*corev1.Pod) []types.Service {
+func (analyzer analyzerImpl) allServicesWithTargetPods(services []*corev1.Service, pods []*corev1.Pod) []types.Service {
 	servicesWithTargetPods := make([]types.Service, 0)
 	for _, service := range services {
-		serviceWithTargetPods := serviceWithTargetPods(service, pods)
+		serviceWithTargetPods := analyzer.serviceWithTargetPods(service, pods)
 		servicesWithTargetPods = append(servicesWithTargetPods, serviceWithTargetPods)
 	}
 	return servicesWithTargetPods
 }
 
-func serviceWithTargetPods(service *corev1.Service, pods []*corev1.Pod) types.Service {
+func (analyzer analyzerImpl) serviceWithTargetPods(service *corev1.Service, pods []*corev1.Pod) types.Service {
 	targetPods := make([]types.PodRef, 0)
 	for _, pod := range pods {
-		namespaceMatches := serviceNamespaceMatches(pod, service)
+		namespaceMatches := analyzer.serviceNamespaceMatches(pod, service)
 		selectorMatches := utils.LabelsMatches(pod.Labels, service.Spec.Selector)
 		if namespaceMatches && selectorMatches {
-			targetPods = append(targetPods, toPodRef(pod))
+			targetPods = append(targetPods, analyzer.toPodRef(pod))
 		}
 	}
 	return types.Service{
@@ -39,10 +49,10 @@ func serviceWithTargetPods(service *corev1.Service, pods []*corev1.Pod) types.Se
 	}
 }
 
-func allReplicaSetsWithTargetPods(replicaSets []*appsv1.ReplicaSet, pods []*corev1.Pod) []types.ReplicaSet {
+func (analyzer analyzerImpl) allReplicaSetsWithTargetPods(replicaSets []*appsv1.ReplicaSet, pods []*corev1.Pod) []types.ReplicaSet {
 	replicaSetsWithTargetPods := make([]types.ReplicaSet, 0)
 	for _, replicaSet := range replicaSets {
-		replicaSetWithTargetPods := replicaSetWithTargetPods(replicaSet, pods)
+		replicaSetWithTargetPods := analyzer.replicaSetWithTargetPods(replicaSet, pods)
 		if replicaSetWithTargetPods != nil {
 			replicaSetsWithTargetPods = append(replicaSetsWithTargetPods, *replicaSetWithTargetPods)
 		}
@@ -50,16 +60,16 @@ func allReplicaSetsWithTargetPods(replicaSets []*appsv1.ReplicaSet, pods []*core
 	return replicaSetsWithTargetPods
 }
 
-func replicaSetWithTargetPods(replicaSet *appsv1.ReplicaSet, pods []*corev1.Pod) *types.ReplicaSet {
+func (analyzer analyzerImpl) replicaSetWithTargetPods(replicaSet *appsv1.ReplicaSet, pods []*corev1.Pod) *types.ReplicaSet {
 	if *replicaSet.Spec.Replicas == 0 {
 		return nil
 	}
 	targetPods := make([]types.PodRef, 0)
 	for _, pod := range pods {
-		namespaceMatches := replicaSetNamespaceMatches(pod, replicaSet)
+		namespaceMatches := analyzer.replicaSetNamespaceMatches(pod, replicaSet)
 		selectorMatches := utils.SelectorMatches(pod.Labels, *replicaSet.Spec.Selector)
 		if namespaceMatches && selectorMatches {
-			targetPods = append(targetPods, toPodRef(pod))
+			targetPods = append(targetPods, analyzer.toPodRef(pod))
 		}
 	}
 	return &types.ReplicaSet{
@@ -69,10 +79,10 @@ func replicaSetWithTargetPods(replicaSet *appsv1.ReplicaSet, pods []*corev1.Pod)
 	}
 }
 
-func allDeploymentsWithTargetReplicaSets(deployments []*appsv1.Deployment, replicaSets []*appsv1.ReplicaSet) []types.Deployment {
+func (analyzer analyzerImpl) allDeploymentsWithTargetReplicaSets(deployments []*appsv1.Deployment, replicaSets []*appsv1.ReplicaSet) []types.Deployment {
 	deploymentsWithTargetReplicaSets := make([]types.Deployment, 0)
 	for _, deployment := range deployments {
-		deploymentWithTargetReplicaSets := deploymentWithTargetReplicaSets(deployment, replicaSets)
+		deploymentWithTargetReplicaSets := analyzer.deploymentWithTargetReplicaSets(deployment, replicaSets)
 		if deploymentWithTargetReplicaSets != nil {
 			deploymentsWithTargetReplicaSets = append(deploymentsWithTargetReplicaSets, *deploymentWithTargetReplicaSets)
 		}
@@ -80,7 +90,7 @@ func allDeploymentsWithTargetReplicaSets(deployments []*appsv1.Deployment, repli
 	return deploymentsWithTargetReplicaSets
 }
 
-func deploymentWithTargetReplicaSets(deployment *appsv1.Deployment, replicaSets []*appsv1.ReplicaSet) *types.Deployment {
+func (analyzer analyzerImpl) deploymentWithTargetReplicaSets(deployment *appsv1.Deployment, replicaSets []*appsv1.ReplicaSet) *types.Deployment {
 	targetReplicaSets := make([]types.ReplicaSetRef, 0)
 	for _, replicaSet := range replicaSets {
 		if *replicaSet.Spec.Replicas == 0 {
@@ -88,7 +98,7 @@ func deploymentWithTargetReplicaSets(deployment *appsv1.Deployment, replicaSets 
 		}
 		for _, ownerReference := range replicaSet.OwnerReferences {
 			if ownerReference.UID == deployment.UID {
-				targetReplicaSets = append(targetReplicaSets, toReplicaSetRef(replicaSet))
+				targetReplicaSets = append(targetReplicaSets, analyzer.toReplicaSetRef(replicaSet))
 				break
 			}
 		}
@@ -100,22 +110,22 @@ func deploymentWithTargetReplicaSets(deployment *appsv1.Deployment, replicaSets 
 	}
 }
 
-func serviceNamespaceMatches(pod *corev1.Pod, service *corev1.Service) bool {
+func (analyzer analyzerImpl) serviceNamespaceMatches(pod *corev1.Pod, service *corev1.Service) bool {
 	return pod.Namespace == service.Namespace
 }
 
-func replicaSetNamespaceMatches(pod *corev1.Pod, replicaSet *appsv1.ReplicaSet) bool {
+func (analyzer analyzerImpl) replicaSetNamespaceMatches(pod *corev1.Pod, replicaSet *appsv1.ReplicaSet) bool {
 	return pod.Namespace == replicaSet.Namespace
 }
 
-func toPodRef(pod *corev1.Pod) types.PodRef {
+func (analyzer analyzerImpl) toPodRef(pod *corev1.Pod) types.PodRef {
 	return types.PodRef{
 		Name:      pod.Name,
 		Namespace: pod.Namespace,
 	}
 }
 
-func toReplicaSetRef(replicaSet *appsv1.ReplicaSet) types.ReplicaSetRef {
+func (analyzer analyzerImpl) toReplicaSetRef(replicaSet *appsv1.ReplicaSet) types.ReplicaSetRef {
 	return types.ReplicaSetRef{
 		Name:      replicaSet.Name,
 		Namespace: replicaSet.Namespace,

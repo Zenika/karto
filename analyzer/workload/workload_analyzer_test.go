@@ -85,7 +85,7 @@ func Test_computeServiceWithTargetPods(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			serviceWithTargetPods := serviceWithTargetPods(tt.args.service, tt.args.pods)
+			serviceWithTargetPods := analyzerImpl{}.serviceWithTargetPods(tt.args.service, tt.args.pods)
 			if diff := cmp.Diff(tt.expectedServiceWithTargetPods, serviceWithTargetPods); diff != "" {
 				t.Errorf("computeServiceWithTargetPods() result mismatch (-want +got):\n%s", diff)
 			}
@@ -158,7 +158,7 @@ func Test_computeReplicaSetWithTargetPods(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			replicaSetWithTargetPods := replicaSetWithTargetPods(tt.args.replicaSet, tt.args.pods)
+			replicaSetWithTargetPods := analyzerImpl{}.replicaSetWithTargetPods(tt.args.replicaSet, tt.args.pods)
 			if diff := cmp.Diff(tt.expectedReplicaSetWithTargetPods, replicaSetWithTargetPods); diff != "" {
 				t.Errorf("computeReplicaSetWithTargetPods() result mismatch (-want +got):\n%s", diff)
 			}
@@ -224,7 +224,7 @@ func Test_computeDeploymentWithTargetReplicaSets(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			deploymentWithTargetReplicaSets := deploymentWithTargetReplicaSets(tt.args.deployment, tt.args.replicaSets)
+			deploymentWithTargetReplicaSets := analyzerImpl{}.deploymentWithTargetReplicaSets(tt.args.deployment, tt.args.replicaSets)
 			if diff := cmp.Diff(tt.expectedDeploymentWithTargetReplicaSets, deploymentWithTargetReplicaSets); diff != "" {
 				t.Errorf("computeDeploymentWithTargetReplicaSets() result mismatch (-want +got):\n%s", diff)
 			}
