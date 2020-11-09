@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"karto/api"
+	"karto/clusterlistener"
 	"karto/types"
 	"os"
 	"path/filepath"
@@ -20,7 +21,9 @@ func main() {
 	container := dependencyInjection()
 	analysisScheduler := container.AnalysisScheduler
 	analysisResultsChannel := make(chan types.AnalysisResult)
-	go analysisScheduler.AnalyzeOnClusterChange(k8sConfigPath, analysisResultsChannel)
+	clusterStateChannel := make(chan types.ClusterState)
+	go clusterlistener.Listen(k8sConfigPath, clusterStateChannel)
+	go analysisScheduler.AnalyzeOnClusterStateChange(clusterStateChannel, analysisResultsChannel)
 	api.Expose(analysisResultsChannel)
 }
 
