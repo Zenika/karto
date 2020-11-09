@@ -223,8 +223,9 @@ func Test_computeDeploymentWithTargetReplicaSets(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		analyzer := analyzerImpl{}
 		t.Run(tt.name, func(t *testing.T) {
-			deploymentWithTargetReplicaSets := analyzerImpl{}.deploymentWithTargetReplicaSets(tt.args.deployment, tt.args.replicaSets)
+			deploymentWithTargetReplicaSets := analyzer.deploymentWithTargetReplicaSets(tt.args.deployment, tt.args.replicaSets)
 			if diff := cmp.Diff(tt.expectedDeploymentWithTargetReplicaSets, deploymentWithTargetReplicaSets); diff != "" {
 				t.Errorf("computeDeploymentWithTargetReplicaSets() result mismatch (-want +got):\n%s", diff)
 			}

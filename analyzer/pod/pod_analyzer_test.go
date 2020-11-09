@@ -32,7 +32,8 @@ func Test_Analyze(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		pods := analyzerImpl{}.Analyze(tt.args.pods)
+		analyzer := analyzerImpl{}
+		pods := analyzer.Analyze(tt.args.pods)
 		t.Run(tt.name, func(t *testing.T) {
 			if diff := cmp.Diff(tt.expectedPods, pods); diff != "" {
 				t.Errorf("Analyze() result mismatch (-want +got):\n%s", diff)

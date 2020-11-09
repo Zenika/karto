@@ -105,6 +105,11 @@ func (networkPolicyBuilder *NetworkPolicyBuilder) WithNamespace(namespace string
 	return networkPolicyBuilder
 }
 
+func (networkPolicyBuilder *NetworkPolicyBuilder) WithLabel(key string, value string) *NetworkPolicyBuilder {
+	networkPolicyBuilder.Labels[key] = value
+	return networkPolicyBuilder
+}
+
 func (networkPolicyBuilder *NetworkPolicyBuilder) WithPodSelector(podSelector *metav1.LabelSelector) *NetworkPolicyBuilder {
 	networkPolicyBuilder.PodSelector = *podSelector
 	return networkPolicyBuilder
