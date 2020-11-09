@@ -7,7 +7,7 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	"karto/analyzer/traffic/allowedroute"
 	"karto/analyzer/traffic/podisolation"
-	shared "karto/analyzer/traffic/types"
+	"karto/analyzer/traffic/shared"
 	"karto/testutils"
 	"karto/types"
 	"reflect"
@@ -68,12 +68,16 @@ func Test_Analyze(t *testing.T) {
 							targetPodIsolation: podIsolation2,
 							namespaces:         []*corev1.Namespace{namespace},
 						},
-						returnValue: &shared.AllowedRoute{
-							SourcePod:       podIsolation1,
-							EgressPolicies:  []*networkingv1.NetworkPolicy{networkPolicy1},
-							TargetPod:       podIsolation2,
-							IngressPolicies: []*networkingv1.NetworkPolicy{networkPolicy2},
-							Ports:           []int32{80, 443},
+						returnValue: &types.AllowedRoute{
+							SourcePod: podRef1,
+							EgressPolicies: []types.NetworkPolicy{
+								{Name: networkPolicy1.Name, Namespace: networkPolicy1.Namespace, Labels: networkPolicy1.Labels},
+							},
+							TargetPod: podRef2,
+							IngressPolicies: []types.NetworkPolicy{
+								{Name: networkPolicy2.Name, Namespace: networkPolicy2.Namespace, Labels: networkPolicy2.Labels},
+							},
+							Ports: []int32{80, 443},
 						},
 					},
 					{
@@ -108,56 +112,6 @@ func Test_Analyze(t *testing.T) {
 					Ports: []int32{80, 443},
 				},
 			},
-		},
-		{
-			name: "a pod with an ingress policy is ingress isolated",
-			mocks: mocks{
-				podIsolation: []mockPodIsolationCall{
-					{
-						args: mockPodIsolationCallArgs{pod: pod1, networkPolicies: []*networkingv1.NetworkPolicy{}},
-						returnValue: shared.PodIsolation{
-							Pod:             pod1,
-							IngressPolicies: []*networkingv1.NetworkPolicy{networkPolicy1},
-							EgressPolicies:  []*networkingv1.NetworkPolicy{},
-						},
-					},
-				},
-				allowedRoute: []mockAllowedRouteCall{},
-			},
-			args: args{
-				pods:            []*corev1.Pod{pod1},
-				networkPolicies: []*networkingv1.NetworkPolicy{},
-				namespaces:      []*corev1.Namespace{},
-			},
-			expectedPodIsolations: []types.PodIsolation{
-				{Pod: podRef1, IsIngressIsolated: true, IsEgressIsolated: false},
-			},
-			expectedAllowedRoutes: []types.AllowedRoute{},
-		},
-		{
-			name: "a pod with an egress policy is egress isolated",
-			mocks: mocks{
-				podIsolation: []mockPodIsolationCall{
-					{
-						args: mockPodIsolationCallArgs{pod: pod1, networkPolicies: []*networkingv1.NetworkPolicy{}},
-						returnValue: shared.PodIsolation{
-							Pod:             pod1,
-							IngressPolicies: []*networkingv1.NetworkPolicy{},
-							EgressPolicies:  []*networkingv1.NetworkPolicy{networkPolicy1},
-						},
-					},
-				},
-				allowedRoute: []mockAllowedRouteCall{},
-			},
-			args: args{
-				pods:            []*corev1.Pod{pod1},
-				networkPolicies: []*networkingv1.NetworkPolicy{},
-				namespaces:      []*corev1.Namespace{},
-			},
-			expectedPodIsolations: []types.PodIsolation{
-				{Pod: podRef1, IsIngressIsolated: false, IsEgressIsolated: true},
-			},
-			expectedAllowedRoutes: []types.AllowedRoute{},
 		},
 	}
 	for _, tt := range tests {
@@ -223,7 +177,7 @@ type mockAllowedRouteCallArgs struct {
 
 type mockAllowedRouteCall struct {
 	args        mockAllowedRouteCallArgs
-	returnValue *shared.AllowedRoute
+	returnValue *types.AllowedRoute
 }
 
 type mockAllowedRouteAnalyzer struct {
@@ -231,7 +185,7 @@ type mockAllowedRouteAnalyzer struct {
 	calls []mockAllowedRouteCall
 }
 
-func (mock mockAllowedRouteAnalyzer) Analyze(sourcePodIsolation shared.PodIsolation, targetPodIsolation shared.PodIsolation, namespaces []*corev1.Namespace) *shared.AllowedRoute {
+func (mock mockAllowedRouteAnalyzer) Analyze(sourcePodIsolation shared.PodIsolation, targetPodIsolation shared.PodIsolation, namespaces []*corev1.Namespace) *types.AllowedRoute {
 	for _, call := range mock.calls {
 		if reflect.DeepEqual(call.args.sourcePodIsolation, sourcePodIsolation) &&
 			reflect.DeepEqual(call.args.targetPodIsolation, targetPodIsolation) &&

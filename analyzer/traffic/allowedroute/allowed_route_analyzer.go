@@ -4,13 +4,14 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	shared "karto/analyzer/traffic/types"
+	"karto/analyzer/traffic/shared"
 	"karto/analyzer/utils"
+	"karto/types"
 	"sort"
 )
 
 type Analyzer interface {
-	Analyze(sourcePodIsolation shared.PodIsolation, targetPodIsolation shared.PodIsolation, namespaces []*corev1.Namespace) *shared.AllowedRoute
+	Analyze(sourcePodIsolation shared.PodIsolation, targetPodIsolation shared.PodIsolation, namespaces []*corev1.Namespace) *types.AllowedRoute
 }
 
 type analyzerImpl struct {
@@ -23,16 +24,16 @@ func NewAnalyzer() Analyzer {
 	}
 }
 
-func (analyzer analyzerImpl) Analyze(sourcePodIsolation shared.PodIsolation, targetPodIsolation shared.PodIsolation, namespaces []*corev1.Namespace) *shared.AllowedRoute {
+func (analyzer analyzerImpl) Analyze(sourcePodIsolation shared.PodIsolation, targetPodIsolation shared.PodIsolation, namespaces []*corev1.Namespace) *types.AllowedRoute {
 	ingressPoliciesByPort := analyzer.ingressPoliciesByPort(sourcePodIsolation.Pod, targetPodIsolation, namespaces)
 	egressPoliciesByPort := analyzer.egressPoliciesByPort(targetPodIsolation.Pod, sourcePodIsolation, namespaces)
 	ports, ingressPolicies, egressPolicies := analyzer.matchPoliciesByPort(ingressPoliciesByPort, egressPoliciesByPort)
 	if ports == nil || len(ports) > 0 {
-		return &shared.AllowedRoute{
-			SourcePod:       sourcePodIsolation,
-			EgressPolicies:  egressPolicies,
-			TargetPod:       targetPodIsolation,
-			IngressPolicies: ingressPolicies,
+		return &types.AllowedRoute{
+			SourcePod:       analyzer.toPodRef(sourcePodIsolation),
+			EgressPolicies:  analyzer.toNetworkPolicies(egressPolicies),
+			TargetPod:       analyzer.toPodRef(targetPodIsolation),
+			IngressPolicies: analyzer.toNetworkPolicies(ingressPolicies),
 			Ports:           ports,
 		}
 	} else {
@@ -180,4 +181,27 @@ func (analyzer analyzerImpl) namespaceLabelsMatches(namespaceName string, namesp
 		}
 	}
 	return utils.SelectorMatches(namespace.Labels, selector)
+}
+
+func (analyzer analyzerImpl) toPodRef(podIsolation shared.PodIsolation) types.PodRef {
+	return types.PodRef{
+		Name:      podIsolation.Pod.Name,
+		Namespace: podIsolation.Pod.Namespace,
+	}
+}
+
+func (analyzer analyzerImpl) toNetworkPolicies(networkPolicies []*networkingv1.NetworkPolicy) []types.NetworkPolicy {
+	result := make([]types.NetworkPolicy, 0)
+	for _, networkPolicy := range networkPolicies {
+		result = append(result, analyzer.toNetworkPolicy(*networkPolicy))
+	}
+	return result
+}
+
+func (analyzer analyzerImpl) toNetworkPolicy(networkPolicy networkingv1.NetworkPolicy) types.NetworkPolicy {
+	return types.NetworkPolicy{
+		Name:      networkPolicy.Name,
+		Namespace: networkPolicy.Namespace,
+		Labels:    networkPolicy.Labels,
+	}
 }

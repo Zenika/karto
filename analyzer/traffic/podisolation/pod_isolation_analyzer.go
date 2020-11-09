@@ -3,7 +3,7 @@ package podisolation
 import (
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
-	shared "karto/analyzer/traffic/types"
+	"karto/analyzer/traffic/shared"
 	"karto/analyzer/utils"
 )
 
