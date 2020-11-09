@@ -55,10 +55,10 @@ type Deployment struct {
 }
 
 type AnalysisResult struct {
-	Pods          []Pod          `json:"pods"`
-	PodIsolations []PodIsolation `json:"podIsolations"`
-	AllowedRoutes []AllowedRoute `json:"allowedRoutes"`
-	Services      []Service      `json:"services"`
-	ReplicaSets   []ReplicaSet   `json:"replicaSets"`
-	Deployments   []Deployment   `json:"deployments"`
+	Pods          []*Pod          `json:"pods"`
+	PodIsolations []*PodIsolation `json:"podIsolations"`
+	AllowedRoutes []*AllowedRoute `json:"allowedRoutes"`
+	Services      []*Service      `json:"services"`
+	ReplicaSets   []*ReplicaSet   `json:"replicaSets"`
+	Deployments   []*Deployment   `json:"deployments"`
 }

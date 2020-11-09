@@ -15,7 +15,7 @@ func Test_Analyze(t *testing.T) {
 	tests := []struct {
 		name         string
 		args         args
-		expectedPods []types.Pod
+		expectedPods []*types.Pod
 	}{
 		{
 			name: "pod info are propagated",
@@ -25,7 +25,7 @@ func Test_Analyze(t *testing.T) {
 					testutils.NewPodBuilder().WithName("name2").WithNamespace("ns2").WithLabel("k1", "bar").WithLabel("k2", "baz").Build(),
 				},
 			},
-			expectedPods: []types.Pod{
+			expectedPods: []*types.Pod{
 				{Name: "name1", Namespace: "ns1", Labels: map[string]string{"k1": "foo"}},
 				{Name: "name2", Namespace: "ns2", Labels: map[string]string{"k1": "bar", "k2": "baz"}},
 			},

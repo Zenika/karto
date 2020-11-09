@@ -8,7 +8,7 @@ import (
 )
 
 type Analyzer interface {
-	Analyze(pod *corev1.Pod, policies []*networkingv1.NetworkPolicy) shared.PodIsolation
+	Analyze(pod *corev1.Pod, policies []*networkingv1.NetworkPolicy) *shared.PodIsolation
 }
 
 type analyzerImpl struct{}
@@ -17,7 +17,7 @@ func NewAnalyzer() Analyzer {
 	return analyzerImpl{}
 }
 
-func (analyzer analyzerImpl) Analyze(pod *corev1.Pod, policies []*networkingv1.NetworkPolicy) shared.PodIsolation {
+func (analyzer analyzerImpl) Analyze(pod *corev1.Pod, policies []*networkingv1.NetworkPolicy) *shared.PodIsolation {
 	podIsolation := shared.NewPodIsolation(pod)
 	for _, policy := range policies {
 		namespaceMatches := analyzer.networkPolicyNamespaceMatches(pod, policy)
@@ -32,7 +32,7 @@ func (analyzer analyzerImpl) Analyze(pod *corev1.Pod, policies []*networkingv1.N
 			}
 		}
 	}
-	return podIsolation
+	return &podIsolation
 }
 
 func (analyzer analyzerImpl) networkPolicyNamespaceMatches(pod *corev1.Pod, policy *networkingv1.NetworkPolicy) bool {

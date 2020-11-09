@@ -35,8 +35,8 @@ func (podIsolation *PodIsolation) ToPodRef() types.PodRef {
 	}
 }
 
-func (podIsolation *PodIsolation) ToPodIsolation() types.PodIsolation {
-	return types.PodIsolation{
+func (podIsolation *PodIsolation) ToPodIsolation() *types.PodIsolation {
+	return &types.PodIsolation{
 		Pod:               podIsolation.ToPodRef(),
 		IsIngressIsolated: podIsolation.IsIngressIsolated(),
 		IsEgressIsolated:  podIsolation.IsEgressIsolated(),

@@ -18,9 +18,12 @@ type handler struct {
 func newHandler() *handler {
 	handler := &handler{
 		lastAnalysisResult: types.AnalysisResult{
-			Pods:          make([]types.Pod, 0),
-			AllowedRoutes: make([]types.AllowedRoute, 0),
-			Services:      make([]types.Service, 0),
+			Pods:          make([]*types.Pod, 0),
+			PodIsolations: make([]*types.PodIsolation, 0),
+			AllowedRoutes: make([]*types.AllowedRoute, 0),
+			Services:      make([]*types.Service, 0),
+			ReplicaSets:   make([]*types.ReplicaSet, 0),
+			Deployments:   make([]*types.Deployment, 0),
 		},
 	}
 	return handler

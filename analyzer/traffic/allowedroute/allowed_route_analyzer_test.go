@@ -13,8 +13,8 @@ import (
 
 func Test_Analyze(t *testing.T) {
 	type args struct {
-		sourcePodIsolation shared.PodIsolation
-		targetPodIsolation shared.PodIsolation
+		sourcePodIsolation *shared.PodIsolation
+		targetPodIsolation *shared.PodIsolation
 		namespaces         []*corev1.Namespace
 	}
 	tests := []struct {
@@ -25,14 +25,14 @@ func Test_Analyze(t *testing.T) {
 		{
 			name: "a non isolated pod can send traffic to non isolated pod",
 			args: args{
-				sourcePodIsolation: shared.PodIsolation{
+				sourcePodIsolation: &shared.PodIsolation{
 					Pod: testutils.NewPodBuilder().WithName("Pod1").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{
 						testutils.NewNetworkPolicyBuilder().WithTypes("Ingress").WithPodSelector(testutils.NewLabelSelectorBuilder().Build()).Build(),
 					},
 					EgressPolicies: []*networkingv1.NetworkPolicy{},
 				},
-				targetPodIsolation: shared.PodIsolation{
+				targetPodIsolation: &shared.PodIsolation{
 					Pod:             testutils.NewPodBuilder().WithName("Pod2").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies: []*networkingv1.NetworkPolicy{
@@ -54,12 +54,12 @@ func Test_Analyze(t *testing.T) {
 		{
 			name: "a non isolated pod can send traffic to pod accepting its labels",
 			args: args{
-				sourcePodIsolation: shared.PodIsolation{
+				sourcePodIsolation: &shared.PodIsolation{
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").WithLabel("app", "foo").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies:  []*networkingv1.NetworkPolicy{},
 				},
-				targetPodIsolation: shared.PodIsolation{
+				targetPodIsolation: &shared.PodIsolation{
 					Pod: testutils.NewPodBuilder().WithName("Pod2").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{
 						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").WithIngressRule(networkingv1.NetworkPolicyIngressRule{
@@ -89,12 +89,12 @@ func Test_Analyze(t *testing.T) {
 		{
 			name: "a non isolated pod cannot send traffic to pod rejecting its labels",
 			args: args{
-				sourcePodIsolation: shared.PodIsolation{
+				sourcePodIsolation: &shared.PodIsolation{
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").WithLabel("app", "foo").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies:  []*networkingv1.NetworkPolicy{},
 				},
-				targetPodIsolation: shared.PodIsolation{
+				targetPodIsolation: &shared.PodIsolation{
 					Pod: testutils.NewPodBuilder().WithName("Pod2").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{
 						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").WithIngressRule(networkingv1.NetworkPolicyIngressRule{
@@ -116,12 +116,12 @@ func Test_Analyze(t *testing.T) {
 		{
 			name: "a non isolated pod can send traffic to pod accepting its namespace",
 			args: args{
-				sourcePodIsolation: shared.PodIsolation{
+				sourcePodIsolation: &shared.PodIsolation{
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").WithNamespace("ns").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies:  []*networkingv1.NetworkPolicy{},
 				},
-				targetPodIsolation: shared.PodIsolation{
+				targetPodIsolation: &shared.PodIsolation{
 					Pod: testutils.NewPodBuilder().WithName("Pod2").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{
 						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").WithIngressRule(networkingv1.NetworkPolicyIngressRule{
@@ -151,12 +151,12 @@ func Test_Analyze(t *testing.T) {
 		{
 			name: "a non isolated pod cannot send traffic to pod rejecting its namespace",
 			args: args{
-				sourcePodIsolation: shared.PodIsolation{
+				sourcePodIsolation: &shared.PodIsolation{
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").WithNamespace("ns").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies:  []*networkingv1.NetworkPolicy{},
 				},
-				targetPodIsolation: shared.PodIsolation{
+				targetPodIsolation: &shared.PodIsolation{
 					Pod: testutils.NewPodBuilder().WithName("Pod2").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{
 						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").WithIngressRule(networkingv1.NetworkPolicyIngressRule{
@@ -178,12 +178,12 @@ func Test_Analyze(t *testing.T) {
 		{
 			name: "a non isolated pod can send traffic to pod accepting both its labels and namespace",
 			args: args{
-				sourcePodIsolation: shared.PodIsolation{
+				sourcePodIsolation: &shared.PodIsolation{
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").WithNamespace("ns").WithLabel("app", "foo").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies:  []*networkingv1.NetworkPolicy{},
 				},
-				targetPodIsolation: shared.PodIsolation{
+				targetPodIsolation: &shared.PodIsolation{
 					Pod: testutils.NewPodBuilder().WithName("Pod2").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{
 						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").WithIngressRule(networkingv1.NetworkPolicyIngressRule{
@@ -214,12 +214,12 @@ func Test_Analyze(t *testing.T) {
 		{
 			name: "a non isolated pod cannot send traffic to pod accepting its labels but not its namespace",
 			args: args{
-				sourcePodIsolation: shared.PodIsolation{
+				sourcePodIsolation: &shared.PodIsolation{
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").WithNamespace("ns").WithLabel("app", "foo").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies:  []*networkingv1.NetworkPolicy{},
 				},
-				targetPodIsolation: shared.PodIsolation{
+				targetPodIsolation: &shared.PodIsolation{
 					Pod: testutils.NewPodBuilder().WithName("Pod2").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{
 						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").WithIngressRule(networkingv1.NetworkPolicyIngressRule{
@@ -242,12 +242,12 @@ func Test_Analyze(t *testing.T) {
 		{
 			name: "a non isolated pod cannot send traffic to pod accepting its namespace but not its labels",
 			args: args{
-				sourcePodIsolation: shared.PodIsolation{
+				sourcePodIsolation: &shared.PodIsolation{
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").WithNamespace("ns").WithLabel("app", "foo").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies:  []*networkingv1.NetworkPolicy{},
 				},
-				targetPodIsolation: shared.PodIsolation{
+				targetPodIsolation: &shared.PodIsolation{
 					Pod: testutils.NewPodBuilder().WithName("Pod2").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{
 						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").WithIngressRule(networkingv1.NetworkPolicyIngressRule{
@@ -270,7 +270,7 @@ func Test_Analyze(t *testing.T) {
 		{
 			name: "a non isolated pod can receive traffic from pod accepting its labels",
 			args: args{
-				sourcePodIsolation: shared.PodIsolation{
+				sourcePodIsolation: &shared.PodIsolation{
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies: []*networkingv1.NetworkPolicy{
@@ -283,7 +283,7 @@ func Test_Analyze(t *testing.T) {
 						}).Build(),
 					},
 				},
-				targetPodIsolation: shared.PodIsolation{
+				targetPodIsolation: &shared.PodIsolation{
 					Pod:             testutils.NewPodBuilder().WithName("Pod2").WithLabel("app", "foo").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies:  []*networkingv1.NetworkPolicy{},
@@ -305,7 +305,7 @@ func Test_Analyze(t *testing.T) {
 		{
 			name: "a non isolated pod cannot receive traffic from pod rejecting its labels",
 			args: args{
-				sourcePodIsolation: shared.PodIsolation{
+				sourcePodIsolation: &shared.PodIsolation{
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies: []*networkingv1.NetworkPolicy{
@@ -318,7 +318,7 @@ func Test_Analyze(t *testing.T) {
 						}).Build(),
 					},
 				},
-				targetPodIsolation: shared.PodIsolation{
+				targetPodIsolation: &shared.PodIsolation{
 					Pod:             testutils.NewPodBuilder().WithName("Pod2").WithLabel("app", "foo").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies:  []*networkingv1.NetworkPolicy{},
@@ -332,7 +332,7 @@ func Test_Analyze(t *testing.T) {
 		{
 			name: "a non isolated pod can receive traffic from pod accepting its namespace",
 			args: args{
-				sourcePodIsolation: shared.PodIsolation{
+				sourcePodIsolation: &shared.PodIsolation{
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies: []*networkingv1.NetworkPolicy{
@@ -345,7 +345,7 @@ func Test_Analyze(t *testing.T) {
 						}).Build(),
 					},
 				},
-				targetPodIsolation: shared.PodIsolation{
+				targetPodIsolation: &shared.PodIsolation{
 					Pod:             testutils.NewPodBuilder().WithName("Pod2").WithNamespace("ns").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies:  []*networkingv1.NetworkPolicy{},
@@ -367,7 +367,7 @@ func Test_Analyze(t *testing.T) {
 		{
 			name: "a non isolated pod cannot receive traffic from pod rejecting its namespace",
 			args: args{
-				sourcePodIsolation: shared.PodIsolation{
+				sourcePodIsolation: &shared.PodIsolation{
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies: []*networkingv1.NetworkPolicy{
@@ -380,7 +380,7 @@ func Test_Analyze(t *testing.T) {
 						}).Build(),
 					},
 				},
-				targetPodIsolation: shared.PodIsolation{
+				targetPodIsolation: &shared.PodIsolation{
 					Pod:             testutils.NewPodBuilder().WithName("Pod2").WithName("ns").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies:  []*networkingv1.NetworkPolicy{},
@@ -394,7 +394,7 @@ func Test_Analyze(t *testing.T) {
 		{
 			name: "a non isolated pod can receive traffic from pod accepting both its labels and namespace",
 			args: args{
-				sourcePodIsolation: shared.PodIsolation{
+				sourcePodIsolation: &shared.PodIsolation{
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies: []*networkingv1.NetworkPolicy{
@@ -408,7 +408,7 @@ func Test_Analyze(t *testing.T) {
 						}).Build(),
 					},
 				},
-				targetPodIsolation: shared.PodIsolation{
+				targetPodIsolation: &shared.PodIsolation{
 					Pod:             testutils.NewPodBuilder().WithName("Pod2").WithNamespace("ns").WithLabel("app", "foo").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies:  []*networkingv1.NetworkPolicy{},
@@ -434,7 +434,7 @@ func Test_Analyze(t *testing.T) {
 		{
 			name: "a non isolated pod cannot receive traffic from pod accepting its labels but not its namespace",
 			args: args{
-				sourcePodIsolation: shared.PodIsolation{
+				sourcePodIsolation: &shared.PodIsolation{
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies: []*networkingv1.NetworkPolicy{
@@ -448,7 +448,7 @@ func Test_Analyze(t *testing.T) {
 						}).Build(),
 					},
 				},
-				targetPodIsolation: shared.PodIsolation{
+				targetPodIsolation: &shared.PodIsolation{
 					Pod:             testutils.NewPodBuilder().WithName("Pod2").WithNamespace("ns").WithLabel("app", "foo").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies:  []*networkingv1.NetworkPolicy{},
@@ -462,7 +462,7 @@ func Test_Analyze(t *testing.T) {
 		{
 			name: "a non isolated pod cannot receive traffic from pod accepting its namespace but not its labels",
 			args: args{
-				sourcePodIsolation: shared.PodIsolation{
+				sourcePodIsolation: &shared.PodIsolation{
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies: []*networkingv1.NetworkPolicy{
@@ -476,7 +476,7 @@ func Test_Analyze(t *testing.T) {
 						}).Build(),
 					},
 				},
-				targetPodIsolation: shared.PodIsolation{
+				targetPodIsolation: &shared.PodIsolation{
 					Pod:             testutils.NewPodBuilder().WithName("Pod2").WithNamespace("ns").WithLabel("app", "foo").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies:  []*networkingv1.NetworkPolicy{},
@@ -490,7 +490,7 @@ func Test_Analyze(t *testing.T) {
 		{
 			name: "allowed route ports are the intersection of ingress and egress rule ports",
 			args: args{
-				sourcePodIsolation: shared.PodIsolation{
+				sourcePodIsolation: &shared.PodIsolation{
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies: []*networkingv1.NetworkPolicy{
@@ -507,7 +507,7 @@ func Test_Analyze(t *testing.T) {
 						}).Build(),
 					},
 				},
-				targetPodIsolation: shared.PodIsolation{
+				targetPodIsolation: &shared.PodIsolation{
 					Pod: testutils.NewPodBuilder().WithName("Pod2").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{
 						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").WithIngressRule(networkingv1.NetworkPolicyIngressRule{
@@ -543,7 +543,7 @@ func Test_Analyze(t *testing.T) {
 		{
 			name: "allowed route ports are ingress rule ports when egress applies to all ports",
 			args: args{
-				sourcePodIsolation: shared.PodIsolation{
+				sourcePodIsolation: &shared.PodIsolation{
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies: []*networkingv1.NetworkPolicy{
@@ -556,7 +556,7 @@ func Test_Analyze(t *testing.T) {
 						}).Build(),
 					},
 				},
-				targetPodIsolation: shared.PodIsolation{
+				targetPodIsolation: &shared.PodIsolation{
 					Pod: testutils.NewPodBuilder().WithName("Pod2").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{
 						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").WithIngressRule(networkingv1.NetworkPolicyIngressRule{
@@ -592,7 +592,7 @@ func Test_Analyze(t *testing.T) {
 		{
 			name: "allowed route ports are egress rule ports when ingress applies to all ports",
 			args: args{
-				sourcePodIsolation: shared.PodIsolation{
+				sourcePodIsolation: &shared.PodIsolation{
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies: []*networkingv1.NetworkPolicy{
@@ -609,7 +609,7 @@ func Test_Analyze(t *testing.T) {
 						}).Build(),
 					},
 				},
-				targetPodIsolation: shared.PodIsolation{
+				targetPodIsolation: &shared.PodIsolation{
 					Pod: testutils.NewPodBuilder().WithName("Pod2").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{
 						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").WithIngressRule(networkingv1.NetworkPolicyIngressRule{
@@ -641,7 +641,7 @@ func Test_Analyze(t *testing.T) {
 		{
 			name: "allowed route ports is nil when both ingress and egress apply to all ports",
 			args: args{
-				sourcePodIsolation: shared.PodIsolation{
+				sourcePodIsolation: &shared.PodIsolation{
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies: []*networkingv1.NetworkPolicy{
@@ -654,7 +654,7 @@ func Test_Analyze(t *testing.T) {
 						}).Build(),
 					},
 				},
-				targetPodIsolation: shared.PodIsolation{
+				targetPodIsolation: &shared.PodIsolation{
 					Pod: testutils.NewPodBuilder().WithName("Pod2").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{
 						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").WithIngressRule(networkingv1.NetworkPolicyIngressRule{
@@ -686,7 +686,7 @@ func Test_Analyze(t *testing.T) {
 		{
 			name: "route is forbidden when ingress and egress have no ports in common",
 			args: args{
-				sourcePodIsolation: shared.PodIsolation{
+				sourcePodIsolation: &shared.PodIsolation{
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies: []*networkingv1.NetworkPolicy{
@@ -702,7 +702,7 @@ func Test_Analyze(t *testing.T) {
 						}).Build(),
 					},
 				},
-				targetPodIsolation: shared.PodIsolation{
+				targetPodIsolation: &shared.PodIsolation{
 					Pod: testutils.NewPodBuilder().WithName("Pod2").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{
 						testutils.NewNetworkPolicyBuilder().WithTypes("Ingress").WithIngressRule(networkingv1.NetworkPolicyIngressRule{
@@ -727,7 +727,7 @@ func Test_Analyze(t *testing.T) {
 		{
 			name: "allowed route only contains policies with allowed ports",
 			args: args{
-				sourcePodIsolation: shared.PodIsolation{
+				sourcePodIsolation: &shared.PodIsolation{
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies: []*networkingv1.NetworkPolicy{
@@ -753,7 +753,7 @@ func Test_Analyze(t *testing.T) {
 						}).Build(),
 					},
 				},
-				targetPodIsolation: shared.PodIsolation{
+				targetPodIsolation: &shared.PodIsolation{
 					Pod: testutils.NewPodBuilder().WithName("Pod2").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{
 						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").WithIngressRule(networkingv1.NetworkPolicyIngressRule{

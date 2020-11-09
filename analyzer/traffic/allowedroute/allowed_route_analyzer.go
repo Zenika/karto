@@ -11,7 +11,7 @@ import (
 )
 
 type Analyzer interface {
-	Analyze(sourcePodIsolation shared.PodIsolation, targetPodIsolation shared.PodIsolation, namespaces []*corev1.Namespace) *types.AllowedRoute
+	Analyze(sourcePodIsolation *shared.PodIsolation, targetPodIsolation *shared.PodIsolation, namespaces []*corev1.Namespace) *types.AllowedRoute
 }
 
 type analyzerImpl struct {
@@ -24,7 +24,7 @@ func NewAnalyzer() Analyzer {
 	}
 }
 
-func (analyzer analyzerImpl) Analyze(sourcePodIsolation shared.PodIsolation, targetPodIsolation shared.PodIsolation, namespaces []*corev1.Namespace) *types.AllowedRoute {
+func (analyzer analyzerImpl) Analyze(sourcePodIsolation *shared.PodIsolation, targetPodIsolation *shared.PodIsolation, namespaces []*corev1.Namespace) *types.AllowedRoute {
 	ingressPoliciesByPort := analyzer.ingressPoliciesByPort(sourcePodIsolation.Pod, targetPodIsolation, namespaces)
 	egressPoliciesByPort := analyzer.egressPoliciesByPort(targetPodIsolation.Pod, sourcePodIsolation, namespaces)
 	ports, ingressPolicies, egressPolicies := analyzer.matchPoliciesByPort(ingressPoliciesByPort, egressPoliciesByPort)
@@ -41,7 +41,7 @@ func (analyzer analyzerImpl) Analyze(sourcePodIsolation shared.PodIsolation, tar
 	}
 }
 
-func (analyzer analyzerImpl) ingressPoliciesByPort(sourcePod *corev1.Pod, targetPodIsolation shared.PodIsolation, namespaces []*corev1.Namespace) map[int32][]*networkingv1.NetworkPolicy {
+func (analyzer analyzerImpl) ingressPoliciesByPort(sourcePod *corev1.Pod, targetPodIsolation *shared.PodIsolation, namespaces []*corev1.Namespace) map[int32][]*networkingv1.NetworkPolicy {
 	policiesByPort := make(map[int32][]*networkingv1.NetworkPolicy)
 	if !targetPodIsolation.IsIngressIsolated() {
 		policiesByPort[analyzer.portWildcard] = make([]*networkingv1.NetworkPolicy, 0)
@@ -82,7 +82,7 @@ func (analyzer analyzerImpl) ingressRuleAllows(sourcePod *corev1.Pod, ingressRul
 	return false
 }
 
-func (analyzer analyzerImpl) egressPoliciesByPort(targetPod *corev1.Pod, sourcePodIsolation shared.PodIsolation, namespaces []*corev1.Namespace) map[int32][]*networkingv1.NetworkPolicy {
+func (analyzer analyzerImpl) egressPoliciesByPort(targetPod *corev1.Pod, sourcePodIsolation *shared.PodIsolation, namespaces []*corev1.Namespace) map[int32][]*networkingv1.NetworkPolicy {
 	policiesByPort := make(map[int32][]*networkingv1.NetworkPolicy)
 	if !sourcePodIsolation.IsEgressIsolated() {
 		policiesByPort[analyzer.portWildcard] = make([]*networkingv1.NetworkPolicy, 0)
@@ -183,7 +183,7 @@ func (analyzer analyzerImpl) namespaceLabelsMatches(namespaceName string, namesp
 	return utils.SelectorMatches(namespace.Labels, selector)
 }
 
-func (analyzer analyzerImpl) toPodRef(podIsolation shared.PodIsolation) types.PodRef {
+func (analyzer analyzerImpl) toPodRef(podIsolation *shared.PodIsolation) types.PodRef {
 	return types.PodRef{
 		Name:      podIsolation.Pod.Name,
 		Namespace: podIsolation.Pod.Namespace,
@@ -193,12 +193,12 @@ func (analyzer analyzerImpl) toPodRef(podIsolation shared.PodIsolation) types.Po
 func (analyzer analyzerImpl) toNetworkPolicies(networkPolicies []*networkingv1.NetworkPolicy) []types.NetworkPolicy {
 	result := make([]types.NetworkPolicy, 0)
 	for _, networkPolicy := range networkPolicies {
-		result = append(result, analyzer.toNetworkPolicy(*networkPolicy))
+		result = append(result, analyzer.toNetworkPolicy(networkPolicy))
 	}
 	return result
 }
 
-func (analyzer analyzerImpl) toNetworkPolicy(networkPolicy networkingv1.NetworkPolicy) types.NetworkPolicy {
+func (analyzer analyzerImpl) toNetworkPolicy(networkPolicy *networkingv1.NetworkPolicy) types.NetworkPolicy {
 	return types.NetworkPolicy{
 		Name:      networkPolicy.Name,
 		Namespace: networkPolicy.Namespace,
