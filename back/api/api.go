@@ -49,7 +49,7 @@ func healthCheck(w http.ResponseWriter, _ *http.Request) {
 }
 
 func Expose(address string, resultsChannel <-chan types.AnalysisResult) {
-	frontendHandler := http.FileServer(pkger.Dir("/front/build"))
+	frontendHandler := http.FileServer(pkger.Dir("../front/build"))
 	apiHandler := newHandler()
 	go apiHandler.keepUpdated(resultsChannel)
 	mux := http.NewServeMux()

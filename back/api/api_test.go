@@ -130,7 +130,7 @@ func Test_Expose(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			address := ":" + strconv.Itoa(findAvailablePort())
+			address := "localhost:" + strconv.Itoa(findAvailablePort())
 			resultsChannel := make(chan types.AnalysisResult)
 			go Expose(address, resultsChannel)
 			resultsChannel <- tt.args.analysisResult
