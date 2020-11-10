@@ -24,18 +24,18 @@ func Test_Analyze(t *testing.T) {
 		podIsolation []mockPodIsolationAnalyzerCall
 		allowedRoute []mockAllowedRouteAnalyzerCall
 	}
-	namespace := testutils.NewNamespaceBuilder().WithName("ns").Build()
-	pod1 := testutils.NewPodBuilder().WithName("pod1").WithNamespace("ns").Build()
-	pod2 := testutils.NewPodBuilder().WithName("pod2").WithNamespace("ns").Build()
-	networkPolicy1 := testutils.NewNetworkPolicyBuilder().WithName("netPol1").WithNamespace("ns1").WithLabel("k", "v1").Build()
-	networkPolicy2 := testutils.NewNetworkPolicyBuilder().WithName("netPol2").WithNamespace("ns2").WithLabel("k", "v2").Build()
+	k8sNamespace := testutils.NewNamespaceBuilder().WithName("ns").Build()
+	k8sPod1 := testutils.NewPodBuilder().WithName("pod1").WithNamespace("ns").Build()
+	k8sPod2 := testutils.NewPodBuilder().WithName("pod2").WithNamespace("ns").Build()
+	k8sNetworkPolicy1 := testutils.NewNetworkPolicyBuilder().WithName("netPol1").WithNamespace("ns1").WithLabel("k", "v1").Build()
+	k8sNetworkPolicy2 := testutils.NewNetworkPolicyBuilder().WithName("netPol2").WithNamespace("ns2").WithLabel("k", "v2").Build()
 	podIsolation1 := &shared.PodIsolation{
-		Pod:             pod1,
+		Pod:             k8sPod1,
 		IngressPolicies: []*networkingv1.NetworkPolicy{},
 		EgressPolicies:  []*networkingv1.NetworkPolicy{},
 	}
 	podIsolation2 := &shared.PodIsolation{
-		Pod:             pod2,
+		Pod:             k8sPod2,
 		IngressPolicies: []*networkingv1.NetworkPolicy{},
 		EgressPolicies:  []*networkingv1.NetworkPolicy{},
 	}
@@ -44,11 +44,11 @@ func Test_Analyze(t *testing.T) {
 	allowedRoute := &types.AllowedRoute{
 		SourcePod: podRef1,
 		EgressPolicies: []types.NetworkPolicy{
-			{Name: networkPolicy1.Name, Namespace: networkPolicy1.Namespace, Labels: networkPolicy1.Labels},
+			{Name: k8sNetworkPolicy1.Name, Namespace: k8sNetworkPolicy1.Namespace, Labels: k8sNetworkPolicy1.Labels},
 		},
 		TargetPod: podRef2,
 		IngressPolicies: []types.NetworkPolicy{
-			{Name: networkPolicy2.Name, Namespace: networkPolicy2.Namespace, Labels: networkPolicy2.Labels},
+			{Name: k8sNetworkPolicy2.Name, Namespace: k8sNetworkPolicy2.Namespace, Labels: k8sNetworkPolicy2.Labels},
 		},
 		Ports: []int32{80, 443},
 	}
@@ -60,15 +60,15 @@ func Test_Analyze(t *testing.T) {
 		expectedAllowedRoutes []*types.AllowedRoute
 	}{
 		{
-			name: "should delegate to pod isolation and allowed route analyzers",
+			name: "delegates to pod isolation and allowed route analyzers",
 			mocks: mocks{
 				podIsolation: []mockPodIsolationAnalyzerCall{
 					{
-						args:        mockPodIsolationAnalyzerCallArgs{pod: pod1, networkPolicies: []*networkingv1.NetworkPolicy{networkPolicy1, networkPolicy2}},
+						args:        mockPodIsolationAnalyzerCallArgs{pod: k8sPod1, networkPolicies: []*networkingv1.NetworkPolicy{k8sNetworkPolicy1, k8sNetworkPolicy2}},
 						returnValue: podIsolation1,
 					},
 					{
-						args:        mockPodIsolationAnalyzerCallArgs{pod: pod2, networkPolicies: []*networkingv1.NetworkPolicy{networkPolicy1, networkPolicy2}},
+						args:        mockPodIsolationAnalyzerCallArgs{pod: k8sPod2, networkPolicies: []*networkingv1.NetworkPolicy{k8sNetworkPolicy1, k8sNetworkPolicy2}},
 						returnValue: podIsolation2,
 					},
 				},
@@ -77,7 +77,7 @@ func Test_Analyze(t *testing.T) {
 						args: mockAllowedRouteAnalyzerCallArgs{
 							sourcePodIsolation: podIsolation1,
 							targetPodIsolation: podIsolation2,
-							namespaces:         []*corev1.Namespace{namespace},
+							namespaces:         []*corev1.Namespace{k8sNamespace},
 						},
 						returnValue: allowedRoute,
 					},
@@ -85,16 +85,16 @@ func Test_Analyze(t *testing.T) {
 						args: mockAllowedRouteAnalyzerCallArgs{
 							sourcePodIsolation: podIsolation2,
 							targetPodIsolation: podIsolation1,
-							namespaces:         []*corev1.Namespace{namespace},
+							namespaces:         []*corev1.Namespace{k8sNamespace},
 						},
 						returnValue: nil,
 					},
 				},
 			},
 			args: args{
-				pods:            []*corev1.Pod{pod1, pod2},
-				networkPolicies: []*networkingv1.NetworkPolicy{networkPolicy1, networkPolicy2},
-				namespaces:      []*corev1.Namespace{namespace},
+				pods:            []*corev1.Pod{k8sPod1, k8sPod2},
+				networkPolicies: []*networkingv1.NetworkPolicy{k8sNetworkPolicy1, k8sNetworkPolicy2},
+				namespaces:      []*corev1.Namespace{k8sNamespace},
 			},
 			expectedPodIsolations: []*types.PodIsolation{
 				{Pod: podRef1, IsIngressIsolated: false, IsEgressIsolated: false},
@@ -104,13 +104,13 @@ func Test_Analyze(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		podIsolationAnalyzer := createMockPodIsolationAnalyzer(t, tt.mocks.podIsolation)
-		allowedRouteAnalyzer := createMockAllowedRouteAnalyzer(t, tt.mocks.allowedRoute)
-		analyzer := analyzerImpl{
-			podIsolationAnalyzer: podIsolationAnalyzer,
-			allowedRouteAnalyzer: allowedRouteAnalyzer,
-		}
 		t.Run(tt.name, func(t *testing.T) {
+			podIsolationAnalyzer := createMockPodIsolationAnalyzer(t, tt.mocks.podIsolation)
+			allowedRouteAnalyzer := createMockAllowedRouteAnalyzer(t, tt.mocks.allowedRoute)
+			analyzer := analyzerImpl{
+				podIsolationAnalyzer: podIsolationAnalyzer,
+				allowedRouteAnalyzer: allowedRouteAnalyzer,
+			}
 			podIsolations, allowedRoutes := analyzer.Analyze(tt.args.pods, tt.args.namespaces, tt.args.networkPolicies)
 			if diff := cmp.Diff(tt.expectedPodIsolations, podIsolations); diff != "" {
 				t.Errorf("Analyze() pod isolations result mismatch (-want +got):\n%s", diff)

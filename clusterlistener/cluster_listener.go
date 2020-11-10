@@ -64,12 +64,12 @@ func Listen(k8sConfigPath string, clusterStateChannel chan<- types.ClusterState)
 			panic(err.Error())
 		}
 		clusterStateChannel <- types.ClusterState{
-			Namespaces:  namespaces,
-			Pods:        pods,
-			Services:    services,
-			ReplicaSets: replicaSets,
-			Deployments: deployments,
-			Policies:    policies,
+			Namespaces:      namespaces,
+			Pods:            pods,
+			Services:        services,
+			ReplicaSets:     replicaSets,
+			Deployments:     deployments,
+			NetworkPolicies: policies,
 		}
 		analyzeQueue.Forget(obj)
 		analyzeQueue.Done(obj)

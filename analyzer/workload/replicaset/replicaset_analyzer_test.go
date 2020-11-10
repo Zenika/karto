@@ -72,9 +72,9 @@ func Test_Analyze(t *testing.T) {
 			},
 		},
 	}
-	analyzer := analyzerImpl{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			analyzer := analyzerImpl{}
 			replicaSetWithTargetPods := analyzer.Analyze(tt.args.replicaSet, tt.args.pods)
 			if diff := cmp.Diff(tt.expectedReplicaSetWithTargetPods, replicaSetWithTargetPods); diff != "" {
 				t.Errorf("Analyze() result mismatch (-want +got):\n%s", diff)
