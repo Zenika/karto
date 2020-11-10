@@ -19,8 +19,8 @@ jobs:
           at: /home/circleci
       - restore_cache:
           keys:
-            - v3-front-dependencies-{{ checksum "front/package.json" }}
-            - v3-front-dependencies-
+            - v4-front-dependencies-{{ checksum "front/package.json" }}
+            - v4-front-dependencies-
       - run:
           working_directory: front
           name: Download dependencies
@@ -29,7 +29,7 @@ jobs:
           paths:
             - front/node_modules
             - /home/circleci/.cache/yarn/v6
-          key: v3-front-dependencies-{{ checksum "front/package.json" }}
+          key: v4-front-dependencies-{{ checksum "front/package.json" }}
       - run:
           working_directory: front
           name: Run tests
@@ -51,33 +51,36 @@ jobs:
           at: /home/circleci
       - restore_cache:
           keys:
-            - v3-back-dependencies-{{ checksum "go.sum" }}
-            - v3-back-dependencies-
+            - v4-back-dependencies-{{ checksum "back/go.sum" }}
+            - v4-back-dependencies-
       - run:
+          working_directory: back
           name: Run tests
           command: go test ./...
       - run:
+          working_directory: back
           name: Build backend
           command: |
+            cp -R ../front/build frontendBuild
             go install github.com/markbates/pkger/cmd/pkger && pkger
             export CGO_ENABLED=0
             go build karto
             GOOS=darwin GOARCH=amd64 go build -o karto_darwin
             GOOS=windows GOARCH=amd64 go build -o karto.exe
       - save_cache:
-          key: v3-back-dependencies-{{ checksum "go.sum" }}
+          key: v4-back-dependencies-{{ checksum "back/go.sum" }}
           paths:
             - /home/circleci/go/pkg/mod
       - store_artifacts:
-          path: karto
+          path: back/karto
       - store_artifacts:
-          path: karto_darwin
+          path: back/karto_darwin
       - store_artifacts:
-          path: karto.exe
+          path: back/karto.exe
       - persist_to_workspace:
           root: /home/circleci
           paths:
-            - karto/karto
+            - karto/back/karto
   dockerize-and-release:
     docker:
       - image: cimg/base:stable

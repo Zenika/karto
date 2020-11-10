@@ -1,9 +1,6 @@
-package analyzer
+package clusterlistener
 
 import (
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/informers"
@@ -13,24 +10,11 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/workqueue"
-	"karto/analyzer/pod"
-	"karto/analyzer/traffic"
-	"karto/analyzer/workload"
 	"karto/types"
 	"log"
-	"time"
 )
 
-type clusterState struct {
-	Namespaces  []*corev1.Namespace
-	Pods        []*corev1.Pod
-	Services    []*corev1.Service
-	ReplicaSets []*appsv1.ReplicaSet
-	Deployments []*appsv1.Deployment
-	Policies    []*networkingv1.NetworkPolicy
-}
-
-func AnalyzeOnChange(k8sConfigPath string, resultsChannel chan<- types.AnalysisResult) {
+func Listen(k8sConfigPath string, clusterStateChannel chan<- types.ClusterState) {
 	k8sClient := getK8sClient(k8sConfigPath)
 	analyzeQueue := workqueue.NewRateLimitingQueue(workqueue.DefaultItemBasedRateLimiter())
 	informerFactory := informers.NewSharedInformerFactory(k8sClient, 0)
@@ -79,14 +63,14 @@ func AnalyzeOnChange(k8sConfigPath string, resultsChannel chan<- types.AnalysisR
 		if err != nil {
 			panic(err.Error())
 		}
-		resultsChannel <- analyze(clusterState{
-			Namespaces:  namespaces,
-			Pods:        pods,
-			Services:    services,
-			ReplicaSets: replicaSets,
-			Deployments: deployments,
-			Policies:    policies,
-		})
+		clusterStateChannel <- types.ClusterState{
+			Namespaces:      namespaces,
+			Pods:            pods,
+			Services:        services,
+			ReplicaSets:     replicaSets,
+			Deployments:     deployments,
+			NetworkPolicies: policies,
+		}
 		analyzeQueue.Forget(obj)
 		analyzeQueue.Done(obj)
 	}
@@ -108,22 +92,4 @@ func getK8sClient(k8sClientConfig string) *kubernetes.Clientset {
 		panic(err.Error())
 	}
 	return k8sClient
-}
-
-func analyze(clusterState clusterState) types.AnalysisResult {
-	start := time.Now()
-	pods := pod.Analyze(clusterState.Pods)
-	podIsolations, allowedRoutes := traffic.Analyze(clusterState.Pods, clusterState.Namespaces, clusterState.Policies)
-	services, replicaSets, deployments := workload.Analyze(clusterState.Pods, clusterState.Services, clusterState.ReplicaSets, clusterState.Deployments)
-	elapsed := time.Since(start)
-	log.Printf("Finished analysis in %s, found: %d pods, %d allowed routes, %d services, %d replicaSets and %d deployments\n",
-		elapsed, len(pods), len(allowedRoutes), len(services), len(replicaSets), len(deployments))
-	return types.AnalysisResult{
-		Pods:          pods,
-		PodIsolations: podIsolations,
-		AllowedRoutes: allowedRoutes,
-		Services:      services,
-		ReplicaSets:   replicaSets,
-		Deployments:   deployments,
-	}
 }

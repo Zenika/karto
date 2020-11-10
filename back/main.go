@@ -3,8 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"karto/analyzer"
 	"karto/api"
+	"karto/clusterlistener"
 	"karto/types"
 	"os"
 	"path/filepath"
@@ -18,9 +18,13 @@ func main() {
 		fmt.Printf("Karto v%s\n", version)
 		os.Exit(0)
 	}
+	container := dependencyInjection()
+	analysisScheduler := container.AnalysisScheduler
 	analysisResultsChannel := make(chan types.AnalysisResult)
-	go analyzer.AnalyzeOnChange(k8sConfigPath, analysisResultsChannel)
-	api.Expose(analysisResultsChannel)
+	clusterStateChannel := make(chan types.ClusterState)
+	go clusterlistener.Listen(k8sConfigPath, clusterStateChannel)
+	go analysisScheduler.AnalyzeOnClusterStateChange(clusterStateChannel, analysisResultsChannel)
+	api.Expose(":8000", analysisResultsChannel)
 }
 
 func parseCmd() (bool, string) {
@@ -31,7 +35,8 @@ func parseCmd() (bool, string) {
 	}
 	var k8sConfigPath *string
 	if home != "" {
-		k8sConfigPath = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+		k8sConfigPath = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"),
+			"(optional) absolute path to the kubeconfig file")
 	} else {
 		k8sConfigPath = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 	}

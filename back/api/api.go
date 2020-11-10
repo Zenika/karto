@@ -18,9 +18,12 @@ type handler struct {
 func newHandler() *handler {
 	handler := &handler{
 		lastAnalysisResult: types.AnalysisResult{
-			Pods:          make([]types.Pod, 0),
-			AllowedRoutes: make([]types.AllowedRoute, 0),
-			Services:      make([]types.Service, 0),
+			Pods:          make([]*types.Pod, 0),
+			PodIsolations: make([]*types.PodIsolation, 0),
+			AllowedRoutes: make([]*types.AllowedRoute, 0),
+			Services:      make([]*types.Service, 0),
+			ReplicaSets:   make([]*types.ReplicaSet, 0),
+			Deployments:   make([]*types.Deployment, 0),
 		},
 	}
 	return handler
@@ -45,17 +48,16 @@ func healthCheck(w http.ResponseWriter, _ *http.Request) {
 	fmt.Fprintln(w, "OK")
 }
 
-func Expose(resultsChannel <-chan types.AnalysisResult) {
-	frontendHandler := http.FileServer(pkger.Dir("/front/build"))
+func Expose(address string, resultsChannel <-chan types.AnalysisResult) {
+	frontendHandler := http.FileServer(pkger.Dir("/frontendBuild"))
 	apiHandler := newHandler()
 	go apiHandler.keepUpdated(resultsChannel)
 	mux := http.NewServeMux()
 	mux.Handle("/", frontendHandler)
 	mux.Handle("/api/analysisResult", apiHandler)
 	mux.HandleFunc("/health", healthCheck)
-	port := ":8000"
-	log.Printf("Listening to incoming requests on %s...\n", port)
-	err := http.ListenAndServe(port, mux)
+	log.Printf("Listening to incoming requests on %s...\n", address)
+	err := http.ListenAndServe(address, mux)
 	if err != nil {
 		log.Fatalln(err)
 	}

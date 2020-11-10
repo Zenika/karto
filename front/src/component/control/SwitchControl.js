@@ -47,7 +47,7 @@ const SwitchControl = ({ className = '', name, checked, onChange }) => {
         <FormControlLabel className={className} label={name} control={
             <CustomSwitch name={name} checked={checked} onChange={handleChange}/>
         }/>
-    )
+    );
 };
 
 SwitchControl.propTypes = {

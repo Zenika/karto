@@ -90,7 +90,7 @@ The following tools must be available locally:
 
 ### Run the frontend in dev mode
 
-In the `front` folder, execute:
+In the `front` directory, execute:
 ```shell script
 npm start
 ```
@@ -98,7 +98,7 @@ This will expose the app in dev mode on `localhost:3000` with a proxy to `localh
 
 ### Run the backend locally
 
-Simply execute: 
+In the `back` directory, execute: 
 ```shell script
 go build karto
 ./karto
@@ -106,7 +106,7 @@ go build karto
 
 ### Test suites
 
-To run the entire backend test suite: 
+To run the entire backend test suite, execute in the `back` directory: 
 ```shell script
 go test ./...
 ```
@@ -116,18 +116,19 @@ go test ./...
 In production mode, the frontend is packaged in the go binary using [pkger](https://github.com/markbates/pkger). In this
 configuration, the frontend is served on the `/` route and the API on the `/api` route.
 
-To compile the Karto binary from source, first compile the frontend source code. In the `front` folder, execute:
+To compile the Karto binary from source, first compile the frontend source code. In the `front` directory, execute:
 ```shell script
 npm run build
 ```
-This will generate a `build` folder in `/front`.
+This will generate a `build` directory in `front`.
 
 Then, package it inside the backend:
 ```shell script
+cp -R front/build back/frontendBuild
 go install github.com/markbates/pkger/cmd/pkger
 pkger
 ```
-This will generate a `pkged.go` file at the root with a binary content equivalent to the generated `build` folder.
+This will generate a `pkged.go` file in `back` with a binary content equivalent to the generated `build` directory.
 
 Finally, compile the go binary:
 ```shell script
