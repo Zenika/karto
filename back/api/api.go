@@ -49,7 +49,7 @@ func healthCheck(w http.ResponseWriter, _ *http.Request) {
 }
 
 func Expose(address string, resultsChannel <-chan types.AnalysisResult) {
-	frontendHandler := http.FileServer(pkger.Dir("../front/build"))
+	frontendHandler := http.FileServer(pkger.Dir("/frontendBuild"))
 	apiHandler := newHandler()
 	go apiHandler.keepUpdated(resultsChannel)
 	mux := http.NewServeMux()
@@ -57,5 +57,8 @@ func Expose(address string, resultsChannel <-chan types.AnalysisResult) {
 	mux.Handle("/api/analysisResult", apiHandler)
 	mux.HandleFunc("/health", healthCheck)
 	log.Printf("Listening to incoming requests on %s...\n", address)
-	http.ListenAndServe(address, mux)
+	err := http.ListenAndServe(address, mux)
+	if err != nil {
+		log.Fatalln(err)
+	}
 }

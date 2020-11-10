@@ -61,6 +61,7 @@ jobs:
           working_directory: back
           name: Build backend
           command: |
+            cp -R ../front/build frontendBuild
             go install github.com/markbates/pkger/cmd/pkger && pkger
             export CGO_ENABLED=0
             go build karto
