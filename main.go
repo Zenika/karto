@@ -24,7 +24,7 @@ func main() {
 	clusterStateChannel := make(chan types.ClusterState)
 	go clusterlistener.Listen(k8sConfigPath, clusterStateChannel)
 	go analysisScheduler.AnalyzeOnClusterStateChange(clusterStateChannel, analysisResultsChannel)
-	api.Expose(analysisResultsChannel)
+	api.Expose(":8000", analysisResultsChannel)
 }
 
 func parseCmd() (bool, string) {
