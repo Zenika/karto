@@ -110,7 +110,8 @@ func (networkPolicyBuilder *NetworkPolicyBuilder) WithLabel(key string, value st
 	return networkPolicyBuilder
 }
 
-func (networkPolicyBuilder *NetworkPolicyBuilder) WithPodSelector(podSelector *metav1.LabelSelector) *NetworkPolicyBuilder {
+func (networkPolicyBuilder *NetworkPolicyBuilder) WithPodSelector(
+	podSelector *metav1.LabelSelector) *NetworkPolicyBuilder {
 	networkPolicyBuilder.PodSelector = *podSelector
 	return networkPolicyBuilder
 }
@@ -120,12 +121,14 @@ func (networkPolicyBuilder *NetworkPolicyBuilder) WithTypes(types ...networkingv
 	return networkPolicyBuilder
 }
 
-func (networkPolicyBuilder *NetworkPolicyBuilder) WithIngressRule(ingressRule networkingv1.NetworkPolicyIngressRule) *NetworkPolicyBuilder {
+func (networkPolicyBuilder *NetworkPolicyBuilder) WithIngressRule(
+	ingressRule networkingv1.NetworkPolicyIngressRule) *NetworkPolicyBuilder {
 	networkPolicyBuilder.Ingress = append(networkPolicyBuilder.Ingress, ingressRule)
 	return networkPolicyBuilder
 }
 
-func (networkPolicyBuilder *NetworkPolicyBuilder) WithEgressRule(egressRule networkingv1.NetworkPolicyEgressRule) *NetworkPolicyBuilder {
+func (networkPolicyBuilder *NetworkPolicyBuilder) WithEgressRule(
+	egressRule networkingv1.NetworkPolicyEgressRule) *NetworkPolicyBuilder {
 	networkPolicyBuilder.Egress = append(networkPolicyBuilder.Egress, egressRule)
 	return networkPolicyBuilder
 }

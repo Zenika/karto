@@ -21,8 +21,10 @@ func Test_Analyze(t *testing.T) {
 			name: "pod info are propagated",
 			args: args{
 				pods: []*corev1.Pod{
-					testutils.NewPodBuilder().WithName("name1").WithNamespace("ns1").WithLabel("k1", "foo").Build(),
-					testutils.NewPodBuilder().WithName("name2").WithNamespace("ns2").WithLabel("k1", "bar").WithLabel("k2", "baz").Build(),
+					testutils.NewPodBuilder().WithName("name1").WithNamespace("ns1").
+						WithLabel("k1", "foo").Build(),
+					testutils.NewPodBuilder().WithName("name2").WithNamespace("ns2").
+						WithLabel("k1", "bar").WithLabel("k2", "baz").Build(),
 				},
 			},
 			expectedPods: []*types.Pod{

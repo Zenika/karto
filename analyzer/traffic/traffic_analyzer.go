@@ -10,7 +10,8 @@ import (
 )
 
 type Analyzer interface {
-	Analyze(pods []*corev1.Pod, namespaces []*corev1.Namespace, networkPolicies []*networkingv1.NetworkPolicy) ([]*types.PodIsolation, []*types.AllowedRoute)
+	Analyze(pods []*corev1.Pod, namespaces []*corev1.Namespace,
+		networkPolicies []*networkingv1.NetworkPolicy) ([]*types.PodIsolation, []*types.AllowedRoute)
 }
 
 type analyzerImpl struct {
@@ -25,13 +26,15 @@ func NewAnalyzer(podIsolationAnalyzer podisolation.Analyzer, allowedRouteAnalyze
 	}
 }
 
-func (analyzer analyzerImpl) Analyze(pods []*corev1.Pod, namespaces []*corev1.Namespace, networkPolicies []*networkingv1.NetworkPolicy) ([]*types.PodIsolation, []*types.AllowedRoute) {
+func (analyzer analyzerImpl) Analyze(pods []*corev1.Pod, namespaces []*corev1.Namespace,
+	networkPolicies []*networkingv1.NetworkPolicy) ([]*types.PodIsolation, []*types.AllowedRoute) {
 	podIsolations := analyzer.podIsolationsOfAllPods(pods, networkPolicies)
 	allowedRoutes := analyzer.allowedRoutesOfAllPods(podIsolations, namespaces)
 	return analyzer.toPodIsolations(podIsolations), allowedRoutes
 }
 
-func (analyzer analyzerImpl) podIsolationsOfAllPods(pods []*corev1.Pod, policies []*networkingv1.NetworkPolicy) []*shared.PodIsolation {
+func (analyzer analyzerImpl) podIsolationsOfAllPods(pods []*corev1.Pod,
+	policies []*networkingv1.NetworkPolicy) []*shared.PodIsolation {
 	podIsolations := make([]*shared.PodIsolation, 0)
 	for _, pod := range pods {
 		podIsolation := analyzer.podIsolationAnalyzer.Analyze(pod, policies)
@@ -40,7 +43,8 @@ func (analyzer analyzerImpl) podIsolationsOfAllPods(pods []*corev1.Pod, policies
 	return podIsolations
 }
 
-func (analyzer analyzerImpl) allowedRoutesOfAllPods(podIsolations []*shared.PodIsolation, namespaces []*corev1.Namespace) []*types.AllowedRoute {
+func (analyzer analyzerImpl) allowedRoutesOfAllPods(podIsolations []*shared.PodIsolation,
+	namespaces []*corev1.Namespace) []*types.AllowedRoute {
 	allowedRoutes := make([]*types.AllowedRoute, 0)
 	for i, sourcePodIsolation := range podIsolations {
 		for j, targetPodIsolation := range podIsolations {

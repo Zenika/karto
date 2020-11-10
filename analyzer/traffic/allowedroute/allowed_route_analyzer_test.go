@@ -28,7 +28,8 @@ func Test_Analyze(t *testing.T) {
 				sourcePodIsolation: &shared.PodIsolation{
 					Pod: testutils.NewPodBuilder().WithName("Pod1").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{
-						testutils.NewNetworkPolicyBuilder().WithTypes("Ingress").WithPodSelector(testutils.NewLabelSelectorBuilder().Build()).Build(),
+						testutils.NewNetworkPolicyBuilder().WithTypes("Ingress").
+							WithPodSelector(testutils.NewLabelSelectorBuilder().Build()).Build(),
 					},
 					EgressPolicies: []*networkingv1.NetworkPolicy{},
 				},
@@ -36,7 +37,8 @@ func Test_Analyze(t *testing.T) {
 					Pod:             testutils.NewPodBuilder().WithName("Pod2").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies: []*networkingv1.NetworkPolicy{
-						testutils.NewNetworkPolicyBuilder().WithTypes("Egress").WithPodSelector(testutils.NewLabelSelectorBuilder().Build()).Build(),
+						testutils.NewNetworkPolicyBuilder().WithTypes("Egress").
+							WithPodSelector(testutils.NewLabelSelectorBuilder().Build()).Build(),
 					},
 				},
 				namespaces: []*corev1.Namespace{
@@ -62,13 +64,15 @@ func Test_Analyze(t *testing.T) {
 				targetPodIsolation: &shared.PodIsolation{
 					Pod: testutils.NewPodBuilder().WithName("Pod2").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{
-						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").WithIngressRule(networkingv1.NetworkPolicyIngressRule{
-							From: []networkingv1.NetworkPolicyPeer{
-								{
-									PodSelector: testutils.NewLabelSelectorBuilder().WithMatchLabel("app", "foo").Build(),
+						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").
+							WithIngressRule(networkingv1.NetworkPolicyIngressRule{
+								From: []networkingv1.NetworkPolicyPeer{
+									{
+										PodSelector: testutils.NewLabelSelectorBuilder().
+											WithMatchLabel("app", "foo").Build(),
+									},
 								},
-							},
-						}).Build(),
+							}).Build(),
 					},
 					EgressPolicies: []*networkingv1.NetworkPolicy{},
 				},
@@ -90,20 +94,22 @@ func Test_Analyze(t *testing.T) {
 			name: "a non isolated pod cannot send traffic to pod rejecting its labels",
 			args: args{
 				sourcePodIsolation: &shared.PodIsolation{
-					Pod:             testutils.NewPodBuilder().WithName("Pod1").WithLabel("app", "foo").Build(),
+					Pod: testutils.NewPodBuilder().WithName("Pod1").
+						WithLabel("app", "foo").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies:  []*networkingv1.NetworkPolicy{},
 				},
 				targetPodIsolation: &shared.PodIsolation{
 					Pod: testutils.NewPodBuilder().WithName("Pod2").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{
-						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").WithIngressRule(networkingv1.NetworkPolicyIngressRule{
-							From: []networkingv1.NetworkPolicyPeer{
-								{
-									PodSelector: testutils.NewLabelSelectorBuilder().WithMatchLabel("app", "bar").Build(),
+						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").
+							WithIngressRule(networkingv1.NetworkPolicyIngressRule{
+								From: []networkingv1.NetworkPolicyPeer{
+									{
+										PodSelector: testutils.NewLabelSelectorBuilder().WithMatchLabel("app", "bar").Build(),
+									},
 								},
-							},
-						}).Build(),
+							}).Build(),
 					},
 					EgressPolicies: []*networkingv1.NetworkPolicy{},
 				},
@@ -117,20 +123,23 @@ func Test_Analyze(t *testing.T) {
 			name: "a non isolated pod can send traffic to pod accepting its namespace",
 			args: args{
 				sourcePodIsolation: &shared.PodIsolation{
-					Pod:             testutils.NewPodBuilder().WithName("Pod1").WithNamespace("ns").Build(),
+					Pod: testutils.NewPodBuilder().WithName("Pod1").
+						WithNamespace("ns").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies:  []*networkingv1.NetworkPolicy{},
 				},
 				targetPodIsolation: &shared.PodIsolation{
 					Pod: testutils.NewPodBuilder().WithName("Pod2").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{
-						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").WithIngressRule(networkingv1.NetworkPolicyIngressRule{
-							From: []networkingv1.NetworkPolicyPeer{
-								{
-									NamespaceSelector: testutils.NewLabelSelectorBuilder().WithMatchLabel("name", "ns").Build(),
+						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").
+							WithIngressRule(networkingv1.NetworkPolicyIngressRule{
+								From: []networkingv1.NetworkPolicyPeer{
+									{
+										NamespaceSelector: testutils.NewLabelSelectorBuilder().
+											WithMatchLabel("name", "ns").Build(),
+									},
 								},
-							},
-						}).Build(),
+							}).Build(),
 					},
 					EgressPolicies: []*networkingv1.NetworkPolicy{},
 				},
@@ -159,13 +168,14 @@ func Test_Analyze(t *testing.T) {
 				targetPodIsolation: &shared.PodIsolation{
 					Pod: testutils.NewPodBuilder().WithName("Pod2").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{
-						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").WithIngressRule(networkingv1.NetworkPolicyIngressRule{
-							From: []networkingv1.NetworkPolicyPeer{
-								{
-									NamespaceSelector: testutils.NewLabelSelectorBuilder().WithMatchLabel("name", "other").Build(),
+						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").
+							WithIngressRule(networkingv1.NetworkPolicyIngressRule{
+								From: []networkingv1.NetworkPolicyPeer{
+									{
+										NamespaceSelector: testutils.NewLabelSelectorBuilder().WithMatchLabel("name", "other").Build(),
+									},
 								},
-							},
-						}).Build(),
+							}).Build(),
 					},
 					EgressPolicies: []*networkingv1.NetworkPolicy{},
 				},
@@ -186,14 +196,15 @@ func Test_Analyze(t *testing.T) {
 				targetPodIsolation: &shared.PodIsolation{
 					Pod: testutils.NewPodBuilder().WithName("Pod2").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{
-						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").WithIngressRule(networkingv1.NetworkPolicyIngressRule{
-							From: []networkingv1.NetworkPolicyPeer{
-								{
-									NamespaceSelector: testutils.NewLabelSelectorBuilder().WithMatchLabel("name", "ns").Build(),
-									PodSelector:       testutils.NewLabelSelectorBuilder().WithMatchLabel("app", "foo").Build(),
+						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").
+							WithIngressRule(networkingv1.NetworkPolicyIngressRule{
+								From: []networkingv1.NetworkPolicyPeer{
+									{
+										NamespaceSelector: testutils.NewLabelSelectorBuilder().WithMatchLabel("name", "ns").Build(),
+										PodSelector:       testutils.NewLabelSelectorBuilder().WithMatchLabel("app", "foo").Build(),
+									},
 								},
-							},
-						}).Build(),
+							}).Build(),
 					},
 					EgressPolicies: []*networkingv1.NetworkPolicy{},
 				},
@@ -222,14 +233,15 @@ func Test_Analyze(t *testing.T) {
 				targetPodIsolation: &shared.PodIsolation{
 					Pod: testutils.NewPodBuilder().WithName("Pod2").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{
-						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").WithIngressRule(networkingv1.NetworkPolicyIngressRule{
-							From: []networkingv1.NetworkPolicyPeer{
-								{
-									NamespaceSelector: testutils.NewLabelSelectorBuilder().WithMatchLabel("name", "other").Build(),
-									PodSelector:       testutils.NewLabelSelectorBuilder().WithMatchLabel("app", "foo").Build(),
+						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").
+							WithIngressRule(networkingv1.NetworkPolicyIngressRule{
+								From: []networkingv1.NetworkPolicyPeer{
+									{
+										NamespaceSelector: testutils.NewLabelSelectorBuilder().WithMatchLabel("name", "other").Build(),
+										PodSelector:       testutils.NewLabelSelectorBuilder().WithMatchLabel("app", "foo").Build(),
+									},
 								},
-							},
-						}).Build(),
+							}).Build(),
 					},
 					EgressPolicies: []*networkingv1.NetworkPolicy{},
 				},
@@ -250,14 +262,15 @@ func Test_Analyze(t *testing.T) {
 				targetPodIsolation: &shared.PodIsolation{
 					Pod: testutils.NewPodBuilder().WithName("Pod2").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{
-						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").WithIngressRule(networkingv1.NetworkPolicyIngressRule{
-							From: []networkingv1.NetworkPolicyPeer{
-								{
-									NamespaceSelector: testutils.NewLabelSelectorBuilder().WithMatchLabel("name", "ns").Build(),
-									PodSelector:       testutils.NewLabelSelectorBuilder().WithMatchLabel("app", "bar").Build(),
+						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").
+							WithIngressRule(networkingv1.NetworkPolicyIngressRule{
+								From: []networkingv1.NetworkPolicyPeer{
+									{
+										NamespaceSelector: testutils.NewLabelSelectorBuilder().WithMatchLabel("name", "ns").Build(),
+										PodSelector:       testutils.NewLabelSelectorBuilder().WithMatchLabel("app", "bar").Build(),
+									},
 								},
-							},
-						}).Build(),
+							}).Build(),
 					},
 					EgressPolicies: []*networkingv1.NetworkPolicy{},
 				},
@@ -274,13 +287,14 @@ func Test_Analyze(t *testing.T) {
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies: []*networkingv1.NetworkPolicy{
-						testutils.NewNetworkPolicyBuilder().WithName("eg1").WithTypes("Egress").WithEgressRule(networkingv1.NetworkPolicyEgressRule{
-							To: []networkingv1.NetworkPolicyPeer{
-								{
-									PodSelector: testutils.NewLabelSelectorBuilder().WithMatchLabel("app", "foo").Build(),
+						testutils.NewNetworkPolicyBuilder().WithName("eg1").WithTypes("Egress").
+							WithEgressRule(networkingv1.NetworkPolicyEgressRule{
+								To: []networkingv1.NetworkPolicyPeer{
+									{
+										PodSelector: testutils.NewLabelSelectorBuilder().WithMatchLabel("app", "foo").Build(),
+									},
 								},
-							},
-						}).Build(),
+							}).Build(),
 					},
 				},
 				targetPodIsolation: &shared.PodIsolation{
@@ -309,13 +323,14 @@ func Test_Analyze(t *testing.T) {
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies: []*networkingv1.NetworkPolicy{
-						testutils.NewNetworkPolicyBuilder().WithName("eg1").WithTypes("Egress").WithEgressRule(networkingv1.NetworkPolicyEgressRule{
-							To: []networkingv1.NetworkPolicyPeer{
-								{
-									PodSelector: testutils.NewLabelSelectorBuilder().WithMatchLabel("app", "bar").Build(),
+						testutils.NewNetworkPolicyBuilder().WithName("eg1").WithTypes("Egress").
+							WithEgressRule(networkingv1.NetworkPolicyEgressRule{
+								To: []networkingv1.NetworkPolicyPeer{
+									{
+										PodSelector: testutils.NewLabelSelectorBuilder().WithMatchLabel("app", "bar").Build(),
+									},
 								},
-							},
-						}).Build(),
+							}).Build(),
 					},
 				},
 				targetPodIsolation: &shared.PodIsolation{
@@ -336,13 +351,14 @@ func Test_Analyze(t *testing.T) {
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies: []*networkingv1.NetworkPolicy{
-						testutils.NewNetworkPolicyBuilder().WithName("eg1").WithTypes("Egress").WithEgressRule(networkingv1.NetworkPolicyEgressRule{
-							To: []networkingv1.NetworkPolicyPeer{
-								{
-									NamespaceSelector: testutils.NewLabelSelectorBuilder().WithMatchLabel("name", "ns").Build(),
+						testutils.NewNetworkPolicyBuilder().WithName("eg1").WithTypes("Egress").
+							WithEgressRule(networkingv1.NetworkPolicyEgressRule{
+								To: []networkingv1.NetworkPolicyPeer{
+									{
+										NamespaceSelector: testutils.NewLabelSelectorBuilder().WithMatchLabel("name", "ns").Build(),
+									},
 								},
-							},
-						}).Build(),
+							}).Build(),
 					},
 				},
 				targetPodIsolation: &shared.PodIsolation{
@@ -371,13 +387,14 @@ func Test_Analyze(t *testing.T) {
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies: []*networkingv1.NetworkPolicy{
-						testutils.NewNetworkPolicyBuilder().WithName("eg1").WithTypes("Egress").WithEgressRule(networkingv1.NetworkPolicyEgressRule{
-							To: []networkingv1.NetworkPolicyPeer{
-								{
-									NamespaceSelector: testutils.NewLabelSelectorBuilder().WithMatchLabel("name", "other").Build(),
+						testutils.NewNetworkPolicyBuilder().WithName("eg1").WithTypes("Egress").
+							WithEgressRule(networkingv1.NetworkPolicyEgressRule{
+								To: []networkingv1.NetworkPolicyPeer{
+									{
+										NamespaceSelector: testutils.NewLabelSelectorBuilder().WithMatchLabel("name", "other").Build(),
+									},
 								},
-							},
-						}).Build(),
+							}).Build(),
 					},
 				},
 				targetPodIsolation: &shared.PodIsolation{
@@ -398,14 +415,15 @@ func Test_Analyze(t *testing.T) {
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies: []*networkingv1.NetworkPolicy{
-						testutils.NewNetworkPolicyBuilder().WithName("eg1").WithTypes("Egress").WithEgressRule(networkingv1.NetworkPolicyEgressRule{
-							To: []networkingv1.NetworkPolicyPeer{
-								{
-									NamespaceSelector: testutils.NewLabelSelectorBuilder().WithMatchLabel("name", "ns").Build(),
-									PodSelector:       testutils.NewLabelSelectorBuilder().WithMatchLabel("app", "foo").Build(),
+						testutils.NewNetworkPolicyBuilder().WithName("eg1").WithTypes("Egress").
+							WithEgressRule(networkingv1.NetworkPolicyEgressRule{
+								To: []networkingv1.NetworkPolicyPeer{
+									{
+										NamespaceSelector: testutils.NewLabelSelectorBuilder().WithMatchLabel("name", "ns").Build(),
+										PodSelector:       testutils.NewLabelSelectorBuilder().WithMatchLabel("app", "foo").Build(),
+									},
 								},
-							},
-						}).Build(),
+							}).Build(),
 					},
 				},
 				targetPodIsolation: &shared.PodIsolation{
@@ -438,14 +456,15 @@ func Test_Analyze(t *testing.T) {
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies: []*networkingv1.NetworkPolicy{
-						testutils.NewNetworkPolicyBuilder().WithName("eg1").WithTypes("Egress").WithEgressRule(networkingv1.NetworkPolicyEgressRule{
-							To: []networkingv1.NetworkPolicyPeer{
-								{
-									NamespaceSelector: testutils.NewLabelSelectorBuilder().WithMatchLabel("name", "other").Build(),
-									PodSelector:       testutils.NewLabelSelectorBuilder().WithMatchLabel("app", "foo").Build(),
+						testutils.NewNetworkPolicyBuilder().WithName("eg1").WithTypes("Egress").
+							WithEgressRule(networkingv1.NetworkPolicyEgressRule{
+								To: []networkingv1.NetworkPolicyPeer{
+									{
+										NamespaceSelector: testutils.NewLabelSelectorBuilder().WithMatchLabel("name", "other").Build(),
+										PodSelector:       testutils.NewLabelSelectorBuilder().WithMatchLabel("app", "foo").Build(),
+									},
 								},
-							},
-						}).Build(),
+							}).Build(),
 					},
 				},
 				targetPodIsolation: &shared.PodIsolation{
@@ -466,14 +485,15 @@ func Test_Analyze(t *testing.T) {
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies: []*networkingv1.NetworkPolicy{
-						testutils.NewNetworkPolicyBuilder().WithName("eg1").WithTypes("Egress").WithEgressRule(networkingv1.NetworkPolicyEgressRule{
-							To: []networkingv1.NetworkPolicyPeer{
-								{
-									NamespaceSelector: testutils.NewLabelSelectorBuilder().WithMatchLabel("name", "ns").Build(),
-									PodSelector:       testutils.NewLabelSelectorBuilder().WithMatchLabel("app", "bar").Build(),
+						testutils.NewNetworkPolicyBuilder().WithName("eg1").WithTypes("Egress").
+							WithEgressRule(networkingv1.NetworkPolicyEgressRule{
+								To: []networkingv1.NetworkPolicyPeer{
+									{
+										NamespaceSelector: testutils.NewLabelSelectorBuilder().WithMatchLabel("name", "ns").Build(),
+										PodSelector:       testutils.NewLabelSelectorBuilder().WithMatchLabel("app", "bar").Build(),
+									},
 								},
-							},
-						}).Build(),
+							}).Build(),
 					},
 				},
 				targetPodIsolation: &shared.PodIsolation{
@@ -494,33 +514,35 @@ func Test_Analyze(t *testing.T) {
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies: []*networkingv1.NetworkPolicy{
-						testutils.NewNetworkPolicyBuilder().WithName("eg1").WithTypes("Egress").WithEgressRule(networkingv1.NetworkPolicyEgressRule{
-							To: []networkingv1.NetworkPolicyPeer{
-								{
-									PodSelector: testutils.NewLabelSelectorBuilder().Build(),
+						testutils.NewNetworkPolicyBuilder().WithName("eg1").WithTypes("Egress").
+							WithEgressRule(networkingv1.NetworkPolicyEgressRule{
+								To: []networkingv1.NetworkPolicyPeer{
+									{
+										PodSelector: testutils.NewLabelSelectorBuilder().Build(),
+									},
 								},
-							},
-							Ports: []networkingv1.NetworkPolicyPort{
-								{Port: &intstr.IntOrString{IntVal: 80}},
-								{Port: &intstr.IntOrString{IntVal: 8080}},
-							},
-						}).Build(),
+								Ports: []networkingv1.NetworkPolicyPort{
+									{Port: &intstr.IntOrString{IntVal: 80}},
+									{Port: &intstr.IntOrString{IntVal: 8080}},
+								},
+							}).Build(),
 					},
 				},
 				targetPodIsolation: &shared.PodIsolation{
 					Pod: testutils.NewPodBuilder().WithName("Pod2").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{
-						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").WithIngressRule(networkingv1.NetworkPolicyIngressRule{
-							From: []networkingv1.NetworkPolicyPeer{
-								{
-									PodSelector: testutils.NewLabelSelectorBuilder().Build(),
+						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").
+							WithIngressRule(networkingv1.NetworkPolicyIngressRule{
+								From: []networkingv1.NetworkPolicyPeer{
+									{
+										PodSelector: testutils.NewLabelSelectorBuilder().Build(),
+									},
 								},
-							},
-							Ports: []networkingv1.NetworkPolicyPort{
-								{Port: &intstr.IntOrString{IntVal: 443}},
-								{Port: &intstr.IntOrString{IntVal: 80}},
-							},
-						}).Build(),
+								Ports: []networkingv1.NetworkPolicyPort{
+									{Port: &intstr.IntOrString{IntVal: 443}},
+									{Port: &intstr.IntOrString{IntVal: 80}},
+								},
+							}).Build(),
 					},
 					EgressPolicies: []*networkingv1.NetworkPolicy{},
 				},
@@ -547,29 +569,31 @@ func Test_Analyze(t *testing.T) {
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies: []*networkingv1.NetworkPolicy{
-						testutils.NewNetworkPolicyBuilder().WithName("eg1").WithTypes("Egress").WithEgressRule(networkingv1.NetworkPolicyEgressRule{
-							To: []networkingv1.NetworkPolicyPeer{
-								{
-									PodSelector: testutils.NewLabelSelectorBuilder().Build(),
+						testutils.NewNetworkPolicyBuilder().WithName("eg1").WithTypes("Egress").
+							WithEgressRule(networkingv1.NetworkPolicyEgressRule{
+								To: []networkingv1.NetworkPolicyPeer{
+									{
+										PodSelector: testutils.NewLabelSelectorBuilder().Build(),
+									},
 								},
-							},
-						}).Build(),
+							}).Build(),
 					},
 				},
 				targetPodIsolation: &shared.PodIsolation{
 					Pod: testutils.NewPodBuilder().WithName("Pod2").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{
-						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").WithIngressRule(networkingv1.NetworkPolicyIngressRule{
-							From: []networkingv1.NetworkPolicyPeer{
-								{
-									PodSelector: testutils.NewLabelSelectorBuilder().Build(),
+						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").
+							WithIngressRule(networkingv1.NetworkPolicyIngressRule{
+								From: []networkingv1.NetworkPolicyPeer{
+									{
+										PodSelector: testutils.NewLabelSelectorBuilder().Build(),
+									},
 								},
-							},
-							Ports: []networkingv1.NetworkPolicyPort{
-								{Port: &intstr.IntOrString{IntVal: 443}},
-								{Port: &intstr.IntOrString{IntVal: 80}},
-							},
-						}).Build(),
+								Ports: []networkingv1.NetworkPolicyPort{
+									{Port: &intstr.IntOrString{IntVal: 443}},
+									{Port: &intstr.IntOrString{IntVal: 80}},
+								},
+							}).Build(),
 					},
 					EgressPolicies: []*networkingv1.NetworkPolicy{},
 				},
@@ -596,29 +620,31 @@ func Test_Analyze(t *testing.T) {
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies: []*networkingv1.NetworkPolicy{
-						testutils.NewNetworkPolicyBuilder().WithName("eg1").WithTypes("Egress").WithEgressRule(networkingv1.NetworkPolicyEgressRule{
-							To: []networkingv1.NetworkPolicyPeer{
-								{
-									PodSelector: testutils.NewLabelSelectorBuilder().Build(),
+						testutils.NewNetworkPolicyBuilder().WithName("eg1").WithTypes("Egress").
+							WithEgressRule(networkingv1.NetworkPolicyEgressRule{
+								To: []networkingv1.NetworkPolicyPeer{
+									{
+										PodSelector: testutils.NewLabelSelectorBuilder().Build(),
+									},
 								},
-							},
-							Ports: []networkingv1.NetworkPolicyPort{
-								{Port: &intstr.IntOrString{IntVal: 443}},
-								{Port: &intstr.IntOrString{IntVal: 80}},
-							},
-						}).Build(),
+								Ports: []networkingv1.NetworkPolicyPort{
+									{Port: &intstr.IntOrString{IntVal: 443}},
+									{Port: &intstr.IntOrString{IntVal: 80}},
+								},
+							}).Build(),
 					},
 				},
 				targetPodIsolation: &shared.PodIsolation{
 					Pod: testutils.NewPodBuilder().WithName("Pod2").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{
-						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").WithIngressRule(networkingv1.NetworkPolicyIngressRule{
-							From: []networkingv1.NetworkPolicyPeer{
-								{
-									PodSelector: testutils.NewLabelSelectorBuilder().Build(),
+						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").
+							WithIngressRule(networkingv1.NetworkPolicyIngressRule{
+								From: []networkingv1.NetworkPolicyPeer{
+									{
+										PodSelector: testutils.NewLabelSelectorBuilder().Build(),
+									},
 								},
-							},
-						}).Build(),
+							}).Build(),
 					},
 					EgressPolicies: []*networkingv1.NetworkPolicy{},
 				},
@@ -645,25 +671,27 @@ func Test_Analyze(t *testing.T) {
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies: []*networkingv1.NetworkPolicy{
-						testutils.NewNetworkPolicyBuilder().WithName("eg1").WithTypes("Egress").WithEgressRule(networkingv1.NetworkPolicyEgressRule{
-							To: []networkingv1.NetworkPolicyPeer{
-								{
-									PodSelector: testutils.NewLabelSelectorBuilder().Build(),
+						testutils.NewNetworkPolicyBuilder().WithName("eg1").WithTypes("Egress").
+							WithEgressRule(networkingv1.NetworkPolicyEgressRule{
+								To: []networkingv1.NetworkPolicyPeer{
+									{
+										PodSelector: testutils.NewLabelSelectorBuilder().Build(),
+									},
 								},
-							},
-						}).Build(),
+							}).Build(),
 					},
 				},
 				targetPodIsolation: &shared.PodIsolation{
 					Pod: testutils.NewPodBuilder().WithName("Pod2").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{
-						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").WithIngressRule(networkingv1.NetworkPolicyIngressRule{
-							From: []networkingv1.NetworkPolicyPeer{
-								{
-									PodSelector: testutils.NewLabelSelectorBuilder().Build(),
+						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").
+							WithIngressRule(networkingv1.NetworkPolicyIngressRule{
+								From: []networkingv1.NetworkPolicyPeer{
+									{
+										PodSelector: testutils.NewLabelSelectorBuilder().Build(),
+									},
 								},
-							},
-						}).Build(),
+							}).Build(),
 					},
 					EgressPolicies: []*networkingv1.NetworkPolicy{},
 				},
@@ -731,51 +759,55 @@ func Test_Analyze(t *testing.T) {
 					Pod:             testutils.NewPodBuilder().WithName("Pod1").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{},
 					EgressPolicies: []*networkingv1.NetworkPolicy{
-						testutils.NewNetworkPolicyBuilder().WithName("eg1").WithTypes("Egress").WithEgressRule(networkingv1.NetworkPolicyEgressRule{
-							To: []networkingv1.NetworkPolicyPeer{
-								{
-									PodSelector: testutils.NewLabelSelectorBuilder().Build(),
+						testutils.NewNetworkPolicyBuilder().WithName("eg1").WithTypes("Egress").
+							WithEgressRule(networkingv1.NetworkPolicyEgressRule{
+								To: []networkingv1.NetworkPolicyPeer{
+									{
+										PodSelector: testutils.NewLabelSelectorBuilder().Build(),
+									},
 								},
-							},
-							Ports: []networkingv1.NetworkPolicyPort{
-								{Port: &intstr.IntOrString{IntVal: 80}},
-							},
-						}).Build(),
-						testutils.NewNetworkPolicyBuilder().WithName("eg2").WithTypes("Egress").WithEgressRule(networkingv1.NetworkPolicyEgressRule{
-							To: []networkingv1.NetworkPolicyPeer{
-								{
-									PodSelector: testutils.NewLabelSelectorBuilder().Build(),
+								Ports: []networkingv1.NetworkPolicyPort{
+									{Port: &intstr.IntOrString{IntVal: 80}},
 								},
-							},
-							Ports: []networkingv1.NetworkPolicyPort{
-								{Port: &intstr.IntOrString{IntVal: 5000}},
-							},
-						}).Build(),
+							}).Build(),
+						testutils.NewNetworkPolicyBuilder().WithName("eg2").WithTypes("Egress").
+							WithEgressRule(networkingv1.NetworkPolicyEgressRule{
+								To: []networkingv1.NetworkPolicyPeer{
+									{
+										PodSelector: testutils.NewLabelSelectorBuilder().Build(),
+									},
+								},
+								Ports: []networkingv1.NetworkPolicyPort{
+									{Port: &intstr.IntOrString{IntVal: 5000}},
+								},
+							}).Build(),
 					},
 				},
 				targetPodIsolation: &shared.PodIsolation{
 					Pod: testutils.NewPodBuilder().WithName("Pod2").Build(),
 					IngressPolicies: []*networkingv1.NetworkPolicy{
-						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").WithIngressRule(networkingv1.NetworkPolicyIngressRule{
-							From: []networkingv1.NetworkPolicyPeer{
-								{
-									PodSelector: testutils.NewLabelSelectorBuilder().Build(),
+						testutils.NewNetworkPolicyBuilder().WithName("in1").WithTypes("Ingress").
+							WithIngressRule(networkingv1.NetworkPolicyIngressRule{
+								From: []networkingv1.NetworkPolicyPeer{
+									{
+										PodSelector: testutils.NewLabelSelectorBuilder().Build(),
+									},
 								},
-							},
-							Ports: []networkingv1.NetworkPolicyPort{
-								{Port: &intstr.IntOrString{IntVal: 80}},
-							},
-						}).Build(),
-						testutils.NewNetworkPolicyBuilder().WithName("in2").WithTypes("Ingress").WithIngressRule(networkingv1.NetworkPolicyIngressRule{
-							From: []networkingv1.NetworkPolicyPeer{
-								{
-									PodSelector: testutils.NewLabelSelectorBuilder().Build(),
+								Ports: []networkingv1.NetworkPolicyPort{
+									{Port: &intstr.IntOrString{IntVal: 80}},
 								},
-							},
-							Ports: []networkingv1.NetworkPolicyPort{
-								{Port: &intstr.IntOrString{IntVal: 7000}},
-							},
-						}).Build(),
+							}).Build(),
+						testutils.NewNetworkPolicyBuilder().WithName("in2").WithTypes("Ingress").
+							WithIngressRule(networkingv1.NetworkPolicyIngressRule{
+								From: []networkingv1.NetworkPolicyPeer{
+									{
+										PodSelector: testutils.NewLabelSelectorBuilder().Build(),
+									},
+								},
+								Ports: []networkingv1.NetworkPolicyPort{
+									{Port: &intstr.IntOrString{IntVal: 7000}},
+								},
+							}).Build(),
 					},
 					EgressPolicies: []*networkingv1.NetworkPolicy{},
 				},

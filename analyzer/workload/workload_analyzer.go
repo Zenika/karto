@@ -10,7 +10,8 @@ import (
 )
 
 type Analyzer interface {
-	Analyze(pods []*corev1.Pod, services []*corev1.Service, replicaSets []*appsv1.ReplicaSet, deployments []*appsv1.Deployment) ([]*types.Service, []*types.ReplicaSet, []*types.Deployment)
+	Analyze(pods []*corev1.Pod, services []*corev1.Service, replicaSets []*appsv1.ReplicaSet,
+		deployments []*appsv1.Deployment) ([]*types.Service, []*types.ReplicaSet, []*types.Deployment)
 }
 
 type analyzerImpl struct {
@@ -19,7 +20,8 @@ type analyzerImpl struct {
 	deploymentAnalyzer deployment.Analyzer
 }
 
-func NewAnalyzer(serviceAnalyzer service.Analyzer, replicaSetAnalyzer replicaset.Analyzer, deploymentAnalyzer deployment.Analyzer) Analyzer {
+func NewAnalyzer(serviceAnalyzer service.Analyzer, replicaSetAnalyzer replicaset.Analyzer,
+	deploymentAnalyzer deployment.Analyzer) Analyzer {
 	return analyzerImpl{
 		serviceAnalyzer:    serviceAnalyzer,
 		replicaSetAnalyzer: replicaSetAnalyzer,
@@ -27,14 +29,16 @@ func NewAnalyzer(serviceAnalyzer service.Analyzer, replicaSetAnalyzer replicaset
 	}
 }
 
-func (analyzer analyzerImpl) Analyze(pods []*corev1.Pod, services []*corev1.Service, replicaSets []*appsv1.ReplicaSet, deployments []*appsv1.Deployment) ([]*types.Service, []*types.ReplicaSet, []*types.Deployment) {
+func (analyzer analyzerImpl) Analyze(pods []*corev1.Pod, services []*corev1.Service, replicaSets []*appsv1.ReplicaSet,
+	deployments []*appsv1.Deployment) ([]*types.Service, []*types.ReplicaSet, []*types.Deployment) {
 	servicesWithTargetPods := analyzer.allServicesWithTargetPods(services, pods)
 	replicaSetsWithTargetPods := analyzer.allReplicaSetsWithTargetPods(replicaSets, pods)
 	deploymentsWithTargetReplicaSets := analyzer.allDeploymentsWithTargetReplicaSets(deployments, replicaSets)
 	return servicesWithTargetPods, replicaSetsWithTargetPods, deploymentsWithTargetReplicaSets
 }
 
-func (analyzer analyzerImpl) allServicesWithTargetPods(services []*corev1.Service, pods []*corev1.Pod) []*types.Service {
+func (analyzer analyzerImpl) allServicesWithTargetPods(services []*corev1.Service,
+	pods []*corev1.Pod) []*types.Service {
 	servicesWithTargetPods := make([]*types.Service, 0)
 	for _, svc := range services {
 		serviceWithTargetPods := analyzer.serviceAnalyzer.Analyze(svc, pods)
@@ -43,7 +47,8 @@ func (analyzer analyzerImpl) allServicesWithTargetPods(services []*corev1.Servic
 	return servicesWithTargetPods
 }
 
-func (analyzer analyzerImpl) allReplicaSetsWithTargetPods(replicaSets []*appsv1.ReplicaSet, pods []*corev1.Pod) []*types.ReplicaSet {
+func (analyzer analyzerImpl) allReplicaSetsWithTargetPods(replicaSets []*appsv1.ReplicaSet,
+	pods []*corev1.Pod) []*types.ReplicaSet {
 	replicaSetsWithTargetPods := make([]*types.ReplicaSet, 0)
 	for _, rs := range replicaSets {
 		replicaSetWithTargetPods := analyzer.replicaSetAnalyzer.Analyze(rs, pods)
@@ -54,7 +59,8 @@ func (analyzer analyzerImpl) allReplicaSetsWithTargetPods(replicaSets []*appsv1.
 	return replicaSetsWithTargetPods
 }
 
-func (analyzer analyzerImpl) allDeploymentsWithTargetReplicaSets(deployments []*appsv1.Deployment, replicaSets []*appsv1.ReplicaSet) []*types.Deployment {
+func (analyzer analyzerImpl) allDeploymentsWithTargetReplicaSets(deployments []*appsv1.Deployment,
+	replicaSets []*appsv1.ReplicaSet) []*types.Deployment {
 	deploymentsWithTargetReplicaSets := make([]*types.Deployment, 0)
 	for _, deploy := range deployments {
 		deploymentWithTargetReplicaSets := analyzer.deploymentAnalyzer.Analyze(deploy, replicaSets)

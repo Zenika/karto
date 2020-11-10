@@ -15,7 +15,8 @@ func NewAnalyzer() Analyzer {
 	return analyzerImpl{}
 }
 
-func (analyzer analyzerImpl) Analyze(deployment *appsv1.Deployment, replicaSets []*appsv1.ReplicaSet) *types.Deployment {
+func (analyzer analyzerImpl) Analyze(deployment *appsv1.Deployment,
+	replicaSets []*appsv1.ReplicaSet) *types.Deployment {
 	targetReplicaSets := make([]types.ReplicaSetRef, 0)
 	for _, replicaSet := range replicaSets {
 		if *replicaSet.Spec.Replicas == 0 {

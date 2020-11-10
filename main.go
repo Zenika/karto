@@ -35,7 +35,8 @@ func parseCmd() (bool, string) {
 	}
 	var k8sConfigPath *string
 	if home != "" {
-		k8sConfigPath = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+		k8sConfigPath = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"),
+			"(optional) absolute path to the kubeconfig file")
 	} else {
 		k8sConfigPath = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 	}

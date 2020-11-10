@@ -25,10 +25,14 @@ func Test_Analyze(t *testing.T) {
 		workload []mockWorkloadAnalyzerCall
 	}
 	k8sNamespace := testutils.NewNamespaceBuilder().WithName("ns").Build()
-	k8sPod1 := testutils.NewPodBuilder().WithName("pod1").WithNamespace("ns").WithLabel("k1", "v1").Build()
-	k8sPod2 := testutils.NewPodBuilder().WithName("pod2").WithNamespace("ns").WithLabel("k1", "v2").Build()
-	k8sNetworkPolicy1 := testutils.NewNetworkPolicyBuilder().WithName("netPol1").WithNamespace("ns").Build()
-	k8sNetworkPolicy2 := testutils.NewNetworkPolicyBuilder().WithName("netPol2").WithNamespace("ns").Build()
+	k8sPod1 := testutils.NewPodBuilder().WithName("pod1").WithNamespace("ns").
+		WithLabel("k1", "v1").Build()
+	k8sPod2 := testutils.NewPodBuilder().WithName("pod2").WithNamespace("ns").
+		WithLabel("k1", "v2").Build()
+	k8sNetworkPolicy1 := testutils.NewNetworkPolicyBuilder().WithName("netPol1").
+		WithNamespace("ns").Build()
+	k8sNetworkPolicy2 := testutils.NewNetworkPolicyBuilder().WithName("netPol2").
+		WithNamespace("ns").Build()
 	k8sService1 := testutils.NewServiceBuilder().WithName("svc1").WithNamespace("ns").Build()
 	k8sService2 := testutils.NewServiceBuilder().WithName("svc2").WithNamespace("ns").Build()
 	k8sReplicaSet1 := testutils.NewReplicaSetBuilder().WithName("rs1").WithNamespace("ns").Build()
@@ -41,17 +45,26 @@ func Test_Analyze(t *testing.T) {
 	podRef2 := types.PodRef{Name: k8sPod2.Name, Namespace: k8sPod2.Namespace}
 	podIsolation1 := &types.PodIsolation{Pod: podRef1, IsIngressIsolated: false, IsEgressIsolated: false}
 	podIsolation2 := &types.PodIsolation{Pod: podRef2, IsIngressIsolated: false, IsEgressIsolated: false}
-	networkPolicy1 := types.NetworkPolicy{Name: k8sNetworkPolicy1.Name, Namespace: k8sNetworkPolicy1.Namespace, Labels: k8sNetworkPolicy1.Labels}
-	networkPolicy2 := types.NetworkPolicy{Name: k8sNetworkPolicy2.Name, Namespace: k8sNetworkPolicy2.Namespace, Labels: k8sNetworkPolicy2.Labels}
-	allowedRoute := &types.AllowedRoute{SourcePod: podRef1, EgressPolicies: []types.NetworkPolicy{networkPolicy1}, TargetPod: podRef2, IngressPolicies: []types.NetworkPolicy{networkPolicy2}, Ports: []int32{80, 443}}
-	service1 := &types.Service{Name: k8sService1.Name, Namespace: k8sService1.Namespace, TargetPods: []types.PodRef{podRef1}}
-	service2 := &types.Service{Name: k8sService2.Name, Namespace: k8sService2.Namespace, TargetPods: []types.PodRef{podRef2}}
-	replicaSet1 := &types.ReplicaSet{Name: k8sReplicaSet1.Name, Namespace: k8sReplicaSet1.Namespace, TargetPods: []types.PodRef{podRef1}}
-	replicaSet2 := &types.ReplicaSet{Name: k8sReplicaSet2.Name, Namespace: k8sReplicaSet2.Namespace, TargetPods: []types.PodRef{podRef2}}
+	networkPolicy1 := types.NetworkPolicy{Name: k8sNetworkPolicy1.Name, Namespace: k8sNetworkPolicy1.Namespace,
+		Labels: k8sNetworkPolicy1.Labels}
+	networkPolicy2 := types.NetworkPolicy{Name: k8sNetworkPolicy2.Name, Namespace: k8sNetworkPolicy2.Namespace,
+		Labels: k8sNetworkPolicy2.Labels}
+	allowedRoute := &types.AllowedRoute{SourcePod: podRef1, EgressPolicies: []types.NetworkPolicy{networkPolicy1},
+		TargetPod: podRef2, IngressPolicies: []types.NetworkPolicy{networkPolicy2}, Ports: []int32{80, 443}}
+	service1 := &types.Service{Name: k8sService1.Name, Namespace: k8sService1.Namespace,
+		TargetPods: []types.PodRef{podRef1}}
+	service2 := &types.Service{Name: k8sService2.Name, Namespace: k8sService2.Namespace,
+		TargetPods: []types.PodRef{podRef2}}
+	replicaSet1 := &types.ReplicaSet{Name: k8sReplicaSet1.Name, Namespace: k8sReplicaSet1.Namespace,
+		TargetPods: []types.PodRef{podRef1}}
+	replicaSet2 := &types.ReplicaSet{Name: k8sReplicaSet2.Name, Namespace: k8sReplicaSet2.Namespace,
+		TargetPods: []types.PodRef{podRef2}}
 	replicaSetRef1 := types.ReplicaSetRef{Name: k8sReplicaSet1.Name, Namespace: k8sReplicaSet1.Namespace}
 	replicaSetRef2 := types.ReplicaSetRef{Name: k8sReplicaSet2.Name, Namespace: k8sReplicaSet2.Namespace}
-	deployment1 := &types.Deployment{Name: k8sDeployment1.Name, Namespace: k8sDeployment1.Namespace, TargetReplicaSets: []types.ReplicaSetRef{replicaSetRef1}}
-	deployment2 := &types.Deployment{Name: k8sDeployment2.Name, Namespace: k8sDeployment2.Namespace, TargetReplicaSets: []types.ReplicaSetRef{replicaSetRef2}}
+	deployment1 := &types.Deployment{Name: k8sDeployment1.Name, Namespace: k8sDeployment1.Namespace,
+		TargetReplicaSets: []types.ReplicaSetRef{replicaSetRef1}}
+	deployment2 := &types.Deployment{Name: k8sDeployment2.Name, Namespace: k8sDeployment2.Namespace,
+		TargetReplicaSets: []types.ReplicaSetRef{replicaSetRef2}}
 	var tests = []struct {
 		name                   string
 		mocks                  mocks
@@ -182,7 +195,8 @@ type mockTrafficAnalyzer struct {
 	calls []mockTrafficAnalyzerCall
 }
 
-func (mock mockTrafficAnalyzer) Analyze(pods []*corev1.Pod, namespaces []*corev1.Namespace, networkPolicies []*networkingv1.NetworkPolicy) ([]*types.PodIsolation, []*types.AllowedRoute) {
+func (mock mockTrafficAnalyzer) Analyze(pods []*corev1.Pod, namespaces []*corev1.Namespace,
+	networkPolicies []*networkingv1.NetworkPolicy) ([]*types.PodIsolation, []*types.AllowedRoute) {
 	for _, call := range mock.calls {
 		if reflect.DeepEqual(call.args.pods, pods) &&
 			reflect.DeepEqual(call.args.namespaces, namespaces) &&
@@ -224,7 +238,9 @@ type mockWorkloadAnalyzer struct {
 	calls []mockWorkloadAnalyzerCall
 }
 
-func (mock mockWorkloadAnalyzer) Analyze(pods []*corev1.Pod, services []*corev1.Service, replicaSets []*appsv1.ReplicaSet, deployments []*appsv1.Deployment) ([]*types.Service, []*types.ReplicaSet, []*types.Deployment) {
+func (mock mockWorkloadAnalyzer) Analyze(pods []*corev1.Pod, services []*corev1.Service,
+	replicaSets []*appsv1.ReplicaSet, deployments []*appsv1.Deployment) ([]*types.Service, []*types.ReplicaSet,
+	[]*types.Deployment) {
 	for _, call := range mock.calls {
 		if reflect.DeepEqual(call.args.pods, pods) &&
 			reflect.DeepEqual(call.args.services, services) &&

@@ -665,9 +665,9 @@ describe('computeDataSet', () => {
 
         const actual = computeDataSet(analysisResult, controls);
 
-        expect(actual.pods.map(pod => pod.displayName)).toEqual([`${namespace}/pod1`,`${namespace}/pod2`]);
+        expect(actual.pods.map(pod => pod.displayName)).toEqual([`${namespace}/pod1`, `${namespace}/pod2`]);
         expect(actual.podIsolations.map(podIsolation => podIsolation.displayName))
-            .toEqual([`${namespace}/pod1`,`${namespace}/pod2`]);
+            .toEqual([`${namespace}/pod1`, `${namespace}/pod2`]);
         expect(actual.services.map(service => service.displayName))
             .toEqual([`${namespace}/svc1`]);
         expect(actual.replicaSets.map(replicaSet => replicaSet.displayName))

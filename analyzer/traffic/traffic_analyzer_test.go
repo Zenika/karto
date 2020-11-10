@@ -27,8 +27,10 @@ func Test_Analyze(t *testing.T) {
 	k8sNamespace := testutils.NewNamespaceBuilder().WithName("ns").Build()
 	k8sPod1 := testutils.NewPodBuilder().WithName("pod1").WithNamespace("ns").Build()
 	k8sPod2 := testutils.NewPodBuilder().WithName("pod2").WithNamespace("ns").Build()
-	k8sNetworkPolicy1 := testutils.NewNetworkPolicyBuilder().WithName("netPol1").WithNamespace("ns1").WithLabel("k", "v1").Build()
-	k8sNetworkPolicy2 := testutils.NewNetworkPolicyBuilder().WithName("netPol2").WithNamespace("ns2").WithLabel("k", "v2").Build()
+	k8sNetworkPolicy1 := testutils.NewNetworkPolicyBuilder().WithName("netPol1").WithNamespace("ns1").
+		WithLabel("k", "v1").Build()
+	k8sNetworkPolicy2 := testutils.NewNetworkPolicyBuilder().WithName("netPol2").WithNamespace("ns2").
+		WithLabel("k", "v2").Build()
 	podIsolation1 := &shared.PodIsolation{
 		Pod:             k8sPod1,
 		IngressPolicies: []*networkingv1.NetworkPolicy{},
@@ -64,11 +66,13 @@ func Test_Analyze(t *testing.T) {
 			mocks: mocks{
 				podIsolation: []mockPodIsolationAnalyzerCall{
 					{
-						args:        mockPodIsolationAnalyzerCallArgs{pod: k8sPod1, networkPolicies: []*networkingv1.NetworkPolicy{k8sNetworkPolicy1, k8sNetworkPolicy2}},
+						args: mockPodIsolationAnalyzerCallArgs{pod: k8sPod1,
+							networkPolicies: []*networkingv1.NetworkPolicy{k8sNetworkPolicy1, k8sNetworkPolicy2}},
 						returnValue: podIsolation1,
 					},
 					{
-						args:        mockPodIsolationAnalyzerCallArgs{pod: k8sPod2, networkPolicies: []*networkingv1.NetworkPolicy{k8sNetworkPolicy1, k8sNetworkPolicy2}},
+						args: mockPodIsolationAnalyzerCallArgs{pod: k8sPod2,
+							networkPolicies: []*networkingv1.NetworkPolicy{k8sNetworkPolicy1, k8sNetworkPolicy2}},
 						returnValue: podIsolation2,
 					},
 				},
@@ -134,7 +138,8 @@ type mockPodIsolationAnalyzer struct {
 	calls []mockPodIsolationAnalyzerCall
 }
 
-func (mock mockPodIsolationAnalyzer) Analyze(pod *corev1.Pod, networkPolicies []*networkingv1.NetworkPolicy) *shared.PodIsolation {
+func (mock mockPodIsolationAnalyzer) Analyze(pod *corev1.Pod,
+	networkPolicies []*networkingv1.NetworkPolicy) *shared.PodIsolation {
 	for _, call := range mock.calls {
 		if reflect.DeepEqual(call.args.pod, pod) &&
 			reflect.DeepEqual(call.args.networkPolicies, networkPolicies) {
@@ -171,7 +176,8 @@ type mockAllowedRouteAnalyzer struct {
 	calls []mockAllowedRouteAnalyzerCall
 }
 
-func (mock mockAllowedRouteAnalyzer) Analyze(sourcePodIsolation *shared.PodIsolation, targetPodIsolation *shared.PodIsolation, namespaces []*corev1.Namespace) *types.AllowedRoute {
+func (mock mockAllowedRouteAnalyzer) Analyze(sourcePodIsolation *shared.PodIsolation,
+	targetPodIsolation *shared.PodIsolation, namespaces []*corev1.Namespace) *types.AllowedRoute {
 	for _, call := range mock.calls {
 		if reflect.DeepEqual(call.args.sourcePodIsolation, sourcePodIsolation) &&
 			reflect.DeepEqual(call.args.targetPodIsolation, targetPodIsolation) &&

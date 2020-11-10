@@ -7,11 +7,7 @@ import SwitchControl from './control/SwitchControl';
 import MultiSelectControl from './control/MultiSelectControl';
 import PropTypes from 'prop-types';
 import { getStoredControls, storeControls } from '../service/storageService';
-import {
-    computeDataSet,
-    fetchAnalysisResult,
-    labelSelectorOperators
-} from '../service/analysisResultService';
+import { computeDataSet, fetchAnalysisResult, labelSelectorOperators } from '../service/analysisResultService';
 import InputControl from './control/InputControl';
 import AllowedRouteDetails from './detail/AllowedRouteDetails';
 import PodDetails from './detail/PodDetails';
@@ -257,8 +253,9 @@ const Content = ({ className = '' }) => {
                     <Typography className={classes.graphCaption} variant="caption">
                         {`Displaying ${state.dataSet.pods.length}/${state.analysisResult.pods.length} pods, `
                         + `${state.dataSet.services.length}/${state.analysisResult.services.length} services, `
-                        + `${state.dataSet.replicaSets.length}/${state.analysisResult.replicaSets.length} replicaSets and `
-                        + `${state.dataSet.deployments.length}/${state.analysisResult.deployments.length} deployments`}
+                        + `${state.dataSet.replicaSets.length}/${state.analysisResult.replicaSets.length} replicaSets `
+                        + `and ${state.dataSet.deployments.length}/${state.analysisResult.deployments.length} `
+                        + `deployments`}
                     </Typography>
                 </>}
                 {!state.isLoading && state.dataSet && state.dataSet.pods.length > 0

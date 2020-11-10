@@ -187,7 +187,8 @@ export default class ClusterD3Graph extends D3Graph {
                         if (d.fx == null) {
                             const targetReplicaSets = d.targetReplicaSets.map(targetReplicaSetId =>
                                 this.replicaSetsLayer.indexedData.get(targetReplicaSetId));
-                            const targetReplicaSetsAvgY = targetReplicaSets.reduce((acc, p) => acc + p.y, 0) / targetReplicaSets.length;
+                            const targetReplicaSetsAvgY = targetReplicaSets.reduce((acc, p) => acc + p.y, 0) /
+                                targetReplicaSets.length;
                             d.fx = d.x = 5 * SPACING;
                             d.y = targetReplicaSetsAvgY;
                         }

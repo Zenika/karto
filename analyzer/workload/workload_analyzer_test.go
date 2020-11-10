@@ -38,14 +38,20 @@ func Test_Analyze(t *testing.T) {
 	podRef1 := types.PodRef{Name: k8sPod1.Name, Namespace: k8sPod1.Namespace}
 	podRef2 := types.PodRef{Name: k8sPod2.Name, Namespace: k8sPod2.Namespace}
 	podRef3 := types.PodRef{Name: k8sPod3.Name, Namespace: k8sPod3.Namespace}
-	service1 := &types.Service{Name: k8sService1.Name, Namespace: k8sService1.Namespace, TargetPods: []types.PodRef{podRef1}}
-	service2 := &types.Service{Name: k8sService2.Name, Namespace: k8sService2.Namespace, TargetPods: []types.PodRef{podRef2, podRef3}}
-	replicaSet1 := &types.ReplicaSet{Name: k8sReplicaSet1.Name, Namespace: k8sReplicaSet1.Namespace, TargetPods: []types.PodRef{podRef1, podRef2}}
-	replicaSet2 := &types.ReplicaSet{Name: k8sReplicaSet2.Name, Namespace: k8sReplicaSet2.Namespace, TargetPods: []types.PodRef{podRef3}}
+	service1 := &types.Service{Name: k8sService1.Name, Namespace: k8sService1.Namespace,
+		TargetPods: []types.PodRef{podRef1}}
+	service2 := &types.Service{Name: k8sService2.Name, Namespace: k8sService2.Namespace,
+		TargetPods: []types.PodRef{podRef2, podRef3}}
+	replicaSet1 := &types.ReplicaSet{Name: k8sReplicaSet1.Name, Namespace: k8sReplicaSet1.Namespace,
+		TargetPods: []types.PodRef{podRef1, podRef2}}
+	replicaSet2 := &types.ReplicaSet{Name: k8sReplicaSet2.Name, Namespace: k8sReplicaSet2.Namespace,
+		TargetPods: []types.PodRef{podRef3}}
 	replicaSetRef1 := types.ReplicaSetRef{Name: k8sReplicaSet1.Name, Namespace: k8sReplicaSet1.Namespace}
 	replicaSetRef2 := types.ReplicaSetRef{Name: k8sReplicaSet2.Name, Namespace: k8sReplicaSet2.Namespace}
-	deployment1 := &types.Deployment{Name: k8sDeployment1.Name, Namespace: k8sDeployment1.Namespace, TargetReplicaSets: []types.ReplicaSetRef{replicaSetRef1}}
-	deployment2 := &types.Deployment{Name: k8sDeployment2.Name, Namespace: k8sDeployment2.Namespace, TargetReplicaSets: []types.ReplicaSetRef{replicaSetRef2}}
+	deployment1 := &types.Deployment{Name: k8sDeployment1.Name, Namespace: k8sDeployment1.Namespace,
+		TargetReplicaSets: []types.ReplicaSetRef{replicaSetRef1}}
+	deployment2 := &types.Deployment{Name: k8sDeployment2.Name, Namespace: k8sDeployment2.Namespace,
+		TargetReplicaSets: []types.ReplicaSetRef{replicaSetRef2}}
 	var tests = []struct {
 		name                string
 		mocks               mocks
@@ -123,7 +129,8 @@ func Test_Analyze(t *testing.T) {
 			replicaSetAnalyzer := createMockReplicaSetAnalyzer(t, tt.mocks.replicaSet)
 			deploymentAnalyzer := createMockDeploymentAnalyzer(t, tt.mocks.deployment)
 			analyzer := NewAnalyzer(serviceAnalyzer, replicaSetAnalyzer, deploymentAnalyzer)
-			services, replicaSets, deployments := analyzer.Analyze(tt.args.pods, tt.args.services, tt.args.replicaSets, tt.args.deployments)
+			services, replicaSets, deployments := analyzer.Analyze(tt.args.pods, tt.args.services, tt.args.replicaSets,
+				tt.args.deployments)
 			if diff := cmp.Diff(tt.expectedServices, services); diff != "" {
 				t.Errorf("Analyze() services result mismatch (-want +got):\n%s", diff)
 			}
@@ -224,7 +231,8 @@ type mockDeploymentAnalyzer struct {
 	calls []mockDeploymentAnalyzerCall
 }
 
-func (mock mockDeploymentAnalyzer) Analyze(deployment *appsv1.Deployment, replicaSets []*appsv1.ReplicaSet) *types.Deployment {
+func (mock mockDeploymentAnalyzer) Analyze(deployment *appsv1.Deployment,
+	replicaSets []*appsv1.ReplicaSet) *types.Deployment {
 	for _, call := range mock.calls {
 		if reflect.DeepEqual(call.args.deployment, deployment) &&
 			reflect.DeepEqual(call.args.replicaSets, replicaSets) {
