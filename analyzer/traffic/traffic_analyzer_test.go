@@ -107,10 +107,7 @@ func Test_Analyze(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			podIsolationAnalyzer := createMockPodIsolationAnalyzer(t, tt.mocks.podIsolation)
 			allowedRouteAnalyzer := createMockAllowedRouteAnalyzer(t, tt.mocks.allowedRoute)
-			analyzer := analyzerImpl{
-				podIsolationAnalyzer: podIsolationAnalyzer,
-				allowedRouteAnalyzer: allowedRouteAnalyzer,
-			}
+			analyzer := NewAnalyzer(podIsolationAnalyzer, allowedRouteAnalyzer)
 			podIsolations, allowedRoutes := analyzer.Analyze(tt.args.pods, tt.args.namespaces, tt.args.networkPolicies)
 			if diff := cmp.Diff(tt.expectedPodIsolations, podIsolations); diff != "" {
 				t.Errorf("Analyze() pod isolations result mismatch (-want +got):\n%s", diff)

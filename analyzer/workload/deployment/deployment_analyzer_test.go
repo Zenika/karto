@@ -66,7 +66,7 @@ func Test_Analyze(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			analyzer := analyzerImpl{}
+			analyzer := NewAnalyzer()
 			deploymentWithTargetReplicaSets := analyzer.Analyze(tt.args.deployment, tt.args.replicaSets)
 			if diff := cmp.Diff(tt.expectedDeploymentWithTargetReplicaSets, deploymentWithTargetReplicaSets); diff != "" {
 				t.Errorf("Analyze() result mismatch (-want +got):\n%s", diff)

@@ -122,11 +122,7 @@ func Test_Analyze(t *testing.T) {
 			serviceAnalyzer := createMockServiceAnalyzer(t, tt.mocks.service)
 			replicaSetAnalyzer := createMockReplicaSetAnalyzer(t, tt.mocks.replicaSet)
 			deploymentAnalyzer := createMockDeploymentAnalyzer(t, tt.mocks.deployment)
-			analyzer := analyzerImpl{
-				serviceAnalyzer:    serviceAnalyzer,
-				replicaSetAnalyzer: replicaSetAnalyzer,
-				deploymentAnalyzer: deploymentAnalyzer,
-			}
+			analyzer := NewAnalyzer(serviceAnalyzer, replicaSetAnalyzer, deploymentAnalyzer)
 			services, replicaSets, deployments := analyzer.Analyze(tt.args.pods, tt.args.services, tt.args.replicaSets, tt.args.deployments)
 			if diff := cmp.Diff(tt.expectedServices, services); diff != "" {
 				t.Errorf("Analyze() services result mismatch (-want +got):\n%s", diff)

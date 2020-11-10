@@ -130,7 +130,7 @@ func Test_Analyze(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			analyzer := analyzerImpl{}
+			analyzer := NewAnalyzer()
 			podIsolation := analyzer.Analyze(tt.args.pod, tt.args.networkPolicies)
 			if diff := cmp.Diff(tt.expectedPodIsolation, podIsolation); diff != "" {
 				t.Errorf("Analyze() result mismatch (-want +got):\n%s", diff)

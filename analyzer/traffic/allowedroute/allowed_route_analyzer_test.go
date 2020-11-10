@@ -798,7 +798,7 @@ func Test_Analyze(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			analyzer := analyzerImpl{}
+			analyzer := NewAnalyzer()
 			allowedRoute := analyzer.Analyze(tt.args.sourcePodIsolation, tt.args.targetPodIsolation, tt.args.namespaces)
 			if diff := cmp.Diff(tt.expectedAllowedRoute, allowedRoute); diff != "" {
 				t.Errorf("Analyze() result mismatch (-want +got):\n%s", diff)

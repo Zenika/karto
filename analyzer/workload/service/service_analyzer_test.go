@@ -84,7 +84,7 @@ func Test_Analyze(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			analyzer := analyzerImpl{}
+			analyzer := NewAnalyzer()
 			serviceWithTargetPods := analyzer.Analyze(tt.args.service, tt.args.pods)
 			if diff := cmp.Diff(tt.expectedServiceWithTargetPods, serviceWithTargetPods); diff != "" {
 				t.Errorf("Analyze() result mismatch (-want +got):\n%s", diff)

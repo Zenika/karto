@@ -119,11 +119,7 @@ func Test_Analyze(t *testing.T) {
 			podAnalyzer := createMockPodAnalyzer(t, tt.mocks.pods)
 			trafficAnalyzer := createMockTrafficAnalyzer(t, tt.mocks.traffic)
 			workloadAnalyzer := createMockWorkloadAnalyzer(t, tt.mocks.workload)
-			analyzer := analysisSchedulerImpl{
-				podAnalyzer:      podAnalyzer,
-				trafficAnalyzer:  trafficAnalyzer,
-				workloadAnalyzer: workloadAnalyzer,
-			}
+			analyzer := NewAnalysisScheduler(podAnalyzer, trafficAnalyzer, workloadAnalyzer)
 			clusterStateChannel := make(chan types.ClusterState)
 			resultsChannel := make(chan types.AnalysisResult)
 			go analyzer.AnalyzeOnClusterStateChange(clusterStateChannel, resultsChannel)
