@@ -58,7 +58,7 @@ const Control = ({ className = '', name, checked, children }) => {
         <div className={classNames(classes.root, className)}>
             <div className={classes.summary} onClick={toggleExpand}>
                 <Button className={classNames(classes.button, { [classes.buttonHighlight]: checked })}
-                        variant="outlined">
+                        aria-label={expanded ? 'collapse' : 'expand'} variant="outlined">
                     {expanded
                         ? <ExpandLessIcon className={classes.buttonIcon} viewBox="5 5 14 14"/>
                         : <ExpandMoreIcon className={classes.buttonIcon} viewBox="5 5 14 14"/>

@@ -145,7 +145,8 @@ const MultiKeyValueSelectControl = (
                                 <Select
                                     value={operatorForLabel(entry.operator.label)}
                                     renderValue={value => value.label}
-                                    onChange={handleEntryOperatorChange(index)}>
+                                    onChange={handleEntryOperatorChange(index)}
+                                    aria-label="Select operator">
                                     {
                                         operators.map(operator =>
                                             <MenuItem key={operator.label} value={operator}>
@@ -173,10 +174,12 @@ const MultiKeyValueSelectControl = (
                             )}
                             <div className={classNames(classes.entryRow, classes.entryActions)}>
                                 <Button color="primary" onClick={() => removeEntry(index)}>
-                                    <RemoveIcon className={classes.buttonIcon} viewBox="5 5 14 14"/>
+                                    <RemoveIcon aria-label="Remove entry" className={classes.buttonIcon}
+                                                viewBox="5 5 14 14"/>
                                 </Button>
                                 <Button color="primary" onClick={() => addEntry(index + 1)}>
-                                    <AddIcon className={classes.buttonIcon} viewBox="5 5 14 14"/>
+                                    <AddIcon aria-label="Add entry" className={classes.buttonIcon}
+                                             viewBox="5 5 14 14"/>
                                 </Button>
                             </div>
                         </div>

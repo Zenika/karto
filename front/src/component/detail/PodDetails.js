@@ -56,22 +56,26 @@ const PodDetails = ({ data }) => {
                     }
                 </div>
             </div>
-            <div>
-                <Typography variant="body1" component="span" className={classes.detailsKey}>
-                    Isolated for ingress:
-                </Typography>
-                <Typography variant="body1" component="span" className={classes.detailsValue}>
-                    {data.isIngressIsolated ? 'yes' : 'no'}
-                </Typography>
-            </div>
-            <div>
-                <Typography variant="body1" component="span" className={classes.detailsKey}>
-                    Isolated for egress:
-                </Typography>
-                <Typography variant="body1" component="span" className={classes.detailsValue}>
-                    {data.isEgressIsolated ? 'yes' : 'no'}
-                </Typography>
-            </div>
+            {data.isIngressIsolated != null && (
+                <div>
+                    <Typography variant="body1" component="span" className={classes.detailsKey}>
+                        Isolated for ingress:
+                    </Typography>
+                    <Typography variant="body1" component="span" className={classes.detailsValue}>
+                        {data.isIngressIsolated ? 'yes' : 'no'}
+                    </Typography>
+                </div>
+            )}
+            {data.isEgressIsolated != null && (
+                <div>
+                    <Typography variant="body1" component="span" className={classes.detailsKey}>
+                        Isolated for egress:
+                    </Typography>
+                    <Typography variant="body1" component="span" className={classes.detailsValue}>
+                        {data.isEgressIsolated ? 'yes' : 'no'}
+                    </Typography>
+                </div>
+            )}
         </>
     );
 };
@@ -81,8 +85,8 @@ PodDetails.propTypes = {
         namespace: PropTypes.string.isRequired,
         name: PropTypes.string.isRequired,
         labels: PropTypes.object.isRequired,
-        isEgressIsolated: PropTypes.bool.isRequired,
-        isIngressIsolated: PropTypes.bool.isRequired
+        isEgressIsolated: PropTypes.bool,
+        isIngressIsolated: PropTypes.bool
     }).isRequired
 };
 

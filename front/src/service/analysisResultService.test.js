@@ -11,7 +11,7 @@ describe('fetchAnalysisResult', () => {
         });
     };
 
-    it('should fetch analysis results and return body content', async () => {
+    it('fetches analysis results and returns body content', async () => {
         const analysisResult = {
             pods: [{ name: 'pod1', labels: {} }],
             podIsolations: [{ pod: { name: 'pod1' } }],
@@ -32,7 +32,7 @@ describe('fetchAnalysisResult', () => {
         expect(actual.deployments).toEqual(analysisResult.deployments);
     });
 
-    it('should aggregate all namespaces', async () => {
+    it('aggregates all namespaces', async () => {
         const analysisResult = {
             pods: [
                 { name: 'pod1', namespace: 'ns2', labels: {} },
@@ -47,7 +47,7 @@ describe('fetchAnalysisResult', () => {
         expect(actual.allNamespaces).toEqual(['ns1', 'ns2']);
     });
 
-    it('should aggregate all pod labels', async () => {
+    it('aggregates all pod labels', async () => {
         const analysisResult = {
             pods: [
                 { name: 'pod2', labels: { k2: 'v3' } },
@@ -84,7 +84,7 @@ describe('computeDataSet', () => {
         includeEgressNeighbors: false
     };
 
-    it('should filter pods by namespace', () => {
+    it('filters pods by namespace', () => {
         const analysisResult = {
             ...emptyAnalysisResult,
             pods: [
@@ -106,7 +106,7 @@ describe('computeDataSet', () => {
         ]);
     });
 
-    it('should filter pods by name with regex', () => {
+    it('filters pods by name with regex', () => {
         const analysisResult = {
             ...emptyAnalysisResult,
             pods: [
@@ -128,7 +128,7 @@ describe('computeDataSet', () => {
         ]);
     });
 
-    it('should filter pods by labels', () => {
+    it('filters pods by labels', () => {
         const selectedLabels = { k1: 'v1', k2: 'not-v2', k3: 'v3a', k4: 'v4c', k5: 'v5' };
         const analysisResult = {
             ...emptyAnalysisResult,
@@ -161,7 +161,7 @@ describe('computeDataSet', () => {
         ]);
     });
 
-    it('should filter podIsolations using their pods', () => {
+    it('filters podIsolations using their pods', () => {
         const analysisResult = {
             ...emptyAnalysisResult,
             pods: [
@@ -185,7 +185,7 @@ describe('computeDataSet', () => {
         ]);
     });
 
-    it('should filter allowed routes using their pods', () => {
+    it('filters allowed routes using their pods', () => {
         const analysisResult = {
             ...emptyAnalysisResult,
             pods: [
@@ -232,7 +232,7 @@ describe('computeDataSet', () => {
         ]);
     });
 
-    it('should filter services using their pods', () => {
+    it('filters services using their pods', () => {
         const analysisResult = {
             ...emptyAnalysisResult,
             pods: [
@@ -280,7 +280,7 @@ describe('computeDataSet', () => {
         ]);
     });
 
-    it('should filter replicaSets using their pods', () => {
+    it('filters replicaSets using their pods', () => {
         const analysisResult = {
             ...emptyAnalysisResult,
             pods: [
@@ -328,7 +328,7 @@ describe('computeDataSet', () => {
         ]);
     });
 
-    it('should filter deployments using their replicaSets', () => {
+    it('filters deployments using their replicaSets', () => {
         const analysisResult = {
             ...emptyAnalysisResult,
             pods: [
@@ -400,7 +400,7 @@ describe('computeDataSet', () => {
         ]);
     });
 
-    it('should include ingress neighbors', () => {
+    it('includes ingress neighbors', () => {
         const analysisResult = {
             ...emptyAnalysisResult,
             pods: [
@@ -447,7 +447,7 @@ describe('computeDataSet', () => {
         ]);
     });
 
-    it('should include egress neighbors', () => {
+    it('includes egress neighbors', () => {
         const analysisResult = {
             ...emptyAnalysisResult,
             pods: [
@@ -494,7 +494,7 @@ describe('computeDataSet', () => {
         ]);
     });
 
-    it('should highlight podIsolations with no ingress isolation', () => {
+    it('highlights podIsolations with no ingress isolation', () => {
         const analysisResult = {
             ...emptyAnalysisResult,
             pods: [
@@ -531,7 +531,7 @@ describe('computeDataSet', () => {
         ]);
     });
 
-    it('should highlight podIsolations with no egress isolation', () => {
+    it('highlights podIsolations with no egress isolation', () => {
         const analysisResult = {
             ...emptyAnalysisResult,
             pods: [
@@ -568,7 +568,7 @@ describe('computeDataSet', () => {
         ]);
     });
 
-    it('should include podIsolation data in allowed routes', () => {
+    it('includes podIsolation data in allowed routes', () => {
         const analysisResult = {
             ...emptyAnalysisResult,
             pods: [
@@ -616,7 +616,7 @@ describe('computeDataSet', () => {
         ]);
     });
 
-    it('should include namespace prefix', () => {
+    it('includes namespace prefix', () => {
         const namespace = 'some-namespace';
         const analysisResult = {
             ...emptyAnalysisResult,

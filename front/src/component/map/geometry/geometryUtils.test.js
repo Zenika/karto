@@ -2,7 +2,7 @@ import { closestPointTo, closestSegmentTo } from './geometryUtils';
 
 describe('closestPointTo', () => {
 
-    it('should find closest point', () => {
+    it('finds closest point', () => {
         const upperBound = 10000;
         const target = { x: 1, y: 1 };
         const points = [
@@ -16,7 +16,7 @@ describe('closestPointTo', () => {
         expect(actual).toEqual({ x: 2, y: 1.3 });
     });
 
-    it('should return null when no points are provided', () => {
+    it('returns null when no points are provided', () => {
         const upperBound = 10000;
         const target = { x: 1, y: 1 };
         const points = [];
@@ -26,7 +26,7 @@ describe('closestPointTo', () => {
         expect(actual).toBeNull();
     });
 
-    it('should ignore points further from target than upper bound', () => {
+    it('ignores points further from target than upper bound', () => {
         const upperBound = 1;
         const target = { x: 0, y: 0 };
         const points = [
@@ -40,7 +40,7 @@ describe('closestPointTo', () => {
         expect(actual).toBeNull();
     });
 
-    it('should preserve extra data in point objects', () => {
+    it('preserves extra data in point objects', () => {
         const upperBound = 10000;
         const target = { x: 0, y: 0 };
         const points = [
@@ -55,7 +55,7 @@ describe('closestPointTo', () => {
 
 describe('closestSegmentTo', () => {
 
-    it('should find closest segment', () => {
+    it('finds closest segment', () => {
         const upperBound = 10000;
         const target = { x: 1, y: 1 };
         const segments = [
@@ -68,7 +68,7 @@ describe('closestSegmentTo', () => {
         expect(actual).toEqual({ x1: 1, y1: 0, x2: 0, y2: 3 });
     });
 
-    it('should return null when no segments are provided', () => {
+    it('returns null when no segments are provided', () => {
         const upperBound = 10000;
         const target = { x: 1, y: 1 };
         const segments = [];
@@ -78,7 +78,7 @@ describe('closestSegmentTo', () => {
         expect(actual).toBeNull();
     });
 
-    it('should ignore segments further from target than upper bound', () => {
+    it('ignores segments further from target than upper bound', () => {
         const upperBound = 1;
         const target = { x: 0, y: 0 };
         const segments = [
@@ -91,7 +91,7 @@ describe('closestSegmentTo', () => {
         expect(actual).toBeNull();
     });
 
-    it('should preserve extra data in segment objects', () => {
+    it('preserves extra data in segment objects', () => {
         const upperBound = 10000;
         const target = { x: 1, y: 1 };
         const segments = [

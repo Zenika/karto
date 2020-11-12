@@ -7,7 +7,7 @@ import SwitchControl from './control/SwitchControl';
 import MultiSelectControl from './control/MultiSelectControl';
 import PropTypes from 'prop-types';
 import { getStoredControls, storeControls } from '../service/storageService';
-import { computeDataSet, fetchAnalysisResult, labelSelectorOperators } from '../service/analysisResultService';
+import { computeDataSet, fetchAnalysisResult } from '../service/analysisResultService';
 import InputControl from './control/InputControl';
 import AllowedRouteDetails from './detail/AllowedRouteDetails';
 import PodDetails from './detail/PodDetails';
@@ -18,6 +18,7 @@ import RadioGroupControl from './control/RadioGroupControl';
 import NetworkPolicyMap from './map/NetworkPolicyMap';
 import ReplicaSetDetails from './detail/ReplicaSetDetails';
 import DeploymentDetails from './detail/DeploymentDetails';
+import { labelSelectorOperators } from '../constants';
 
 const MAX_RECOMMENDED_PODS = 100;
 const MAX_RECOMMENDED_ALLOWED_ROUTES = 1000;
