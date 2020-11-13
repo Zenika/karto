@@ -6,3 +6,6 @@ export const labelSelectorOperators = [
     { op: 'exists', label: 'exists', args: 'none' },
     { op: 'notexists', label: 'not exists', args: 'none' }
 ];
+
+export const maxRecommendedPods = 100;
+export const maxRecommendedAllowedRoutes = 1000;

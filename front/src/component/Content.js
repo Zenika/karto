@@ -18,10 +18,8 @@ import RadioGroupControl from './control/RadioGroupControl';
 import NetworkPolicyMap from './map/NetworkPolicyMap';
 import ReplicaSetDetails from './detail/ReplicaSetDetails';
 import DeploymentDetails from './detail/DeploymentDetails';
-import { labelSelectorOperators } from '../constants';
+import { labelSelectorOperators, maxRecommendedPods, maxRecommendedAllowedRoutes } from '../constants';
 
-const MAX_RECOMMENDED_PODS = 100;
-const MAX_RECOMMENDED_ALLOWED_ROUTES = 1000;
 const VIEWS = {
     WORKLOADS: 'Workloads',
     NETWORK_POLICIES: 'Network policies'
@@ -135,8 +133,8 @@ const Content = ({ className = '' }) => {
     }, [state.controls]);
 
     const isSafeToDisplay = (dataSet, displayLargeDatasets) => {
-        const tooLarge = dataSet.pods.length > MAX_RECOMMENDED_PODS
-            || dataSet.allowedRoutes.length > MAX_RECOMMENDED_ALLOWED_ROUTES;
+        const tooLarge = dataSet.pods.length > maxRecommendedPods
+            || dataSet.allowedRoutes.length > maxRecommendedAllowedRoutes;
         return displayLargeDatasets || !tooLarge;
     };
     const handleControlChange = key => newValue => {
