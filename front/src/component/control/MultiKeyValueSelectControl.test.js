@@ -2,19 +2,7 @@ import React from 'react';
 import MultiKeyValueSelectControl from './MultiKeyValueSelectControl';
 import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom/extend-expect';
-
-function configureMockForPopper() {
-    global.document.createRange = () => ({
-        setStart: () => {
-        },
-        setEnd: () => {
-        },
-        commonAncestorContainer: {
-            nodeName: 'BODY',
-            ownerDocument: document
-        }
-    });
-}
+import configureMockForPopper from '../testutils';
 
 describe('MultiKeyValueSelectControl component', () => {
 
@@ -124,6 +112,8 @@ describe('MultiKeyValueSelectControl component', () => {
     });
 
     it('calls change handler with same operator and default value when key changes', () => {
+        const keyPlaceholder = 'keyPlaceholder';
+        const valuePlaceholder = 'valuePlaceholder';
         const operator = { op: 'eq', label: '', args: 'single' };
         const previousSelectionEntry = { key: 'k1', operator: operator, value: 'k1-1' };
         const options = {
@@ -133,12 +123,12 @@ describe('MultiKeyValueSelectControl component', () => {
         const selectedOptions = [previousSelectionEntry];
         const changeHandler = jest.fn();
         render(
-            <MultiKeyValueSelectControl name={''} checked={false} keyPlaceholder={''} valuePlaceholder={''}
-                                        options={options} operators={[operator]}
+            <MultiKeyValueSelectControl name={''} checked={false} keyPlaceholder={keyPlaceholder}
+                                        valuePlaceholder={valuePlaceholder} options={options} operators={[operator]}
                                         selectedOptions={selectedOptions} onChange={changeHandler}/>
         );
 
-        const input = screen.getAllByRole('textbox')[0];
+        const input = screen.getByPlaceholderText(keyPlaceholder);
         fireEvent.change(input, { target: { value: 'k2' } });
         fireEvent.keyDown(input, { key: 'Enter' });
 
@@ -199,6 +189,8 @@ describe('MultiKeyValueSelectControl component', () => {
     });
 
     it('calls change handler when value changes', () => {
+        const keyPlaceholder = 'keyPlaceholder';
+        const valuePlaceholder = 'valuePlaceholder';
         const operator1 = { op: 'eq', label: 'eq', args: 'single' };
         const previousValue = 'k1-1';
         const newValue = 'k1-2';
@@ -207,12 +199,12 @@ describe('MultiKeyValueSelectControl component', () => {
         const selectedOptions = [previousSelectionEntry];
         const changeHandler = jest.fn();
         render(
-            <MultiKeyValueSelectControl name={''} checked={false} keyPlaceholder={''} valuePlaceholder={''}
-                                        options={options} operators={[operator1]}
+            <MultiKeyValueSelectControl name={''} checked={false} keyPlaceholder={keyPlaceholder}
+                                        valuePlaceholder={valuePlaceholder} options={options} operators={[operator1]}
                                         selectedOptions={selectedOptions} onChange={changeHandler}/>
         );
 
-        const input = screen.getAllByRole('textbox')[1];
+        const input = screen.getByPlaceholderText(valuePlaceholder);
         fireEvent.change(input, { target: { value: newValue } });
         fireEvent.keyDown(input, { key: 'Enter' });
 

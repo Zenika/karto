@@ -7,11 +7,12 @@ describe('SwitchControl component', () => {
 
     it('calls change handler when off and toggled', () => {
         const changeHandler = jest.fn();
+        const name = 'name';
         render(
-            <SwitchControl name={''} checked={false} onChange={changeHandler}/>
+            <SwitchControl name={name} checked={false} onChange={changeHandler}/>
         );
 
-        const toggle = screen.getByRole('checkbox');
+        const toggle = screen.getByLabelText(name);
         fireEvent.click(toggle);
 
         expect(changeHandler).toHaveBeenCalledTimes(1);
@@ -20,11 +21,12 @@ describe('SwitchControl component', () => {
 
     it('calls change handler when on and toggled', () => {
         const changeHandler = jest.fn();
+        const name = 'name';
         render(
-            <SwitchControl name={''} checked={true} onChange={changeHandler}/>
+            <SwitchControl name={name} checked={true} onChange={changeHandler}/>
         );
 
-        const toggle = screen.getByRole('checkbox');
+        const toggle = screen.getByLabelText(name);
         fireEvent.click(toggle);
 
         expect(changeHandler).toHaveBeenCalledTimes(1);

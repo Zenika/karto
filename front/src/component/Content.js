@@ -6,7 +6,7 @@ import Typography from '@material-ui/core/Typography';
 import SwitchControl from './control/SwitchControl';
 import MultiSelectControl from './control/MultiSelectControl';
 import PropTypes from 'prop-types';
-import { getStoredControls, storeControls } from '../service/storageService';
+import { getControls, storeControls } from '../service/storageService';
 import { computeDataSet, fetchAnalysisResult } from '../service/analysisResultService';
 import InputControl from './control/InputControl';
 import AllowedRouteDetails from './detail/AllowedRouteDetails';
@@ -18,7 +18,7 @@ import RadioGroupControl from './control/RadioGroupControl';
 import NetworkPolicyMap from './map/NetworkPolicyMap';
 import ReplicaSetDetails from './detail/ReplicaSetDetails';
 import DeploymentDetails from './detail/DeploymentDetails';
-import { labelSelectorOperators, maxRecommendedPods, maxRecommendedAllowedRoutes } from '../constants';
+import { labelSelectorOperators, maxRecommendedAllowedRoutes, maxRecommendedPods } from '../constants';
 
 const VIEWS = {
     WORKLOADS: 'Workloads',
@@ -101,7 +101,7 @@ const Content = ({ className = '' }) => {
         isLoading: true,
         analysisResult: null,
         dataSet: null,
-        controls: Object.assign(DEFAULT_CONTROLS, getStoredControls()),
+        controls: { ...DEFAULT_CONTROLS, ...getControls() },
         podDetails: null,
         allowedRouteDetails: null
     });

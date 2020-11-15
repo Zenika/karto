@@ -2,19 +2,7 @@ import React from 'react';
 import MultiSelectControl from './MultiSelectControl';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import '@testing-library/jest-dom/extend-expect';
-
-function configureMockForPopper() {
-    global.document.createRange = () => ({
-        setStart: () => {
-        },
-        setEnd: () => {
-        },
-        commonAncestorContainer: {
-            nodeName: 'BODY',
-            ownerDocument: document
-        }
-    });
-}
+import configureMockForPopper from '../testutils';
 
 describe('MultiSelectControl component', () => {
 
@@ -48,7 +36,7 @@ describe('MultiSelectControl component', () => {
                                 selectedOptions={selectedOptions} onChange={changeHandler}/>
         );
 
-        const input = screen.getByRole('textbox');
+        const input = screen.getByPlaceholderText(placeholder);
         fireEvent.change(input, { target: { value: options[2] } });
         fireEvent.keyDown(input, { key: 'Enter' });
 

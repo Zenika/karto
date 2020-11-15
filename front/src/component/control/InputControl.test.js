@@ -12,19 +12,20 @@ describe('InputControl component', () => {
             <InputControl name={''} checked={false} placeholder={placeholder} value={value} onChange={() => null}/>
         );
 
-        const input = screen.getByRole('textbox');
+        const input = screen.getByPlaceholderText(placeholder);
         expect(input).toHaveAttribute('placeholder', placeholder);
         expect(input).toHaveAttribute('value', value);
     });
 
     it('calls change handler when text is typed', () => {
         const changeHandler = jest.fn();
+        const placeholder = 'placeholder';
         render(
-            <InputControl name={''} checked={false} placeholder={''} value={''} onChange={changeHandler}/>
+            <InputControl name={''} checked={false} placeholder={placeholder} value={''} onChange={changeHandler}/>
         );
 
         const newValue = 'newValue';
-        const input = screen.getByRole('textbox');
+        const input = screen.getByPlaceholderText(placeholder);
         fireEvent.change(input, { target: { value: newValue } });
 
         expect(changeHandler).toHaveBeenCalledTimes(1);
