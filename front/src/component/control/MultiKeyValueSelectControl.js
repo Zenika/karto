@@ -68,8 +68,7 @@ const MultiKeyValueSelectControl = (
         }
     };
     const operatorForLabel = label => {
-        const operator = operators.find(operator => operator.label === label);
-        return operator || '';
+        return operators.find(operator => operator.label === label);
     };
     const labelOptionsForKey = key => {
         if (key == null) {

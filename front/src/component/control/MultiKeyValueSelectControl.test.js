@@ -213,4 +213,24 @@ describe('MultiKeyValueSelectControl component', () => {
             { key: previousSelectionEntry.key, operator: previousSelectionEntry.operator, value: newValue }
         ]);
     });
+
+    it('clears input when clear button is clicked', () => {
+        const operator = { op: 'eq', label: 'eq', args: 'single' };
+        const previousSelectionEntry1 = { key: 'k1', operator: operator, value: 'v1' };
+        const previousSelectionEntry2 = { key: 'k2', operator: operator, value: 'v2' };
+        const options = { k1: ['v1'], k2: ['v2'] };
+        const selectedOptions = [previousSelectionEntry1, previousSelectionEntry2];
+        const changeHandler = jest.fn();
+        render(
+            <MultiKeyValueSelectControl name={''} checked={false} keyPlaceholder={''}
+                                        valuePlaceholder={''} options={options} operators={[operator]}
+                                        selectedOptions={selectedOptions} onChange={changeHandler}/>
+        );
+
+        const clearButton = screen.getByText('Clear');
+        fireEvent.click(clearButton);
+
+        expect(changeHandler).toHaveBeenCalledTimes(1);
+        expect(changeHandler).toHaveBeenCalledWith([]);
+    });
 });

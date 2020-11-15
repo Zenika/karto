@@ -141,13 +141,12 @@ function makePodFilter(controls) {
 }
 
 function makePodNameFilter(nameFilter) {
-    let nameRegex;
     try {
-        nameRegex = new RegExp(nameFilter);
+        const nameRegex = new RegExp(nameFilter);
+        return pod => nameFilter === '' || nameRegex.test(pod.name);
     } catch (e) {
-        nameRegex = new RegExp('.*');
+        return () => true;
     }
-    return pod => nameFilter === '' || nameRegex.test(pod.name);
 }
 
 function makePodNamespaceFilter(namespaceFilters) {

@@ -47,7 +47,7 @@ describe('PodDetails component', () => {
             namespace: 'ns',
             name: 'pod',
             labels: {},
-            isIngressIsolated: false
+            isIngressIsolated: true
         };
         render(<PodDetails data={podData}/>);
 

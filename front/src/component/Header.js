@@ -14,7 +14,7 @@ const useStyles = makeStyles(theme => ({
     }
 }));
 
-const Header = ({ className = '' }) => {
+const Header = ({ className }) => {
     const classes = useStyles();
     return (
         <header className={classNames(classes.root, className)}>
@@ -24,7 +24,7 @@ const Header = ({ className = '' }) => {
 };
 
 Header.propTypes = {
-    className: PropTypes.string
+    className: PropTypes.string.isRequired
 };
 
 export default Header;

@@ -128,6 +128,25 @@ describe('computeDataSet', () => {
         ]);
     });
 
+    it('filters pods by name with invalid regex treated as no filter', () => {
+        const analysisResult = {
+            ...emptyAnalysisResult,
+            pods: [
+                { namespace: defaultNamespace, name: 'pod1' }
+            ]
+        };
+        const controls = {
+            ...defaultControls,
+            nameFilter: '/\\invalid regex/\\'
+        };
+
+        const actual = computeDataSet(analysisResult, controls);
+
+        expect(actual.pods).toEqual([
+            { namespace: defaultNamespace, name: 'pod1', displayName: 'pod1' }
+        ]);
+    });
+
     it('filters pods by labels', () => {
         const selectedLabels = { k1: 'v1', k2: 'not-v2', k3: 'v3a', k4: 'v4c', k5: 'v5' };
         const analysisResult = {

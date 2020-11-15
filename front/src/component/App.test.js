@@ -1,6 +1,5 @@
 import React from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import Content from './Content';
 import '@testing-library/jest-dom/extend-expect';
 import { computeDataSet, fetchAnalysisResult } from '../service/analysisResultService';
 import { labelSelectorOperators, maxRecommendedAllowedRoutes, maxRecommendedPods } from '../constants';
@@ -8,13 +7,14 @@ import ClusterMap from './map/ClusterMap';
 import NetworkPolicyMap from './map/NetworkPolicyMap';
 import { getControls } from '../service/storageService';
 import configureMockForPopper from './testutils';
+import App from './App';
 
 jest.mock('../service/analysisResultService');
 jest.mock('../service/storageService');
 jest.mock('./map/ClusterMap', () => ({ __esModule: true, default: jest.fn() }));
 jest.mock('./map/NetworkPolicyMap', () => ({ __esModule: true, default: jest.fn() }));
 
-describe('Content component', () => {
+describe('App', () => {
 
     let analysisResultPromise;
     let podDetailsHandler;
@@ -90,8 +90,15 @@ describe('Content component', () => {
         jest.useRealTimers();
     });
 
+    it('displays header', async () => {
+        render(<App/>);
+        await waitForComponentUpdate();
+
+        expect(screen.queryByText('Karto')).toBeInTheDocument();
+    });
+
     it('displays loading message before analysis result arrive', async () => {
-        render(<Content/>);
+        render(<App/>);
 
         expect(screen.queryByText('Analyzing your cluster...')).toBeInTheDocument();
 
@@ -101,7 +108,7 @@ describe('Content component', () => {
     });
 
     it('refreshes analysis results every 2 seconds when auto refresh is on', async () => {
-        render(<Content/>);
+        render(<App/>);
         fireEvent.click(screen.getByLabelText('Auto refresh'));
         await waitForComponentUpdate();
         fetchAnalysisResult.mockClear();
@@ -119,7 +126,7 @@ describe('Content component', () => {
 
     it('displays message when dataset is empty', async () => {
         mockDataSet({ pods: [] });
-        render(<Content/>);
+        render(<App/>);
         await waitForComponentUpdate();
 
         expect(screen.queryByText('No pod to display')).toBeInTheDocument();
@@ -128,7 +135,7 @@ describe('Content component', () => {
     it('displays message when dataset is too large (number of pods)', async () => {
         const tooManyPods = Array(maxRecommendedPods + 1).fill({});
         mockDataSet({ pods: tooManyPods });
-        render(<Content/>);
+        render(<App/>);
         await waitForComponentUpdate();
 
         expect(screen.queryByText('The dataset to display is larger than recommended for an optimal experience. ' +
@@ -139,7 +146,7 @@ describe('Content component', () => {
     it('displays message when dataset is too large (allowed routes)', async () => {
         const tooManyAllowedRoutes = Array(maxRecommendedAllowedRoutes + 1).fill({});
         mockDataSet({ allowedRoutes: tooManyAllowedRoutes });
-        render(<Content/>);
+        render(<App/>);
         await waitForComponentUpdate();
 
         expect(screen.queryByText('The dataset to display is larger than recommended for an optimal experience. ' +
@@ -150,7 +157,7 @@ describe('Content component', () => {
     it('displays large dataset when large dataset option is on', async () => {
         const tooManyAllowedRoutes = Array(maxRecommendedAllowedRoutes + 1).fill({});
         mockDataSet({ allowedRoutes: tooManyAllowedRoutes });
-        render(<Content/>);
+        render(<App/>);
 
         fireEvent.click(screen.getByLabelText('Always display large datasets'));
         await waitForComponentUpdate();
@@ -170,7 +177,7 @@ describe('Content component', () => {
             deployments: [{}]
         };
         mockDataSet(dataSet);
-        render(<Content/>);
+        render(<App/>);
         await waitForComponentUpdate();
 
         expect(screen.queryByText('Mock ClusterMap')).toBeInTheDocument();
@@ -189,7 +196,7 @@ describe('Content component', () => {
             deployments: [{}]
         };
         mockDataSet(dataSet);
-        render(<Content/>);
+        render(<App/>);
 
         fireEvent.click(screen.getByLabelText('Network policies'));
         await waitForComponentUpdate();
@@ -201,7 +208,7 @@ describe('Content component', () => {
     });
 
     it('displays cluster map when selected', async () => {
-        render(<Content/>);
+        render(<App/>);
         fireEvent.click(screen.getByLabelText('Network policies'));
         await waitForComponentUpdate();
 
@@ -227,7 +234,7 @@ describe('Content component', () => {
             deployments: [{}, {}, {}, {}]
         };
         mockDataSet(dataSet);
-        render(<Content/>);
+        render(<App/>);
         await waitForComponentUpdate();
 
         expect(screen.queryByText('Displaying 1/2 pods, 2/3 services, 3/4 replicaSets and 4/5 deployments'))
@@ -245,7 +252,7 @@ describe('Content component', () => {
             allowedRoutes: [{}, {}]
         };
         mockDataSet(dataSet);
-        render(<Content/>);
+        render(<App/>);
         fireEvent.click(screen.getByLabelText('Network policies'));
         await waitForComponentUpdate();
 
@@ -279,7 +286,7 @@ describe('Content component', () => {
             displayLargeDatasets: true
         };
         mockStoredControls(storedControls);
-        render(<Content/>);
+        render(<App/>);
         await waitForComponentUpdate();
 
         expect(getControls).toHaveBeenCalled();
@@ -289,7 +296,7 @@ describe('Content component', () => {
     it('applies default controls when none are stored', async () => {
         const storedControls = {};
         mockStoredControls(storedControls);
-        render(<Content/>);
+        render(<App/>);
         await waitForComponentUpdate();
 
         const expectedDefaultControls = {
@@ -311,7 +318,7 @@ describe('Content component', () => {
     });
 
     it('displays specific controld with cluster map', async () => {
-        render(<Content/>);
+        render(<App/>);
         fireEvent.click(screen.getByLabelText('Workloads'));
         await waitForComponentUpdate();
 
@@ -328,7 +335,7 @@ describe('Content component', () => {
     });
 
     it('displays specific controld with network policy map', async () => {
-        render(<Content/>);
+        render(<App/>);
         fireEvent.click(screen.getByLabelText('Network policies'));
         await waitForComponentUpdate();
 
@@ -351,7 +358,7 @@ describe('Content component', () => {
             fireEvent.keyDown(input, { key: 'Enter' });
         };
         mockAnalysisResult({ allNamespaces: ['ns1', 'ns2', 'ns3'] });
-        render(<Content/>);
+        render(<App/>);
         await waitForComponentUpdate();
 
         expect(screen.queryByText('All namespaces')).toBeInTheDocument();
@@ -389,7 +396,7 @@ describe('Content component', () => {
             fireEvent.click(screen.getAllByLabelText('Add entry')[podFiltersCount++]);
         };
         mockAnalysisResult({ allLabels: { k1: ['v1-1', 'v1-2'], k2: ['v2-1', 'v2-2'] } });
-        render(<Content/>);
+        render(<App/>);
         await waitForComponentUpdate();
 
         expect(screen.queryByText('All pod labels')).toBeInTheDocument();
@@ -419,7 +426,7 @@ describe('Content component', () => {
     });
 
     it('can change pod name filter', async () => {
-        render(<Content/>);
+        render(<App/>);
         await waitForComponentUpdate();
 
         expect(screen.queryByText('All pod names')).toBeInTheDocument();
@@ -432,7 +439,7 @@ describe('Content component', () => {
     });
 
     it('can change ingress neighbors filter', async () => {
-        render(<Content/>);
+        render(<App/>);
         fireEvent.click(screen.getByLabelText('Network policies'));
         await waitForComponentUpdate();
 
@@ -443,7 +450,7 @@ describe('Content component', () => {
     });
 
     it('can change egress neighbors filter', async () => {
-        render(<Content/>);
+        render(<App/>);
         fireEvent.click(screen.getByLabelText('Network policies'));
         await waitForComponentUpdate();
 
@@ -454,7 +461,7 @@ describe('Content component', () => {
     });
 
     it('can change namespace prefix display option', async () => {
-        render(<Content/>);
+        render(<App/>);
         await waitForComponentUpdate();
 
         fireEvent.click(screen.getByLabelText('Show namespace prefix'));
@@ -464,7 +471,7 @@ describe('Content component', () => {
     });
 
     it('can change non isolated ingress highlight display option', async () => {
-        render(<Content/>);
+        render(<App/>);
         fireEvent.click(screen.getByLabelText('Network policies'));
         await waitForComponentUpdate();
 
@@ -475,7 +482,7 @@ describe('Content component', () => {
     });
 
     it('can change non isolated egress highlight display option', async () => {
-        render(<Content/>);
+        render(<App/>);
         fireEvent.click(screen.getByLabelText('Network policies'));
         await waitForComponentUpdate();
 
@@ -486,7 +493,7 @@ describe('Content component', () => {
     });
 
     it('displays pod details from cluster map', async () => {
-        render(<Content/>);
+        render(<App/>);
         await waitForComponentUpdate();
 
         act(() => podDetailsHandler({ namespace: 'ns', name: 'po', labels: {} }));
@@ -496,7 +503,7 @@ describe('Content component', () => {
     });
 
     it('displays service details from cluster map', async () => {
-        render(<Content/>);
+        render(<App/>);
         await waitForComponentUpdate();
 
         act(() => serviceDetailsHandler({
@@ -510,7 +517,7 @@ describe('Content component', () => {
     });
 
     it('displays replicaSet details from cluster map', async () => {
-        render(<Content/>);
+        render(<App/>);
         await waitForComponentUpdate();
 
         act(() => replicaSetDetailsHandler({
@@ -524,7 +531,7 @@ describe('Content component', () => {
     });
 
     it('displays deployment details from cluster map', async () => {
-        render(<Content/>);
+        render(<App/>);
         await waitForComponentUpdate();
 
         act(() => deploymentDetailsHandler({
@@ -538,7 +545,7 @@ describe('Content component', () => {
     });
 
     it('displays pod details from network policy map', async () => {
-        render(<Content/>);
+        render(<App/>);
         fireEvent.click(screen.getByLabelText('Network policies'));
         await waitForComponentUpdate();
 
@@ -549,7 +556,7 @@ describe('Content component', () => {
     });
 
     it('displays allowed route details from network policy map', async () => {
-        render(<Content/>);
+        render(<App/>);
         fireEvent.click(screen.getByLabelText('Network policies'));
         await waitForComponentUpdate();
 

@@ -95,7 +95,7 @@ const useStyles = makeStyles(theme => ({
     }
 }));
 
-const Content = ({ className = '' }) => {
+const Content = ({ className }) => {
     const classes = useStyles();
     const [state, setState] = useState({
         isLoading: true,
@@ -364,7 +364,7 @@ const Content = ({ className = '' }) => {
 };
 
 Content.propTypes = {
-    className: PropTypes.string
+    className: PropTypes.string.isRequired
 };
 
 export default Content;
