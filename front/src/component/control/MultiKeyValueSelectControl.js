@@ -144,8 +144,7 @@ const MultiKeyValueSelectControl = (
                                 <Select
                                     value={operatorForLabel(entry.operator.label)}
                                     renderValue={value => value.label}
-                                    onChange={handleEntryOperatorChange(index)}
-                                    aria-label="Select operator">
+                                    onChange={handleEntryOperatorChange(index)}>
                                     {
                                         operators.map(operator =>
                                             <MenuItem key={operator.label} value={operator}>

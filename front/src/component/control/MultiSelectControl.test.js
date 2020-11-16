@@ -2,7 +2,7 @@ import React from 'react';
 import MultiSelectControl from './MultiSelectControl';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import '@testing-library/jest-dom/extend-expect';
-import configureMockForPopper from '../testutils';
+import configureMockForPopper from '../utils/testutils';
 
 describe('MultiSelectControl component', () => {
 

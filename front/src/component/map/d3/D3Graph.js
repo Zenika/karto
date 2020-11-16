@@ -9,6 +9,7 @@ import {
     LINK_FORCE
 } from './D3Constants';
 import { closestPointTo, closestSegmentTo } from '../geometry/geometryUtils';
+import flatten from '../../utils/utils';
 
 export default class D3Graph {
 
@@ -171,12 +172,12 @@ export default class D3Graph {
     }
 
     getItemClosestTo(targetPoint, upperBound) {
-        const itemPoints = this.getItemLayers().map(layer => layer.getItemsAsPointGeometries()).flat();
+        const itemPoints = flatten(this.getItemLayers().map(layer => layer.getItemsAsPointGeometries()));
         return closestPointTo(targetPoint, itemPoints, upperBound);
     }
 
     getLinkClosestTo(targetPoint, upperBound) {
-        const linkSegments = this.getLinkLayers().map(layer => layer.getLinksAsSegmentGeometries()).flat();
+        const linkSegments = flatten(this.getLinkLayers().map(layer => layer.getLinksAsSegmentGeometries()));
         return closestSegmentTo(targetPoint, linkSegments, upperBound);
     }
 
@@ -261,8 +262,8 @@ export default class D3Graph {
     }
 
     updateForceSimulationData() {
-        const itemsData = this.getItemLayers().map(layer => layer.data).flat();
-        const linksData = this.getLinkLayers().map(layer => layer.data).flat();
+        const itemsData = flatten(this.getItemLayers().map(layer => layer.data));
+        const linksData = flatten(this.getLinkLayers().map(layer => layer.data));
         this.simulation.nodes(itemsData);
         this.simulation.force(LINK_FORCE).links(linksData);
     }

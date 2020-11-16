@@ -6,7 +6,7 @@ import { labelSelectorOperators, maxRecommendedAllowedRoutes, maxRecommendedPods
 import ClusterMap from './map/ClusterMap';
 import NetworkPolicyMap from './map/NetworkPolicyMap';
 import { getControls } from '../service/storageService';
-import configureMockForPopper from './testutils';
+import configureMockForPopper from './utils/testutils';
 import App from './App';
 
 jest.mock('../service/analysisResultService');
@@ -14,7 +14,7 @@ jest.mock('../service/storageService');
 jest.mock('./map/ClusterMap', () => ({ __esModule: true, default: jest.fn() }));
 jest.mock('./map/NetworkPolicyMap', () => ({ __esModule: true, default: jest.fn() }));
 
-describe('App', () => {
+describe('App component', () => {
 
     let analysisResultPromise;
     let podDetailsHandler;

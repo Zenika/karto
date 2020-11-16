@@ -54,7 +54,7 @@ const NetworkPolicyMap = ({ dataSet, onPodFocus, onAllowedRouteFocus }) => {
 
 NetworkPolicyMap.propTypes = {
     dataSet: PropTypes.shape({
-        pods: PropTypes.arrayOf(PropTypes.shape({
+        podIsolations: PropTypes.arrayOf(PropTypes.shape({
             displayName: PropTypes.string.isRequired,
             name: PropTypes.string.isRequired,
             namespace: PropTypes.string.isRequired

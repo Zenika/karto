@@ -2,6 +2,7 @@ import D3Graph from './D3Graph';
 import D3GraphLinkLayer from './D3GraphLinkLayer';
 import D3GraphItemLayer from './D3GraphItemLayer';
 import { SPACING } from './D3Constants';
+import flatten from '../../utils/utils';
 
 function d3PodId(pod) {
     return `pod/${pod.namespace}/${pod.name}`;
@@ -124,12 +125,11 @@ export default class ClusterD3Graph extends D3Graph {
             dataExtractor: dataSet => {
                 const podIds = new Set();
                 dataSet.pods.forEach(pod => podIds.add(d3PodId(pod)));
-                return dataSet.services.map(service => {
-                        return service.targetPods
-                            .filter(pod => podIds.has(d3PodId(pod)))
-                            .map(targetPod => ({ service, targetPod }));
-                    }
-                ).flat();
+                return flatten(dataSet.services.map(service => {
+                    return service.targetPods
+                        .filter(pod => podIds.has(d3PodId(pod)))
+                        .map(targetPod => ({ service, targetPod }));
+                }));
             },
             d3IdFn: d3ServiceLinkId,
             d3DatumMapper: d3ServiceLink,
@@ -162,12 +162,11 @@ export default class ClusterD3Graph extends D3Graph {
             dataExtractor: dataSet => {
                 const podIds = new Set();
                 dataSet.pods.forEach(pod => podIds.add(d3PodId(pod)));
-                return dataSet.replicaSets.map(replicaSet => {
-                        return replicaSet.targetPods
-                            .filter(pod => podIds.has(d3PodId(pod)))
-                            .map(targetPod => ({ replicaSet, targetPod }));
-                    }
-                ).flat();
+                return flatten(dataSet.replicaSets.map(replicaSet => {
+                    return replicaSet.targetPods
+                        .filter(pod => podIds.has(d3PodId(pod)))
+                        .map(targetPod => ({ replicaSet, targetPod }));
+                }));
             },
             d3IdFn: d3ReplicaSetLinkId,
             d3DatumMapper: d3ReplicaSetLink,
@@ -201,12 +200,11 @@ export default class ClusterD3Graph extends D3Graph {
             dataExtractor: dataSet => {
                 const replicaSetIds = new Set();
                 dataSet.replicaSets.forEach(replicaSet => replicaSetIds.add(d3ReplicaSetId(replicaSet)));
-                return dataSet.deployments.map(deployment => {
-                        return deployment.targetReplicaSets
-                            .filter(replicaSet => replicaSetIds.has(d3ReplicaSetId(replicaSet)))
-                            .map(targetReplicaSet => ({ deployment, targetReplicaSet }));
-                    }
-                ).flat();
+                return flatten(dataSet.deployments.map(deployment => {
+                    return deployment.targetReplicaSets
+                        .filter(replicaSet => replicaSetIds.has(d3ReplicaSetId(replicaSet)))
+                        .map(targetReplicaSet => ({ deployment, targetReplicaSet }));
+                }));
             },
             d3IdFn: d3DeploymentLinkId,
             d3DatumMapper: d3DeploymentLink,

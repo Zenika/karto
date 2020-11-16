@@ -40,6 +40,7 @@ export default class NetworkPolicyD3Graph extends D3Graph {
             focusHandler: 'onPodFocus',
             svgElementAttributesApplier: selection => {
                 selection
+                    .attr('aria-label', 'pod')
                     .attr('r', 2);
             }
         });
@@ -49,7 +50,11 @@ export default class NetworkPolicyD3Graph extends D3Graph {
             dataExtractor: dataSet => dataSet.allowedRoutes,
             d3IdFn: d3AllowedRouteId,
             d3DatumMapper: d3AllowedRoute,
-            focusHandler: 'onAllowedRouteFocus'
+            focusHandler: 'onAllowedRouteFocus',
+            svgElementAttributesApplier: selection => {
+                selection
+                    .attr('aria-label', 'allowed route');
+            }
         });
     }
 
