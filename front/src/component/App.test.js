@@ -56,10 +56,10 @@ describe('App component', () => {
         getControls.mockImplementation(() => value);
     }
 
-    async function waitForComponentUpdate() {
+    function waitForComponentUpdate() {
         // Any update resets the setInterval to fetch the analysis result
         // We must wait on that promise in order to avoid the 'act' warning
-        await act(() => analysisResultPromise);
+        return act(() => analysisResultPromise);
     }
 
     beforeAll(() => {
@@ -67,7 +67,6 @@ describe('App component', () => {
     });
 
     beforeEach(() => {
-        jest.resetAllMocks();
         jest.useFakeTimers();
         ClusterMap.mockImplementation(props => {
             podDetailsHandler = props.onPodFocus;
@@ -109,19 +108,18 @@ describe('App component', () => {
 
     it('refreshes analysis results every 2 seconds when auto refresh is on', async () => {
         render(<App/>);
-        fireEvent.click(screen.getByLabelText('Auto refresh'));
+        fireEvent.click(screen.getByText('Auto refresh'));
         await waitForComponentUpdate();
-        fetchAnalysisResult.mockClear();
 
+        fetchAnalysisResult.mockClear();
         act(() => jest.advanceTimersByTime(2000));
         await waitForComponentUpdate();
         expect(fetchAnalysisResult).toHaveBeenCalledTimes(1);
-        fetchAnalysisResult.mockClear();
 
+        fetchAnalysisResult.mockClear();
         act(() => jest.advanceTimersByTime(2000));
         await waitForComponentUpdate();
         expect(fetchAnalysisResult).toHaveBeenCalledTimes(1);
-        fetchAnalysisResult.mockClear();
     });
 
     it('displays message when dataset is empty', async () => {
@@ -159,7 +157,7 @@ describe('App component', () => {
         mockDataSet({ allowedRoutes: tooManyAllowedRoutes });
         render(<App/>);
 
-        fireEvent.click(screen.getByLabelText('Always display large datasets'));
+        fireEvent.click(screen.getByText('Always display large datasets'));
         await waitForComponentUpdate();
 
         expect(screen.queryByText('The dataset to display is larger than recommended for an optimal experience. ' +
@@ -198,7 +196,7 @@ describe('App component', () => {
         mockDataSet(dataSet);
         render(<App/>);
 
-        fireEvent.click(screen.getByLabelText('Network policies'));
+        fireEvent.click(screen.getByText('Network policies'));
         await waitForComponentUpdate();
 
         expect(screen.queryByText('Mock ClusterMap')).not.toBeInTheDocument();
@@ -209,10 +207,10 @@ describe('App component', () => {
 
     it('displays cluster map when selected', async () => {
         render(<App/>);
-        fireEvent.click(screen.getByLabelText('Network policies'));
+        fireEvent.click(screen.getByText('Network policies'));
         await waitForComponentUpdate();
 
-        fireEvent.click(screen.getByLabelText('Workloads'));
+        fireEvent.click(screen.getByText('Workloads'));
         await waitForComponentUpdate();
 
         expect(screen.queryByText('Mock ClusterMap')).toBeInTheDocument();
@@ -253,7 +251,7 @@ describe('App component', () => {
         };
         mockDataSet(dataSet);
         render(<App/>);
-        fireEvent.click(screen.getByLabelText('Network policies'));
+        fireEvent.click(screen.getByText('Network policies'));
         await waitForComponentUpdate();
 
         expect(screen.queryByText('Displaying 1/2 pods and 2/3 allowed routes'))
@@ -319,7 +317,7 @@ describe('App component', () => {
 
     it('displays specific controld with cluster map', async () => {
         render(<App/>);
-        fireEvent.click(screen.getByLabelText('Workloads'));
+        fireEvent.click(screen.getByText('Workloads'));
         await waitForComponentUpdate();
 
         expect(screen.queryByText('All namespaces')).toBeInTheDocument();
@@ -336,7 +334,7 @@ describe('App component', () => {
 
     it('displays specific controld with network policy map', async () => {
         render(<App/>);
-        fireEvent.click(screen.getByLabelText('Network policies'));
+        fireEvent.click(screen.getByText('Network policies'));
         await waitForComponentUpdate();
 
         expect(screen.queryByText('All namespaces')).toBeInTheDocument();
@@ -393,7 +391,7 @@ describe('App component', () => {
             fireEvent.change(valueInput, { target: { value: value } });
             fireEvent.keyDown(valueInput, { key: 'Enter' });
 
-            fireEvent.click(screen.getAllByLabelText('Add entry')[podFiltersCount++]);
+            fireEvent.click(screen.getAllByLabelText('add entry')[podFiltersCount++]);
         };
         mockAnalysisResult({ allLabels: { k1: ['v1-1', 'v1-2'], k2: ['v2-1', 'v2-2'] } });
         render(<App/>);
@@ -440,10 +438,10 @@ describe('App component', () => {
 
     it('can change ingress neighbors filter', async () => {
         render(<App/>);
-        fireEvent.click(screen.getByLabelText('Network policies'));
+        fireEvent.click(screen.getByText('Network policies'));
         await waitForComponentUpdate();
 
-        fireEvent.click(screen.getByLabelText('Include ingress neighbors'));
+        fireEvent.click(screen.getByText('Include ingress neighbors'));
 
         expect(computeDataSet).toHaveBeenCalledWith(expect.anything(),
             expect.objectContaining({ includeIngressNeighbors: true }));
@@ -451,10 +449,10 @@ describe('App component', () => {
 
     it('can change egress neighbors filter', async () => {
         render(<App/>);
-        fireEvent.click(screen.getByLabelText('Network policies'));
+        fireEvent.click(screen.getByText('Network policies'));
         await waitForComponentUpdate();
 
-        fireEvent.click(screen.getByLabelText('Include egress neighbors'));
+        fireEvent.click(screen.getByText('Include egress neighbors'));
 
         expect(computeDataSet).toHaveBeenCalledWith(expect.anything(),
             expect.objectContaining({ includeEgressNeighbors: true }));
@@ -464,7 +462,7 @@ describe('App component', () => {
         render(<App/>);
         await waitForComponentUpdate();
 
-        fireEvent.click(screen.getByLabelText('Show namespace prefix'));
+        fireEvent.click(screen.getByText('Show namespace prefix'));
 
         expect(computeDataSet).toHaveBeenCalledWith(expect.anything(),
             expect.objectContaining({ showNamespacePrefix: true }));
@@ -472,10 +470,10 @@ describe('App component', () => {
 
     it('can change non isolated ingress highlight display option', async () => {
         render(<App/>);
-        fireEvent.click(screen.getByLabelText('Network policies'));
+        fireEvent.click(screen.getByText('Network policies'));
         await waitForComponentUpdate();
 
-        fireEvent.click(screen.getByLabelText('Highlight non isolated pods (ingress)'));
+        fireEvent.click(screen.getByText('Highlight non isolated pods (ingress)'));
 
         expect(computeDataSet).toHaveBeenCalledWith(expect.anything(),
             expect.objectContaining({ highlightPodsWithoutIngressIsolation: true }));
@@ -483,10 +481,10 @@ describe('App component', () => {
 
     it('can change non isolated egress highlight display option', async () => {
         render(<App/>);
-        fireEvent.click(screen.getByLabelText('Network policies'));
+        fireEvent.click(screen.getByText('Network policies'));
         await waitForComponentUpdate();
 
-        fireEvent.click(screen.getByLabelText('Highlight non isolated pods (egress)'));
+        fireEvent.click(screen.getByText('Highlight non isolated pods (egress)'));
 
         expect(computeDataSet).toHaveBeenCalledWith(expect.anything(),
             expect.objectContaining({ highlightPodsWithoutEgressIsolation: true }));
@@ -546,7 +544,7 @@ describe('App component', () => {
 
     it('displays pod details from network policy map', async () => {
         render(<App/>);
-        fireEvent.click(screen.getByLabelText('Network policies'));
+        fireEvent.click(screen.getByText('Network policies'));
         await waitForComponentUpdate();
 
         act(() => podDetailsHandler({ namespace: 'ns', name: 'po', labels: {} }));
@@ -557,7 +555,7 @@ describe('App component', () => {
 
     it('displays allowed route details from network policy map', async () => {
         render(<App/>);
-        fireEvent.click(screen.getByLabelText('Network policies'));
+        fireEvent.click(screen.getByText('Network policies'));
         await waitForComponentUpdate();
 
         act(() => allowedRouteDetailsHandler({

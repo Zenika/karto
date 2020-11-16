@@ -38,7 +38,7 @@ describe('MultiKeyValueSelectControl component', () => {
                                         selectedOptions={selectedOptions} onChange={changeHandler}/>
         );
 
-        fireEvent.click(screen.getAllByLabelText('Add entry')[0]);
+        fireEvent.click(screen.getAllByLabelText('add entry')[0]);
 
         expect(changeHandler).toHaveBeenCalledTimes(1);
         expect(changeHandler).toHaveBeenCalledWith([previousSelectionEntry1, emptySelectionEntry,
@@ -57,7 +57,7 @@ describe('MultiKeyValueSelectControl component', () => {
                                         selectedOptions={selectedOptions} onChange={changeHandler}/>
         );
 
-        fireEvent.click(screen.getAllByLabelText('Remove entry')[0]);
+        fireEvent.click(screen.getAllByLabelText('remove entry')[0]);
 
         expect(changeHandler).toHaveBeenCalledTimes(1);
         expect(changeHandler).toHaveBeenCalledWith([previousSelectionEntry2]);
@@ -154,8 +154,8 @@ describe('MultiKeyValueSelectControl component', () => {
                                         selectedOptions={selectedOptions} onChange={changeHandler}/>
         );
 
-        fireEvent.mouseDown(screen.getAllByRole('button')[3]);
-        fireEvent.click(screen.getAllByRole('option')[1]);
+        fireEvent.mouseDown(screen.getByText(operator1.label));
+        fireEvent.click(screen.getByText(operator2.label));
 
         expect(changeHandler).toHaveBeenCalledTimes(1);
         expect(changeHandler).toHaveBeenCalledWith([
@@ -179,8 +179,8 @@ describe('MultiKeyValueSelectControl component', () => {
                                         selectedOptions={selectedOptions} onChange={changeHandler}/>
         );
 
-        fireEvent.mouseDown(screen.getAllByRole('button')[3]);
-        fireEvent.click(screen.getAllByRole('option')[1]);
+        fireEvent.mouseDown(screen.getByText(operator1.label));
+        fireEvent.click(screen.getByText(operator2.label));
 
         expect(changeHandler).toHaveBeenCalledTimes(1);
         expect(changeHandler).toHaveBeenCalledWith([
@@ -227,8 +227,7 @@ describe('MultiKeyValueSelectControl component', () => {
                                         selectedOptions={selectedOptions} onChange={changeHandler}/>
         );
 
-        const clearButton = screen.getByText('Clear');
-        fireEvent.click(clearButton);
+        fireEvent.click(screen.getByText('Clear'));
 
         expect(changeHandler).toHaveBeenCalledTimes(1);
         expect(changeHandler).toHaveBeenCalledWith([]);

@@ -172,11 +172,11 @@ const MultiKeyValueSelectControl = (
                             )}
                             <div className={classNames(classes.entryRow, classes.entryActions)}>
                                 <Button color="primary" onClick={() => removeEntry(index)}>
-                                    <RemoveIcon aria-label="Remove entry" className={classes.buttonIcon}
+                                    <RemoveIcon aria-label="remove entry" className={classes.buttonIcon}
                                                 viewBox="5 5 14 14"/>
                                 </Button>
                                 <Button color="primary" onClick={() => addEntry(index + 1)}>
-                                    <AddIcon aria-label="Add entry" className={classes.buttonIcon}
+                                    <AddIcon aria-label="add entry" className={classes.buttonIcon}
                                              viewBox="5 5 14 14"/>
                                 </Button>
                             </div>

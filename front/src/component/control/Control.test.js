@@ -46,8 +46,7 @@ describe('Control component', () => {
             </Control>
         );
 
-        const expandButton = screen.getByLabelText('expand');
-        fireEvent.click(expandButton);
+        fireEvent.click(screen.getByLabelText('expand'));
 
         expect(screen.queryByLabelText('expand')).not.toBeInTheDocument();
         expect(screen.queryByLabelText('collapse')).toBeInTheDocument();
@@ -60,10 +59,8 @@ describe('Control component', () => {
             </Control>
         );
 
-        const expandButton = screen.getByLabelText('expand');
-        fireEvent.click(expandButton);
-        const collapseButton = screen.getByLabelText('collapse');
-        fireEvent.click(collapseButton);
+        fireEvent.click(screen.getByLabelText('expand'));
+        fireEvent.click(screen.getByLabelText('collapse'));
 
         expect(screen.queryByLabelText('expand')).toBeInTheDocument();
         expect(screen.queryByLabelText('collapse')).not.toBeInTheDocument();

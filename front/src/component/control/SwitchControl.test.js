@@ -12,8 +12,7 @@ describe('SwitchControl component', () => {
             <SwitchControl name={name} checked={false} onChange={changeHandler}/>
         );
 
-        const toggle = screen.getByLabelText(name);
-        fireEvent.click(toggle);
+        fireEvent.click(screen.getByLabelText(name));
 
         expect(changeHandler).toHaveBeenCalledTimes(1);
         expect(changeHandler).toHaveBeenCalledWith(true);
@@ -26,8 +25,7 @@ describe('SwitchControl component', () => {
             <SwitchControl name={name} checked={true} onChange={changeHandler}/>
         );
 
-        const toggle = screen.getByLabelText(name);
-        fireEvent.click(toggle);
+        fireEvent.click(screen.getByLabelText(name));
 
         expect(changeHandler).toHaveBeenCalledTimes(1);
         expect(changeHandler).toHaveBeenCalledWith(false);

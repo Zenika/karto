@@ -11,7 +11,6 @@ describe('RadioGroupControl component', () => {
             <RadioGroupControl options={options} value={options[0]} onChange={() => null}/>
         );
 
-        expect(screen.queryAllByRole('radio')).toHaveLength(2);
         expect(screen.queryByText(options[0])).toBeInTheDocument();
         expect(screen.queryByText(options[1])).toBeInTheDocument();
     });
@@ -23,8 +22,7 @@ describe('RadioGroupControl component', () => {
             <RadioGroupControl options={options} value={options[0]} onChange={changeHandler}/>
         );
 
-        const option = screen.getAllByRole('radio')[1];
-        fireEvent.click(option);
+        fireEvent.click(screen.getByText(options[1]));
 
         expect(changeHandler).toHaveBeenCalledTimes(1);
         expect(changeHandler).toHaveBeenCalledWith(options[1]);

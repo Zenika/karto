@@ -38,8 +38,7 @@ describe('InputControl component', () => {
             <InputControl name={''} checked={false} placeholder={''} value={'some value'} onChange={changeHandler}/>
         );
 
-        const clearButton = screen.getByText('Clear');
-        fireEvent.click(clearButton);
+        fireEvent.click(screen.getByText('Clear'));
 
         expect(changeHandler).toHaveBeenCalledTimes(1);
         expect(changeHandler).toHaveBeenCalledWith('');

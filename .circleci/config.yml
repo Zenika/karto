@@ -19,8 +19,8 @@ jobs:
           at: /home/circleci
       - restore_cache:
           keys:
-            - v4-front-dependencies-{{ checksum "front/package.json" }}
-            - v4-front-dependencies-
+            - v5-front-dependencies-{{ checksum "front/package.json" }}
+            - v5-front-dependencies-
       - run:
           working_directory: front
           name: Download dependencies
@@ -29,7 +29,7 @@ jobs:
           paths:
             - front/node_modules
             - /home/circleci/.cache/yarn/v6
-          key: v4-front-dependencies-{{ checksum "front/package.json" }}
+          key: v5-front-dependencies-{{ checksum "front/package.json" }}
       - run:
           working_directory: front
           name: Run tests

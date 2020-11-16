@@ -1,6 +1,6 @@
 import React from 'react';
 import MultiSelectControl from './MultiSelectControl';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom/extend-expect';
 import configureMockForPopper from '../utils/testutils';
 
@@ -19,11 +19,9 @@ describe('MultiSelectControl component', () => {
                                 selectedOptions={selectedOptions} onChange={() => null}/>
         );
 
-        const { queryAllByRole, queryByText, queryByPlaceholderText } = within(screen.queryByRole('combobox'));
-        expect(queryAllByRole('button')).toHaveLength(3);
-        expect(queryByText(selectedOptions[0])).toBeInTheDocument();
-        expect(queryByText(selectedOptions[1])).toBeInTheDocument();
-        expect(queryByPlaceholderText(placeholder)).toBeInTheDocument();
+        expect(screen.queryByText(selectedOptions[0])).toBeInTheDocument();
+        expect(screen.queryByText(selectedOptions[1])).toBeInTheDocument();
+        expect(screen.queryByPlaceholderText(placeholder)).toBeInTheDocument();
     });
 
     it('calls change handler when new option is selected', () => {
@@ -53,8 +51,7 @@ describe('MultiSelectControl component', () => {
                                 selectedOptions={selectedOptions} onChange={changeHandler}/>
         );
 
-        const clearButton = screen.getByText('Clear');
-        fireEvent.click(clearButton);
+        fireEvent.click(screen.getByText('Clear'));
 
         expect(changeHandler).toHaveBeenCalledTimes(1);
         expect(changeHandler).toHaveBeenCalledWith([]);
@@ -68,8 +65,7 @@ describe('MultiSelectControl component', () => {
                                 selectedOptions={[]} onChange={changeHandler}/>
         );
 
-        const selectAllButton = screen.getByText('Select all');
-        fireEvent.click(selectAllButton);
+        fireEvent.click(screen.getByText('Select all'));
 
         expect(changeHandler).toHaveBeenCalledTimes(1);
         expect(changeHandler).toHaveBeenCalledWith(options);

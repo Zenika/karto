@@ -4,7 +4,7 @@ import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import ExpandLessIcon from '@material-ui/icons/ExpandLess';
 import { makeStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
-import { unstable_StrictModeCollapse as Collapse } from '@material-ui/core/Collapse';
+import Collapse from '@material-ui/core/Collapse';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 
