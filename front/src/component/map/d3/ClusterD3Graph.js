@@ -89,6 +89,7 @@ export default class ClusterD3Graph extends D3Graph {
             focusHandler: 'onPodFocus',
             svgElementAttributesApplier: selection => {
                 selection
+                    .attr('aria-label', 'pod')
                     .attr('r', 2)
                     .each((d, i, c) => {
                         if (d.fx == null) {
@@ -107,6 +108,7 @@ export default class ClusterD3Graph extends D3Graph {
             focusHandler: 'onServiceFocus',
             svgElementAttributesApplier: selection => {
                 selection
+                    .attr('aria-label', 'service')
                     .attr('points', '-4,0 0,-2.5 4,0 0,2.5')
                     .each(d => {
                         if (d.fx == null) {
@@ -133,7 +135,11 @@ export default class ClusterD3Graph extends D3Graph {
             },
             d3IdFn: d3ServiceLinkId,
             d3DatumMapper: d3ServiceLink,
-            focusHandler: 'onServiceFocus'
+            focusHandler: 'onServiceFocus',
+            svgElementAttributesApplier: selection => {
+                selection
+                    .attr('aria-label', 'service link');
+            }
         });
         this.replicaSetsLayer = new D3GraphItemLayer({
             name: 'replicaSets',
@@ -144,6 +150,7 @@ export default class ClusterD3Graph extends D3Graph {
             focusHandler: 'onReplicaSetFocus',
             svgElementAttributesApplier: selection => {
                 selection
+                    .attr('aria-label', 'replicaset')
                     .attr('d', 'M-2,-2 L2,-2 L2,2 L-2,2 M2.5,-1 L3,-1 L3,3 L-1,3 L-1,2.5 L2.5,2.5 L2.5,-1')
                     .each(d => {
                         if (d.fx == null) {
@@ -170,7 +177,11 @@ export default class ClusterD3Graph extends D3Graph {
             },
             d3IdFn: d3ReplicaSetLinkId,
             d3DatumMapper: d3ReplicaSetLink,
-            focusHandler: 'onReplicaSetFocus'
+            focusHandler: 'onReplicaSetFocus',
+            svgElementAttributesApplier: selection => {
+                selection
+                    .attr('aria-label', 'replicaset link')
+            }
         });
         this.deploymentsLayer = new D3GraphItemLayer({
             name: 'deployments',
@@ -181,6 +192,7 @@ export default class ClusterD3Graph extends D3Graph {
             focusHandler: 'onDeploymentFocus',
             svgElementAttributesApplier: selection => {
                 selection
+                    .attr('aria-label', 'deployment')
                     .attr('d', 'M0,1 A1,1,0,1,1,1,0 L0.5,0 L1.75,1.25 L3,0 L2.5,0 A2.5,2.5,0,1,0,0,2.5')
                     .each(d => {
                         if (d.fx == null) {
@@ -208,7 +220,11 @@ export default class ClusterD3Graph extends D3Graph {
             },
             d3IdFn: d3DeploymentLinkId,
             d3DatumMapper: d3DeploymentLink,
-            focusHandler: 'onDeploymentFocus'
+            focusHandler: 'onDeploymentFocus',
+            svgElementAttributesApplier: selection => {
+                selection
+                    .attr('aria-label', 'deployment link')
+            }
         });
     }
 
@@ -246,9 +262,9 @@ export default class ClusterD3Graph extends D3Graph {
             const service2 = indexedPodsToService.get(pod2.id);
             const service1Index = service1 ? service1.index : -1;
             const service2Index = service2 ? service2.index : -1;
-            if (service1Index > service2Index) {
+            if (service1Index < service2Index) {
                 return -1;
-            } else if (service1Index < service2Index) {
+            } else if (service1Index > service2Index) {
                 return 1;
             } else {
                 return pod1.id.localeCompare(pod2.id);
@@ -292,7 +308,7 @@ export default class ClusterD3Graph extends D3Graph {
             return this.isPodOfService(podId, candidateDatumId);
         } else if (candidateLayerName === this.replicaSetsLayer.name) {
             return this.isPodOfReplicaSet(podId, candidateDatumId);
-        } else if (candidateLayerName === this.deploymentsLayer) {
+        } else if (candidateLayerName === this.deploymentsLayer.name) {
             return this.isPodOfDeployment(podId, candidateDatumId);
         } else if (candidateLayerName === this.serviceLinksLayer.name) {
             return this.isServiceLinkOfPod(candidateDatumId, podId);
