@@ -2,6 +2,7 @@ import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom/extend-expect';
 import NetworkPolicyMap from './NetworkPolicyMap';
+import { patchGraphViewBox } from '../utils/testutils';
 
 describe('NetworkPolicyMap component', () => {
 
@@ -29,6 +30,15 @@ describe('NetworkPolicyMap component', () => {
             return null;
         }
         return { clientX: (parseFloat(x1) + parseFloat(x2)) / 2, clientY: (parseFloat(y1) + parseFloat(y2)) / 2 };
+    }
+
+    function getScale(element) {
+        const transformAttr = element.getAttribute('transform');
+        const matches = /.*scale\((-?\d+\.?\d*)\).*/.exec(transformAttr);
+        if (matches == null) {
+            return null;
+        }
+        return parseFloat(matches[1]);
     }
 
     function waitForPodPositionStable(pod) {
@@ -63,7 +73,7 @@ describe('NetworkPolicyMap component', () => {
         hoverPod(pod);
         fireEvent.mouseDown(pod, { view: global.window });
         fireEvent.mouseMove(screen.getByLabelText('graph'), targetPosition);
-        fireEvent.mouseUp(pod, { view: global.window,  });
+        fireEvent.mouseUp(pod, { view: global.window });
     }
 
     it('displays pods and their labels', () => {
@@ -400,4 +410,52 @@ describe('NetworkPolicyMap component', () => {
         expect(newPod1Position).toEqual(oldPod1Position);
         expect(newPod2Position).not.toEqual(oldPod2Position);
     }, timeout);
+
+    it('pods and their labels keep same apparent size despite zoom', async () => {
+        const dataSet = {
+            podIsolations: [
+                { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' }
+            ],
+            allowedRoutes: []
+        };
+        render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
+        patchGraphViewBox();
+        await waitForPodPositionStable(screen.getAllByLabelText('pod')[0]);
+        const oldFontSize = parseFloat(screen.getByText('ns/pod1').getAttribute('font-size'));
+
+        fireEvent.wheel(screen.getByLabelText('layers container'), { deltaY: -100 }); // scroll down
+        const containerScale = getScale(screen.queryByLabelText('layers container'));
+        const podScale = getScale(screen.getAllByLabelText('pod')[0]);
+        const newFontSize = parseFloat(screen.getByText('ns/pod1').getAttribute('font-size'));
+        const fontScale = newFontSize / oldFontSize;
+
+        expect(containerScale).toBeGreaterThan(1);
+        expect(podScale).toEqual(1 / containerScale);
+        expect(fontScale).toEqual(1 / containerScale);
+    });
+
+    it('allowed routes keep same apparent size despite zoom', async () => {
+        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
+        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
+        const allowedRoute1 = {
+            sourcePod: { namespace: 'ns', name: 'pod1' },
+            targetPod: { namespace: 'ns', name: 'pod2' }
+        };
+        const dataSet = {
+            podIsolations: [pod1, pod2],
+            allowedRoutes: [allowedRoute1]
+        };
+        render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
+        patchGraphViewBox();
+        await waitForPodPositionStable(screen.getAllByLabelText('pod')[0]);
+        const oldWidth = parseFloat(screen.getAllByLabelText('allowed route')[0].getAttribute('stroke-width'));
+
+        fireEvent.wheel(screen.getByLabelText('layers container'), { deltaY: -100 }); // scroll down
+        const containerScale = getScale(screen.queryByLabelText('layers container'));
+        const newWidth = parseFloat(screen.getAllByLabelText('allowed route')[0].getAttribute('stroke-width'));
+        const strokeScale = newWidth / oldWidth;
+
+        expect(containerScale).toBeGreaterThan(1);
+        expect(strokeScale).toEqual(1 / containerScale);
+    });
 });

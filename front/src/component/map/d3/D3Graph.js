@@ -203,7 +203,9 @@ export default class D3Graph {
     }
 
     createContentLayout(d3Selection) {
-        return d3Selection.append('g');
+        return d3Selection
+            .append('g')
+            .attr('aria-label', 'layers container');
     }
 
     createLinkLayersContainer() {

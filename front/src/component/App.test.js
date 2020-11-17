@@ -6,7 +6,7 @@ import { labelSelectorOperators, maxRecommendedAllowedRoutes, maxRecommendedPods
 import ClusterMap from './map/ClusterMap';
 import NetworkPolicyMap from './map/NetworkPolicyMap';
 import { getControls } from '../service/storageService';
-import configureMockForPopper from './utils/testutils';
+import { configureMockForPopper } from './utils/testutils';
 import App from './App';
 
 jest.mock('../service/analysisResultService');

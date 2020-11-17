@@ -43,9 +43,6 @@ export default class D3GraphLayer {
     }
 
     onElementFocused(id, focusHandlers) {
-        if (!this.focusHandler) {
-            return;
-        }
         const focusHandler = focusHandlers[this.focusHandler];
         const datum = this.indexedData.get(id).sourceData;
         focusHandler(datum);
