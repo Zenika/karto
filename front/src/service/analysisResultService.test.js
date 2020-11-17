@@ -287,8 +287,7 @@ describe('computeDataSet', () => {
         expect(actual.services).toEqual([
             {
                 name: 'svc1', displayName: 'svc1', targetPods: [
-                    { namespace: defaultNamespace, name: 'pod1' },
-                    { namespace: defaultNamespace, name: 'pod2' }
+                    { namespace: defaultNamespace, name: 'pod1' }
                 ]
             },
             {
@@ -335,8 +334,7 @@ describe('computeDataSet', () => {
         expect(actual.replicaSets).toEqual([
             {
                 namespace: defaultNamespace, name: 'replicaSet1', displayName: 'replicaSet1', targetPods: [
-                    { namespace: defaultNamespace, name: 'pod1' },
-                    { namespace: defaultNamespace, name: 'pod2' }
+                    { namespace: defaultNamespace, name: 'pod1' }
                 ]
             },
             {
@@ -407,8 +405,7 @@ describe('computeDataSet', () => {
         expect(actual.deployments).toEqual([
             {
                 namespace: defaultNamespace, name: 'deployment1', displayName: 'deployment1', targetReplicaSets: [
-                    { namespace: defaultNamespace, name: 'replicaSet1' },
-                    { namespace: defaultNamespace, name: 'replicaSet3' }
+                    { namespace: defaultNamespace, name: 'replicaSet1' }
                 ]
             },
             {

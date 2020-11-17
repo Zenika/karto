@@ -22,10 +22,10 @@ export default class D3GraphLinkLayer extends D3GraphLayer {
         super.updateElementsPositionAndScale(zoomFactor);
         this.linkSvgContainer
             .selectAll(this.svgElement)
-            .attr('x1', d => d.source.x || null)
-            .attr('y1', d => d.source.y || null)
-            .attr('x2', d => d.target.x || null)
-            .attr('y2', d => d.target.y || null)
+            .attr('x1', d => d.source.x)
+            .attr('y1', d => d.source.y)
+            .attr('x2', d => d.target.x)
+            .attr('y2', d => d.target.y)
             .attr('stroke-width', LINK_WIDTH / zoomFactor);
     }
 

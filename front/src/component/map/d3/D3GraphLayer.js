@@ -7,8 +7,7 @@ export default class D3GraphLayer {
         this.d3IdFn = layerConfig.d3IdFn;
         this.d3DatumMapper = layerConfig.d3DatumMapper;
         this.focusHandler = layerConfig.focusHandler;
-        this.svgElementAttributesApplier = layerConfig.svgElementAttributesApplier || (() => {
-        });
+        this.svgElementAttributesApplier = layerConfig.svgElementAttributesApplier || (() => null);
         this.data = [];
         this.indexedData = new Map();
     }

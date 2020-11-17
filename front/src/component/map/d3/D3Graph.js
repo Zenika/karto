@@ -138,7 +138,8 @@ export default class D3Graph {
         return d3.select('#graph').append('svg')
             .attr('width', '100%')
             .attr('height', '100%')
-            .attr('viewBox', [-GRAPH_WIDTH / 2, -GRAPH_HEIGHT / 2, GRAPH_WIDTH, GRAPH_HEIGHT]);
+            .attr('viewBox', [-GRAPH_WIDTH / 2, -GRAPH_HEIGHT / 2, GRAPH_WIDTH, GRAPH_HEIGHT])
+            .attr('aria-label', 'graph');
     }
 
     attachZoomHandlerTo(d3Selection) {
