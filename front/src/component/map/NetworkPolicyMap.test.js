@@ -280,12 +280,6 @@ describe('NetworkPolicyMap component', () => {
         await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], timeout);
 
         hoverItem(screen.getAllByLabelText('pod')[2]);
-
-        expect(screen.getAllByLabelText('pod')[0]).toHaveAttribute('class', 'item-faded');
-        expect(screen.getAllByLabelText('pod')[1]).toHaveAttribute('class', 'item-faded');
-        expect(screen.getAllByLabelText('pod')[2]).toHaveAttribute('class', 'item');
-        expect(screen.getAllByLabelText('allowed route')[0]).toHaveAttribute('class', 'link-faded');
-
         hoverAway();
 
         expect(screen.getAllByLabelText('pod')[0]).toHaveAttribute('class', 'item');

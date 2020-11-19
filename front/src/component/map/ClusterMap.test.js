@@ -1,8 +1,17 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom/extend-expect';
 import ClusterMap from './ClusterMap';
-import { hoverAway, hoverItem, hoverLink, waitForItemPositionStable } from '../utils/testutils';
+import {
+    dragAndDropItem,
+    getItemPosition,
+    getScale,
+    hoverAway,
+    hoverItem,
+    hoverLink,
+    patchGraphViewBox,
+    waitForItemPositionStable
+} from '../utils/testutils';
 
 describe('ClusterMap component', () => {
 
@@ -484,7 +493,7 @@ describe('ClusterMap component', () => {
         expect(screen.getAllByLabelText('deployment link')[1]).toHaveAttribute('class', 'link-faded');
     }, timeout);
 
-    it('focusing a pod fades all others pods and their services, replicaSets and deployments', async () => {
+    it('focusing a pod also focuses connected services, replicaSets and deployments', async () => {
         const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
         const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
         const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
@@ -565,145 +574,780 @@ describe('ClusterMap component', () => {
         expect(screen.getAllByLabelText('deployment')[1]).toHaveAttribute('class', 'item-faded');
         expect(screen.getAllByLabelText('deployment link')[1]).toHaveAttribute('class', 'link-faded');
     }, timeout);
-    //
-    // it('unfocusing an element should remove all fades', async () => {
-    //     const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-    //     const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-    //     const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
-    //     const allowedRoute1 = {
-    //         sourcePod: { namespace: 'ns', name: 'pod1' },
-    //         targetPod: { namespace: 'ns', name: 'pod2' }
-    //     };
-    //     const dataSet = {
-    //         podIsolations: [pod1, pod2, pod3],
-    //         allowedRoutes: [allowedRoute1]
-    //     };
-    //     render(<ClusterMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
-    //     await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], timeout);
-    //
-    //     hoverPod(screen.getAllByLabelText('pod')[2]);
-    //
-    //     expect(screen.getAllByLabelText('pod')[0]).toHaveAttribute('class', 'item-faded');
-    //     expect(screen.getAllByLabelText('pod')[1]).toHaveAttribute('class', 'item-faded');
-    //     expect(screen.getAllByLabelText('pod')[2]).toHaveAttribute('class', 'item');
-    //     expect(screen.getAllByLabelText('allowed route')[0]).toHaveAttribute('class', 'link-faded');
-    //
-    //     hoverAway();
-    //
-    //     expect(screen.getAllByLabelText('pod')[0]).toHaveAttribute('class', 'item');
-    //     expect(screen.getAllByLabelText('pod')[1]).toHaveAttribute('class', 'item');
-    //     expect(screen.getAllByLabelText('pod')[2]).toHaveAttribute('class', 'item');
-    //     expect(screen.getAllByLabelText('allowed route')[0]).toHaveAttribute('class', 'link');
-    // }, timeout);
-    //
-    // it('focused element should stay focused after component update', async () => {
-    //     const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-    //     const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-    //     const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
-    //     const dataSet1 = {
-    //         podIsolations: [pod1, pod2],
-    //         allowedRoutes: []
-    //     };
-    //     const dataSet2 = {
-    //         podIsolations: [pod1, pod2, pod3],
-    //         allowedRoutes: []
-    //     };
-    //     const { rerender } = render(
-    //         <ClusterMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet1}/>
-    //     );
-    //     await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], timeout);
-    //
-    //     hoverPod(screen.getAllByLabelText('pod')[0]);
-    //
-    //     expect(screen.getAllByLabelText('pod')[0]).toHaveAttribute('class', 'item');
-    //     expect(screen.getAllByLabelText('pod')[1]).toHaveAttribute('class', 'item-faded');
-    //
-    //     rerender(
-    //         <ClusterMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet2}/>
-    //     );
-    //
-    //     expect(screen.getAllByLabelText('pod')[0]).toHaveAttribute('class', 'item');
-    //     expect(screen.getAllByLabelText('pod')[1]).toHaveAttribute('class', 'item-faded');
-    // }, timeout);
-    //
-    // it('drag and dropped pods do not move anymore', async () => {
-    //     const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-    //     const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-    //     const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
-    //     const dataSet1 = {
-    //         podIsolations: [pod1, pod2],
-    //         allowedRoutes: []
-    //     };
-    //     const dataSet2 = {
-    //         podIsolations: [pod1, pod2, pod3],
-    //         allowedRoutes: []
-    //     };
-    //     const { rerender } = render(
-    //         <ClusterMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet1}/>
-    //     );
-    //     await waitForItemPositionStable(screen.getAllByLabelText('pod')[1], timeout);
-    //
-    //     dragAndDropItem(screen.getAllByLabelText('pod')[0], { clientX: 20, clientY: 20 });
-    //     await waitForItemPositionStable(screen.getAllByLabelText('pod')[1], timeout);
-    //     const oldPod1Position = getPodPosition(screen.getAllByLabelText('pod')[0]);
-    //     const oldPod2Position = getPodPosition(screen.getAllByLabelText('pod')[1]);
-    //
-    //     rerender(
-    //         <ClusterMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet2}/>
-    //     );
-    //     await waitForItemPositionStable(screen.getAllByLabelText('pod')[1], timeout);
-    //     const newPod1Position = getPodPosition(screen.getAllByLabelText('pod')[0]);
-    //     const newPod2Position = getPodPosition(screen.getAllByLabelText('pod')[1]);
-    //
-    //     expect(newPod1Position).toEqual(oldPod1Position);
-    //     expect(newPod2Position).not.toEqual(oldPod2Position);
-    // }, timeout);
-    //
-    // it('pods and their labels keep same apparent size despite zoom', async () => {
-    //     const dataSet = {
-    //         podIsolations: [
-    //             { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' }
-    //         ],
-    //         allowedRoutes: []
-    //     };
-    //     render(<ClusterMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
-    //     patchGraphViewBox();
-    //     await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], timeout);
-    //     const oldFontSize = parseFloat(screen.getByText('ns/pod1').getAttribute('font-size'));
-    //
-    //     fireEvent.wheel(screen.getByLabelText('layers container'), { deltaY: -100 }); // scroll down
-    //     const containerScale = getScale(screen.queryByLabelText('layers container'));
-    //     const podScale = getScale(screen.getAllByLabelText('pod')[0]);
-    //     const newFontSize = parseFloat(screen.getByText('ns/pod1').getAttribute('font-size'));
-    //     const fontScale = newFontSize / oldFontSize;
-    //
-    //     expect(containerScale).toBeGreaterThan(1);
-    //     expect(podScale).toEqual(1 / containerScale);
-    //     expect(fontScale).toEqual(1 / containerScale);
-    // });
-    //
-    // it('allowed routes keep same apparent size despite zoom', async () => {
-    //     const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-    //     const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-    //     const allowedRoute1 = {
-    //         sourcePod: { namespace: 'ns', name: 'pod1' },
-    //         targetPod: { namespace: 'ns', name: 'pod2' }
-    //     };
-    //     const dataSet = {
-    //         podIsolations: [pod1, pod2],
-    //         allowedRoutes: [allowedRoute1]
-    //     };
-    //     render(<ClusterMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
-    //     patchGraphViewBox();
-    //     await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], timeout);
-    //     const oldWidth = parseFloat(screen.getAllByLabelText('allowed route')[0].getAttribute('stroke-width'));
-    //
-    //     fireEvent.wheel(screen.getByLabelText('layers container'), { deltaY: -100 }); // scroll down
-    //     const containerScale = getScale(screen.queryByLabelText('layers container'));
-    //     const newWidth = parseFloat(screen.getAllByLabelText('allowed route')[0].getAttribute('stroke-width'));
-    //     const strokeScale = newWidth / oldWidth;
-    //
-    //     expect(containerScale).toBeGreaterThan(1);
-    //     expect(strokeScale).toEqual(1 / containerScale);
-    // });
+
+    it('focusing a service also focuses its target pods', async () => {
+        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
+        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
+        const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
+        const service1 = {
+            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
+                { namespace: 'ns', name: 'pod1' },
+                { namespace: 'ns', name: 'pod2' }
+            ]
+        };
+        const service2 = {
+            namespace: 'ns', name: 'svc2', displayName: 'ns/svc2', targetPods: [
+                { namespace: 'ns', name: 'pod3' }
+            ]
+        };
+        const replicaSet1 = {
+            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
+                { namespace: 'ns', name: 'pod1' },
+                { namespace: 'ns', name: 'pod2' }
+            ]
+        };
+        const deployment1 = {
+            namespace: 'ns', name: 'deploy1', displayName: 'ns/deploy1', targetReplicaSets: [
+                { namespace: 'ns', name: 'rs1' }
+            ]
+        };
+        const dataSet = {
+            pods: [pod1, pod2, pod3],
+            services: [service1, service2],
+            replicaSets: [replicaSet1],
+            deployments: [deployment1]
+        };
+        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
+                           onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        await waitForItemPositionStable(screen.getAllByLabelText('service')[0], timeout);
+
+        hoverItem(screen.getAllByLabelText('service')[0]);
+
+        expect(screen.getAllByLabelText('pod')[0]).toHaveAttribute('class', 'item');
+        expect(screen.getAllByLabelText('pod')[1]).toHaveAttribute('class', 'item');
+        expect(screen.getAllByLabelText('pod')[2]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('service')[0]).toHaveAttribute('class', 'item');
+        expect(screen.getAllByLabelText('service link')[0]).toHaveAttribute('class', 'link');
+        expect(screen.getAllByLabelText('service link')[1]).toHaveAttribute('class', 'link');
+        expect(screen.getAllByLabelText('service')[1]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('service link')[2]).toHaveAttribute('class', 'link-faded');
+        expect(screen.getAllByLabelText('replicaset')[0]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('replicaset link')[0]).toHaveAttribute('class', 'link-faded');
+        expect(screen.getAllByLabelText('replicaset link')[1]).toHaveAttribute('class', 'link-faded');
+        expect(screen.getAllByLabelText('deployment')[0]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('deployment link')[0]).toHaveAttribute('class', 'link-faded');
+    }, timeout);
+
+    it('focusing a service link also focuses its service and target pod', async () => {
+        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
+        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
+        const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
+        const service1 = {
+            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
+                { namespace: 'ns', name: 'pod1' },
+                { namespace: 'ns', name: 'pod2' }
+            ]
+        };
+        const service2 = {
+            namespace: 'ns', name: 'svc2', displayName: 'ns/svc2', targetPods: [
+                { namespace: 'ns', name: 'pod3' }
+            ]
+        };
+        const replicaSet1 = {
+            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
+                { namespace: 'ns', name: 'pod1' },
+                { namespace: 'ns', name: 'pod2' }
+            ]
+        };
+        const deployment1 = {
+            namespace: 'ns', name: 'deploy1', displayName: 'ns/deploy1', targetReplicaSets: [
+                { namespace: 'ns', name: 'rs1' }
+            ]
+        };
+        const dataSet = {
+            pods: [pod1, pod2, pod3],
+            services: [service1, service2],
+            replicaSets: [replicaSet1],
+            deployments: [deployment1]
+        };
+        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
+                           onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        await waitForItemPositionStable(screen.getAllByLabelText('service')[0], timeout);
+
+        hoverLink(screen.getAllByLabelText('service link')[0]);
+
+        expect(screen.getAllByLabelText('pod')[0]).toHaveAttribute('class', 'item');
+        expect(screen.getAllByLabelText('pod')[1]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('pod')[2]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('service')[0]).toHaveAttribute('class', 'item');
+        expect(screen.getAllByLabelText('service link')[0]).toHaveAttribute('class', 'link');
+        expect(screen.getAllByLabelText('service link')[1]).toHaveAttribute('class', 'link-faded');
+        expect(screen.getAllByLabelText('service')[1]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('service link')[2]).toHaveAttribute('class', 'link-faded');
+        expect(screen.getAllByLabelText('replicaset')[0]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('replicaset link')[0]).toHaveAttribute('class', 'link-faded');
+        expect(screen.getAllByLabelText('replicaset link')[1]).toHaveAttribute('class', 'link-faded');
+        expect(screen.getAllByLabelText('deployment')[0]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('deployment link')[0]).toHaveAttribute('class', 'link-faded');
+    }, timeout);
+
+    it('focusing a replicaSet also focuses its target pods', async () => {
+        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
+        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
+        const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
+        const service1 = {
+            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
+                { namespace: 'ns', name: 'pod1' },
+                { namespace: 'ns', name: 'pod2' },
+                { namespace: 'ns', name: 'pod3' }
+            ]
+        };
+        const replicaSet1 = {
+            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
+                { namespace: 'ns', name: 'pod1' },
+                { namespace: 'ns', name: 'pod2' }
+            ]
+        };
+        const replicaSet2 = {
+            namespace: 'ns', name: 'rs2', displayName: 'ns/rs2', targetPods: [
+                { namespace: 'ns', name: 'pod3' }
+            ]
+        };
+        const deployment1 = {
+            namespace: 'ns', name: 'deploy1', displayName: 'ns/deploy1', targetReplicaSets: [
+                { namespace: 'ns', name: 'rs1' }
+            ]
+        };
+        const deployment2 = {
+            namespace: 'ns', name: 'deploy2', displayName: 'ns/deploy2', targetReplicaSets: [
+                { namespace: 'ns', name: 'rs2' }
+            ]
+        };
+        const dataSet = {
+            pods: [pod1, pod2, pod3],
+            services: [service1],
+            replicaSets: [replicaSet1, replicaSet2],
+            deployments: [deployment1, deployment2]
+        };
+        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
+                           onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        await waitForItemPositionStable(screen.getAllByLabelText('replicaset')[0], timeout);
+
+        hoverItem(screen.getAllByLabelText('replicaset')[0]);
+
+        expect(screen.getAllByLabelText('pod')[0]).toHaveAttribute('class', 'item');
+        expect(screen.getAllByLabelText('pod')[1]).toHaveAttribute('class', 'item');
+        expect(screen.getAllByLabelText('pod')[2]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('service')[0]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('service link')[0]).toHaveAttribute('class', 'link-faded');
+        expect(screen.getAllByLabelText('replicaset')[0]).toHaveAttribute('class', 'item');
+        expect(screen.getAllByLabelText('replicaset link')[0]).toHaveAttribute('class', 'link');
+        expect(screen.getAllByLabelText('replicaset link')[1]).toHaveAttribute('class', 'link');
+        expect(screen.getAllByLabelText('replicaset')[1]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('replicaset link')[2]).toHaveAttribute('class', 'link-faded');
+        expect(screen.getAllByLabelText('deployment')[0]).toHaveAttribute('class', 'item');
+        expect(screen.getAllByLabelText('deployment link')[0]).toHaveAttribute('class', 'link');
+        expect(screen.getAllByLabelText('deployment')[1]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('deployment link')[1]).toHaveAttribute('class', 'link-faded');
+    }, timeout);
+
+    it('focusing a replicaSet link also focuses its replicaSet and target pod', async () => {
+        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
+        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
+        const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
+        const service1 = {
+            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
+                { namespace: 'ns', name: 'pod1' },
+                { namespace: 'ns', name: 'pod2' },
+                { namespace: 'ns', name: 'pod3' }
+            ]
+        };
+        const replicaSet1 = {
+            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
+                { namespace: 'ns', name: 'pod1' },
+                { namespace: 'ns', name: 'pod2' }
+            ]
+        };
+        const replicaSet2 = {
+            namespace: 'ns', name: 'rs2', displayName: 'ns/rs2', targetPods: [
+                { namespace: 'ns', name: 'pod3' }
+            ]
+        };
+        const deployment1 = {
+            namespace: 'ns', name: 'deploy1', displayName: 'ns/deploy1', targetReplicaSets: [
+                { namespace: 'ns', name: 'rs1' }
+            ]
+        };
+        const deployment2 = {
+            namespace: 'ns', name: 'deploy2', displayName: 'ns/deploy2', targetReplicaSets: [
+                { namespace: 'ns', name: 'rs2' }
+            ]
+        };
+        const dataSet = {
+            pods: [pod1, pod2, pod3],
+            services: [service1],
+            replicaSets: [replicaSet1, replicaSet2],
+            deployments: [deployment1, deployment2]
+        };
+        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
+                           onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        await waitForItemPositionStable(screen.getAllByLabelText('replicaset')[0], timeout);
+
+        hoverLink(screen.getAllByLabelText('replicaset link')[0]);
+
+        expect(screen.getAllByLabelText('pod')[0]).toHaveAttribute('class', 'item');
+        expect(screen.getAllByLabelText('pod')[1]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('pod')[2]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('service')[0]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('service link')[0]).toHaveAttribute('class', 'link-faded');
+        expect(screen.getAllByLabelText('replicaset')[0]).toHaveAttribute('class', 'item');
+        expect(screen.getAllByLabelText('replicaset link')[0]).toHaveAttribute('class', 'link');
+        expect(screen.getAllByLabelText('replicaset link')[1]).toHaveAttribute('class', 'link-faded');
+        expect(screen.getAllByLabelText('replicaset')[1]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('replicaset link')[2]).toHaveAttribute('class', 'link-faded');
+        expect(screen.getAllByLabelText('deployment')[0]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('deployment link')[0]).toHaveAttribute('class', 'link-faded');
+        expect(screen.getAllByLabelText('deployment')[1]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('deployment link')[1]).toHaveAttribute('class', 'link-faded');
+    }, timeout);
+
+    it('focusing a deployment also focuses its target replicaSets and their target pods', async () => {
+        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
+        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
+        const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
+        const pod4 = { namespace: 'ns', name: 'pod4', displayName: 'ns/pod4' };
+        const service1 = {
+            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
+                { namespace: 'ns', name: 'pod1' },
+                { namespace: 'ns', name: 'pod2' },
+                { namespace: 'ns', name: 'pod3' },
+                { namespace: 'ns', name: 'pod4' }
+            ]
+        };
+        const replicaSet1 = {
+            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
+                { namespace: 'ns', name: 'pod1' },
+                { namespace: 'ns', name: 'pod2' }
+            ]
+        };
+        const replicaSet2 = {
+            namespace: 'ns', name: 'rs2', displayName: 'ns/rs2', targetPods: [
+                { namespace: 'ns', name: 'pod3' }
+            ]
+        };
+        const replicaSet3 = {
+            namespace: 'ns', name: 'rs3', displayName: 'ns/rs3', targetPods: [
+                { namespace: 'ns', name: 'pod4' }
+            ]
+        };
+        const deployment1 = {
+            namespace: 'ns', name: 'deploy1', displayName: 'ns/deploy1', targetReplicaSets: [
+                { namespace: 'ns', name: 'rs1' },
+                { namespace: 'ns', name: 'rs2' }
+            ]
+        };
+        const deployment2 = {
+            namespace: 'ns', name: 'deploy2', displayName: 'ns/deploy2', targetReplicaSets: [
+                { namespace: 'ns', name: 'rs3' }
+            ]
+        };
+        const dataSet = {
+            pods: [pod1, pod2, pod3, pod4],
+            services: [service1],
+            replicaSets: [replicaSet1, replicaSet2, replicaSet3],
+            deployments: [deployment1, deployment2]
+        };
+        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
+                           onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        await waitForItemPositionStable(screen.getAllByLabelText('deployment')[0], timeout);
+
+        hoverItem(screen.getAllByLabelText('deployment')[0]);
+
+        expect(screen.getAllByLabelText('pod')[0]).toHaveAttribute('class', 'item');
+        expect(screen.getAllByLabelText('pod')[1]).toHaveAttribute('class', 'item');
+        expect(screen.getAllByLabelText('pod')[2]).toHaveAttribute('class', 'item');
+        expect(screen.getAllByLabelText('pod')[3]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('service')[0]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('service link')[0]).toHaveAttribute('class', 'link-faded');
+        expect(screen.getAllByLabelText('replicaset')[0]).toHaveAttribute('class', 'item');
+        expect(screen.getAllByLabelText('replicaset link')[0]).toHaveAttribute('class', 'link');
+        expect(screen.getAllByLabelText('replicaset link')[1]).toHaveAttribute('class', 'link');
+        expect(screen.getAllByLabelText('replicaset')[1]).toHaveAttribute('class', 'item');
+        expect(screen.getAllByLabelText('replicaset link')[2]).toHaveAttribute('class', 'link');
+        expect(screen.getAllByLabelText('replicaset')[2]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('replicaset link')[3]).toHaveAttribute('class', 'link-faded');
+        expect(screen.getAllByLabelText('deployment')[0]).toHaveAttribute('class', 'item');
+        expect(screen.getAllByLabelText('deployment link')[0]).toHaveAttribute('class', 'link');
+        expect(screen.getAllByLabelText('deployment link')[1]).toHaveAttribute('class', 'link');
+        expect(screen.getAllByLabelText('deployment')[1]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('deployment link')[2]).toHaveAttribute('class', 'link-faded');
+    }, timeout);
+
+    it('focusing a deployment link also focuses its deployment and target replicaSet', async () => {
+        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
+        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
+        const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
+        const service1 = {
+            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
+                { namespace: 'ns', name: 'pod1' },
+                { namespace: 'ns', name: 'pod2' },
+                { namespace: 'ns', name: 'pod3' }
+            ]
+        };
+        const replicaSet1 = {
+            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
+                { namespace: 'ns', name: 'pod1' }
+            ]
+        };
+        const replicaSet2 = {
+            namespace: 'ns', name: 'rs2', displayName: 'ns/rs2', targetPods: [
+                { namespace: 'ns', name: 'pod2' }
+            ]
+        };
+        const replicaSet3 = {
+            namespace: 'ns', name: 'rs3', displayName: 'ns/rs3', targetPods: [
+                { namespace: 'ns', name: 'pod3' }
+            ]
+        };
+        const deployment1 = {
+            namespace: 'ns', name: 'deploy1', displayName: 'ns/deploy1', targetReplicaSets: [
+                { namespace: 'ns', name: 'rs1' },
+                { namespace: 'ns', name: 'rs2' }
+            ]
+        };
+        const deployment2 = {
+            namespace: 'ns', name: 'deploy2', displayName: 'ns/deploy2', targetReplicaSets: [
+                { namespace: 'ns', name: 'rs3' }
+            ]
+        };
+        const dataSet = {
+            pods: [pod1, pod2, pod3],
+            services: [service1],
+            replicaSets: [replicaSet1, replicaSet2, replicaSet3],
+            deployments: [deployment1, deployment2]
+        };
+        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
+                           onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        await waitForItemPositionStable(screen.getAllByLabelText('deployment')[0], timeout);
+
+        hoverLink(screen.getAllByLabelText('deployment link')[0]);
+
+        expect(screen.getAllByLabelText('pod')[0]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('pod')[1]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('pod')[2]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('service')[0]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('service link')[0]).toHaveAttribute('class', 'link-faded');
+        expect(screen.getAllByLabelText('replicaset')[0]).toHaveAttribute('class', 'item');
+        expect(screen.getAllByLabelText('replicaset link')[0]).toHaveAttribute('class', 'link-faded');
+        expect(screen.getAllByLabelText('replicaset')[1]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('replicaset link')[1]).toHaveAttribute('class', 'link-faded');
+        expect(screen.getAllByLabelText('replicaset')[2]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('replicaset link')[2]).toHaveAttribute('class', 'link-faded');
+        expect(screen.getAllByLabelText('deployment')[0]).toHaveAttribute('class', 'item');
+        expect(screen.getAllByLabelText('deployment link')[0]).toHaveAttribute('class', 'link');
+        expect(screen.getAllByLabelText('deployment link')[1]).toHaveAttribute('class', 'link-faded');
+        expect(screen.getAllByLabelText('deployment')[1]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('deployment link')[2]).toHaveAttribute('class', 'link-faded');
+    }, timeout);
+
+    it('unfocusing an element should remove all fades', async () => {
+        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
+        const service1 = {
+            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
+                { namespace: 'ns', name: 'pod1' }
+            ]
+        };
+        const replicaSet1 = {
+            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
+                { namespace: 'ns', name: 'pod1' }
+            ]
+        };
+        const deployment1 = {
+            namespace: 'ns', name: 'deploy1', displayName: 'ns/deploy1', targetReplicaSets: [
+                { namespace: 'ns', name: 'rs1' }
+            ]
+        };
+        const dataSet = {
+            pods: [pod1],
+            services: [service1],
+            replicaSets: [replicaSet1],
+            deployments: [deployment1]
+        };
+        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
+                           onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        await waitForItemPositionStable(screen.getAllByLabelText('service')[0], timeout);
+
+        hoverItem(screen.getAllByLabelText('service')[0]);
+        hoverAway();
+
+        expect(screen.getAllByLabelText('pod')[0]).toHaveAttribute('class', 'item');
+        expect(screen.getAllByLabelText('service')[0]).toHaveAttribute('class', 'item');
+        expect(screen.getAllByLabelText('service link')[0]).toHaveAttribute('class', 'link');
+        expect(screen.getAllByLabelText('replicaset')[0]).toHaveAttribute('class', 'item');
+        expect(screen.getAllByLabelText('replicaset link')[0]).toHaveAttribute('class', 'link');
+        expect(screen.getAllByLabelText('deployment')[0]).toHaveAttribute('class', 'item');
+        expect(screen.getAllByLabelText('deployment link')[0]).toHaveAttribute('class', 'link');
+    }, timeout);
+
+    it('focused element should stay focused after component update', async () => {
+        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
+        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
+        const service1 = {
+            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
+                { namespace: 'ns', name: 'pod1' }
+            ]
+        };
+        const service2 = {
+            namespace: 'ns', name: 'svc2', displayName: 'ns/svc2', targetPods: [
+                { namespace: 'ns', name: 'pod2' }
+            ]
+        };
+        const replicaSet1 = {
+            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
+                { namespace: 'ns', name: 'pod1' }
+            ]
+        };
+        const deployment1 = {
+            namespace: 'ns', name: 'deploy1', displayName: 'ns/deploy1', targetReplicaSets: [
+                { namespace: 'ns', name: 'rs1' }
+            ]
+        };
+        const dataSet1 = {
+            pods: [pod1, pod2],
+            services: [service1],
+            replicaSets: [replicaSet1],
+            deployments: [deployment1]
+        };
+        const dataSet2 = {
+            pods: [pod1, pod2],
+            services: [service1, service2],
+            replicaSets: [replicaSet1],
+            deployments: [deployment1]
+        };
+        const { rerender } = render(
+            <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
+                        onDeploymentFocus={noOpHandler} dataSet={dataSet1}/>
+        );
+        await waitForItemPositionStable(screen.getAllByLabelText('service')[0], timeout);
+
+        hoverItem(screen.getAllByLabelText('service')[0]);
+
+        rerender(
+            <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
+                        onDeploymentFocus={noOpHandler} dataSet={dataSet2}/>
+        );
+
+        expect(screen.getAllByLabelText('pod')[0]).toHaveAttribute('class', 'item');
+        expect(screen.getAllByLabelText('pod')[1]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('service')[0]).toHaveAttribute('class', 'item');
+        expect(screen.getAllByLabelText('service link')[0]).toHaveAttribute('class', 'link');
+        expect(screen.getAllByLabelText('service')[1]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('service link')[1]).toHaveAttribute('class', 'link-faded');
+        expect(screen.getAllByLabelText('replicaset')[0]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('replicaset link')[0]).toHaveAttribute('class', 'link-faded');
+        expect(screen.getAllByLabelText('deployment')[0]).toHaveAttribute('class', 'item-faded');
+        expect(screen.getAllByLabelText('deployment link')[0]).toHaveAttribute('class', 'link-faded');
+    }, timeout);
+
+    it('drag and dropped services do not move anymore', async () => {
+        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
+        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
+        const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
+        const service1 = {
+            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
+                { namespace: 'ns', name: 'pod1' }
+            ]
+        };
+        const service2 = {
+            namespace: 'ns', name: 'svc2', displayName: 'ns/svc2', targetPods: [
+                { namespace: 'ns', name: 'pod2' }
+            ]
+        };
+        const service3 = {
+            namespace: 'ns', name: 'svc3', displayName: 'ns/svc3', targetPods: [
+                { namespace: 'ns', name: 'pod3' }
+            ]
+        };
+        const replicaSet1 = {
+            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
+                { namespace: 'ns', name: 'pod1' }
+            ]
+        };
+        const deployment1 = {
+            namespace: 'ns', name: 'deploy1', displayName: 'ns/deploy1', targetReplicaSets: [
+                { namespace: 'ns', name: 'rs1' }
+            ]
+        };
+        const dataSet1 = {
+            pods: [pod1, pod2],
+            services: [service1, service2],
+            replicaSets: [replicaSet1],
+            deployments: [deployment1]
+        };
+        const dataSet2 = {
+            pods: [pod1, pod2, pod3],
+            services: [service1, service2, service3],
+            replicaSets: [replicaSet1],
+            deployments: [deployment1]
+        };
+        const { rerender } = render(
+            <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
+                        onDeploymentFocus={noOpHandler} dataSet={dataSet1}/>
+        );
+        await waitForItemPositionStable(screen.getAllByLabelText('service')[1], timeout);
+
+        dragAndDropItem(screen.getAllByLabelText('service')[1], { clientX: -20, clientY: 10 });
+        await waitForItemPositionStable(screen.getAllByLabelText('service')[1], timeout);
+        const oldService1Position = getItemPosition(screen.getAllByLabelText('service')[0]);
+        const oldService2Position = getItemPosition(screen.getAllByLabelText('service')[1]);
+
+        rerender(
+            <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
+                        onDeploymentFocus={noOpHandler} dataSet={dataSet2}/>
+        );
+        await waitForItemPositionStable(screen.getAllByLabelText('service')[2], timeout);
+        const newService1Position = getItemPosition(screen.getAllByLabelText('service')[0]);
+        const newService2Position = getItemPosition(screen.getAllByLabelText('service')[1]);
+
+        expect(newService1Position).not.toEqual(oldService1Position);
+        expect(newService2Position).toEqual(oldService2Position);
+    }, timeout);
+
+    it('drag and dropped replicaSets do not move anymore', async () => {
+        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
+        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
+        const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
+        const service1 = {
+            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
+                { namespace: 'ns', name: 'pod1' }
+            ]
+        };
+        const replicaSet1 = {
+            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
+                { namespace: 'ns', name: 'pod1' }
+            ]
+        };
+        const replicaSet2 = {
+            namespace: 'ns', name: 'rs2', displayName: 'ns/rs2', targetPods: [
+                { namespace: 'ns', name: 'pod2' }
+            ]
+        };
+        const replicaSet3 = {
+            namespace: 'ns', name: 'rs3', displayName: 'ns/rs3', targetPods: [
+                { namespace: 'ns', name: 'pod3' }
+            ]
+        };
+        const deployment1 = {
+            namespace: 'ns', name: 'deploy1', displayName: 'ns/deploy1', targetReplicaSets: [
+                { namespace: 'ns', name: 'rs1' }
+            ]
+        };
+        const dataSet1 = {
+            pods: [pod1, pod2],
+            services: [service1],
+            replicaSets: [replicaSet1, replicaSet2],
+            deployments: [deployment1]
+        };
+        const dataSet2 = {
+            pods: [pod1, pod2, pod3],
+            services: [service1],
+            replicaSets: [replicaSet1, replicaSet2, replicaSet3],
+            deployments: [deployment1]
+        };
+        const { rerender } = render(
+            <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
+                        onDeploymentFocus={noOpHandler} dataSet={dataSet1}/>
+        );
+        await waitForItemPositionStable(screen.getAllByLabelText('replicaset')[1], timeout);
+
+        dragAndDropItem(screen.getAllByLabelText('replicaset')[1], { clientX: 20, clientY: 10 });
+        await waitForItemPositionStable(screen.getAllByLabelText('replicaset')[1], timeout);
+        const oldReplicaSet1Position = getItemPosition(screen.getAllByLabelText('replicaset')[0]);
+        const oldReplicaSet2Position = getItemPosition(screen.getAllByLabelText('replicaset')[1]);
+
+        rerender(
+            <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
+                        onDeploymentFocus={noOpHandler} dataSet={dataSet2}/>
+        );
+        await waitForItemPositionStable(screen.getAllByLabelText('replicaset')[2], timeout);
+        const newReplicaSet1Position = getItemPosition(screen.getAllByLabelText('replicaset')[0]);
+        const newReplicaSet2Position = getItemPosition(screen.getAllByLabelText('replicaset')[1]);
+
+        expect(newReplicaSet1Position).not.toEqual(oldReplicaSet1Position);
+        expect(newReplicaSet2Position).toEqual(oldReplicaSet2Position);
+    }, timeout);
+
+    it('drag and dropped deployments do not move anymore', async () => {
+        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
+        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
+        const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
+        const service1 = {
+            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
+                { namespace: 'ns', name: 'pod1' }
+            ]
+        };
+        const replicaSet1 = {
+            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
+                { namespace: 'ns', name: 'pod1' }
+            ]
+        };
+        const replicaSet2 = {
+            namespace: 'ns', name: 'rs2', displayName: 'ns/rs2', targetPods: [
+                { namespace: 'ns', name: 'pod2' }
+            ]
+        };
+        const replicaSet3 = {
+            namespace: 'ns', name: 'rs3', displayName: 'ns/rs3', targetPods: [
+                { namespace: 'ns', name: 'pod3' }
+            ]
+        };
+        const deployment1 = {
+            namespace: 'ns', name: 'deploy1', displayName: 'ns/deploy1', targetReplicaSets: [
+                { namespace: 'ns', name: 'rs1' }
+            ]
+        };
+        const deployment2 = {
+            namespace: 'ns', name: 'deploy2', displayName: 'ns/deploy2', targetReplicaSets: [
+                { namespace: 'ns', name: 'rs2' }
+            ]
+        };
+        const deployment3 = {
+            namespace: 'ns', name: 'deploy3', displayName: 'ns/deploy3', targetReplicaSets: [
+                { namespace: 'ns', name: 'rs3' }
+            ]
+        };
+        const dataSet1 = {
+            pods: [pod1, pod2],
+            services: [service1],
+            replicaSets: [replicaSet1, replicaSet2],
+            deployments: [deployment1, deployment2]
+        };
+        const dataSet2 = {
+            pods: [pod1, pod2, pod3],
+            services: [service1],
+            replicaSets: [replicaSet1, replicaSet2, replicaSet3],
+            deployments: [deployment1, deployment2, deployment3]
+        };
+        const { rerender } = render(
+            <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
+                        onDeploymentFocus={noOpHandler} dataSet={dataSet1}/>
+        );
+        await waitForItemPositionStable(screen.getAllByLabelText('deployment')[1], timeout);
+
+        dragAndDropItem(screen.getAllByLabelText('deployment')[1], { clientX: 40, clientY: 10 });
+        await waitForItemPositionStable(screen.getAllByLabelText('deployment')[1], timeout);
+        const oldDeployment1Position = getItemPosition(screen.getAllByLabelText('deployment')[0]);
+        const oldDeployment2Position = getItemPosition(screen.getAllByLabelText('deployment')[1]);
+
+        rerender(
+            <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
+                        onDeploymentFocus={noOpHandler} dataSet={dataSet2}/>
+        );
+        await waitForItemPositionStable(screen.getAllByLabelText('deployment')[2], timeout);
+        const newDeployment1Position = getItemPosition(screen.getAllByLabelText('deployment')[0]);
+        const newDeployment2Position = getItemPosition(screen.getAllByLabelText('deployment')[1]);
+
+        expect(newDeployment1Position).not.toEqual(oldDeployment1Position);
+        expect(newDeployment2Position).toEqual(oldDeployment2Position);
+    }, timeout);
+
+    it('pods, services, replicaSets, deployments and their labels keep same apparent size despite zoom', async () => {
+        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
+        const service1 = {
+            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
+                { namespace: 'ns', name: 'pod1' }
+            ]
+        };
+        const replicaSet1 = {
+            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
+                { namespace: 'ns', name: 'pod1' }
+            ]
+        };
+        const deployment1 = {
+            namespace: 'ns', name: 'deploy1', displayName: 'ns/deploy1', targetReplicaSets: [
+                { namespace: 'ns', name: 'rs1' }
+            ]
+        };
+        const dataSet = {
+            pods: [pod1],
+            services: [service1],
+            replicaSets: [replicaSet1],
+            deployments: [deployment1]
+        };
+        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
+                           onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        patchGraphViewBox();
+        await waitForItemPositionStable(screen.getAllByLabelText('service')[0], timeout);
+        const oldPodFontSize = parseFloat(screen.getByText('ns/pod1').getAttribute('font-size'));
+        const oldServiceFontSize = parseFloat(screen.getByText('ns/svc1').getAttribute('font-size'));
+        const oldReplicaSetFontSize = parseFloat(screen.getByText('ns/rs1').getAttribute('font-size'));
+        const oldDeploymentFontSize = parseFloat(screen.getByText('ns/deploy1').getAttribute('font-size'));
+
+        fireEvent.wheel(screen.getByLabelText('layers container'), { deltaY: -100 }); // scroll down
+        const containerScale = getScale(screen.queryByLabelText('layers container'));
+        const podScale = getScale(screen.getAllByLabelText('pod')[0]);
+        const serviceScale = getScale(screen.getAllByLabelText('service')[0]);
+        const replicaSetScale = getScale(screen.getAllByLabelText('replicaset')[0]);
+        const deploymentScale = getScale(screen.getAllByLabelText('deployment')[0]);
+        const newPodFontSize = parseFloat(screen.getByText('ns/pod1').getAttribute('font-size'));
+        const newServiceFontSize = parseFloat(screen.getByText('ns/svc1').getAttribute('font-size'));
+        const newReplicaSetFontSize = parseFloat(screen.getByText('ns/rs1').getAttribute('font-size'));
+        const newDeploymentFontSize = parseFloat(screen.getByText('ns/deploy1').getAttribute('font-size'));
+        const podFontScale = newPodFontSize / oldPodFontSize;
+        const serviceFontScale = newServiceFontSize / oldServiceFontSize;
+        const replicaSetFontScale = newReplicaSetFontSize / oldReplicaSetFontSize;
+        const deploymentFontScale = newDeploymentFontSize / oldDeploymentFontSize;
+
+        expect(containerScale).toBeGreaterThan(1);
+        expect(podScale).toEqual(1 / containerScale);
+        expect(serviceScale).toEqual(1 / containerScale);
+        expect(replicaSetScale).toEqual(1 / containerScale);
+        expect(deploymentScale).toEqual(1 / containerScale);
+        expect(podFontScale).toEqual(1 / containerScale);
+        expect(serviceFontScale).toEqual(1 / containerScale);
+        expect(replicaSetFontScale).toEqual(1 / containerScale);
+        expect(deploymentFontScale).toEqual(1 / containerScale);
+    });
+
+    it('pod, service, replicaSet and deployments links keep same apparent size despite zoom', async () => {
+        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
+        const service1 = {
+            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
+                { namespace: 'ns', name: 'pod1' }
+            ]
+        };
+        const replicaSet1 = {
+            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
+                { namespace: 'ns', name: 'pod1' }
+            ]
+        };
+        const deployment1 = {
+            namespace: 'ns', name: 'deploy1', displayName: 'ns/deploy1', targetReplicaSets: [
+                { namespace: 'ns', name: 'rs1' }
+            ]
+        };
+        const dataSet = {
+            pods: [pod1],
+            services: [service1],
+            replicaSets: [replicaSet1],
+            deployments: [deployment1]
+        };
+        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
+                           onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        patchGraphViewBox();
+        await waitForItemPositionStable(screen.getAllByLabelText('service')[0], timeout);
+        const oldServiceLinkWidth = parseFloat(
+            screen.getAllByLabelText('service link')[0].getAttribute('stroke-width'));
+        const oldReplicaSetLinkWidth = parseFloat(
+            screen.getAllByLabelText('replicaset link')[0].getAttribute('stroke-width'));
+        const oldDeploymentLinkWidth = parseFloat(
+            screen.getAllByLabelText('deployment link')[0].getAttribute('stroke-width'));
+
+        fireEvent.wheel(screen.getByLabelText('layers container'), { deltaY: -100 }); // scroll down
+        const newServiceLinkWidth = parseFloat(
+            screen.getAllByLabelText('service link')[0].getAttribute('stroke-width'));
+        const newReplicaSetLinkWidth = parseFloat(
+            screen.getAllByLabelText('replicaset link')[0].getAttribute('stroke-width'));
+        const newDeploymentLinkWidth = parseFloat(
+            screen.getAllByLabelText('deployment link')[0].getAttribute('stroke-width'));
+        const containerScale = getScale(screen.queryByLabelText('layers container'));
+        const serviceLinkScale = newServiceLinkWidth / oldServiceLinkWidth;
+        const replicasetLinkScale = newReplicaSetLinkWidth / oldReplicaSetLinkWidth;
+        const deploymentLinkScale = newDeploymentLinkWidth / oldDeploymentLinkWidth;
+
+        expect(containerScale).toBeGreaterThan(1);
+        expect(serviceLinkScale).toEqual(1 / containerScale);
+        expect(replicasetLinkScale).toEqual(1 / containerScale);
+        expect(deploymentLinkScale).toEqual(1 / containerScale);
+    });
 });
