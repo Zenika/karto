@@ -18,10 +18,31 @@ describe('NetworkPolicyMap component', () => {
     const timeout = 10000;
 
     const noOpHandler = () => null;
+    let mockFocusHandler;
+    let pod1, pod2, pod3, pod4;
+    let allowedRoute1_2, allowedRoute2_3, allowedRoute3_1, allowedRoute3_4;
+
+    beforeEach(() => {
+        mockFocusHandler = jest.fn();
+        pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
+        pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
+        pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
+        pod4 = { namespace: 'ns', name: 'pod4', displayName: 'ns/pod4' };
+        allowedRoute1_2 = {
+            sourcePod: { namespace: 'ns', name: 'pod1' }, targetPod: { namespace: 'ns', name: 'pod2' }
+        };
+        allowedRoute2_3 = {
+            sourcePod: { namespace: 'ns', name: 'pod2' }, targetPod: { namespace: 'ns', name: 'pod3' }
+        };
+        allowedRoute3_1 = {
+            sourcePod: { namespace: 'ns', name: 'pod3' }, targetPod: { namespace: 'ns', name: 'pod1' }
+        };
+        allowedRoute3_4 = {
+            sourcePod: { namespace: 'ns', name: 'pod3' }, targetPod: { namespace: 'ns', name: 'pod4' }
+        };
+    });
 
     it('displays pods and their labels', () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
         const dataSet = {
             podIsolations: [pod1, pod2],
             allowedRoutes: []
@@ -29,25 +50,14 @@ describe('NetworkPolicyMap component', () => {
         render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
 
         expect(screen.queryAllByLabelText('pod')).toHaveLength(2);
-        expect(screen.queryByText('ns/pod1')).toBeInTheDocument();
-        expect(screen.queryByText('ns/pod2')).toBeInTheDocument();
+        expect(screen.queryByText(pod1.displayName)).toBeInTheDocument();
+        expect(screen.queryByText(pod2.displayName)).toBeInTheDocument();
     });
 
     it('displays allowed routes', () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-        const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
-        const allowedRoute1 = {
-            sourcePod: { namespace: 'ns', name: 'pod1' },
-            targetPod: { namespace: 'ns', name: 'pod2' }
-        };
-        const allowedRoute2 = {
-            sourcePod: { namespace: 'ns', name: 'pod2' },
-            targetPod: { namespace: 'ns', name: 'pod3' }
-        };
         const dataSet = {
             podIsolations: [pod1, pod2, pod3],
-            allowedRoutes: [allowedRoute1, allowedRoute2]
+            allowedRoutes: [allowedRoute1_2, allowedRoute2_3]
         };
         render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
 
@@ -55,87 +65,62 @@ describe('NetworkPolicyMap component', () => {
     });
 
     it('calls handler on pod focus', async () => {
-        const focusHandler = jest.fn();
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
         const dataSet = {
             podIsolations: [pod1],
             allowedRoutes: []
         };
-        render(<NetworkPolicyMap onPodFocus={focusHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<NetworkPolicyMap onPodFocus={mockFocusHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], timeout);
 
         hoverItem(screen.getAllByLabelText('pod')[0]);
 
-        expect(focusHandler).toHaveBeenCalledWith(pod1);
+        expect(mockFocusHandler).toHaveBeenCalledWith(pod1);
     }, timeout);
 
     it('calls handler on allowed route focus', async () => {
-        const focusHandler = jest.fn();
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-        const allowedRoute = {
-            sourcePod: { namespace: 'ns', name: 'pod1' },
-            targetPod: { namespace: 'ns', name: 'pod2' }
-        };
         const dataSet = {
             podIsolations: [pod1, pod2],
-            allowedRoutes: [allowedRoute]
+            allowedRoutes: [allowedRoute1_2]
         };
-        render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={focusHandler} dataSet={dataSet}/>);
+        render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={mockFocusHandler} dataSet={dataSet}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], timeout);
 
         hoverLink(screen.getAllByLabelText('allowed route')[0]);
 
-        expect(focusHandler).toHaveBeenCalledWith(allowedRoute);
+        expect(mockFocusHandler).toHaveBeenCalledWith(allowedRoute1_2);
     }, timeout);
 
     it('updates local state properly', () => {
         const dataSet1 = {
-            podIsolations: [
-                { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' },
-                { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' }
-            ],
-            allowedRoutes: [
-                { sourcePod: { namespace: 'ns', name: 'pod1' }, targetPod: { namespace: 'ns', name: 'pod2' } }
-            ]
+            podIsolations: [pod1, pod2],
+            allowedRoutes: [allowedRoute1_2]
         };
+        const pod1WithoutNamespaceDisplay = { ...pod1, displayName: 'pod1' };
+        const pod2WithoutNamespaceDisplay = { ...pod2, displayName: 'pod2' };
+        const pod3WithoutNamespaceDisplay = { ...pod3, displayName: 'pod3' };
         const dataSet2 = {
-            podIsolations: [
-                { namespace: 'ns', name: 'pod1', displayName: 'pod1' },
-                { namespace: 'ns', name: 'pod2', displayName: 'pod2' },
-                { namespace: 'ns', name: 'pod3', displayName: 'pod3' }
-            ],
-            allowedRoutes: [
-                { sourcePod: { namespace: 'ns', name: 'pod1' }, targetPod: { namespace: 'ns', name: 'pod2' } },
-                { sourcePod: { namespace: 'ns', name: 'pod2' }, targetPod: { namespace: 'ns', name: 'pod3' } }
-            ]
+            podIsolations: [pod1WithoutNamespaceDisplay, pod2WithoutNamespaceDisplay, pod3WithoutNamespaceDisplay],
+            allowedRoutes: [allowedRoute1_2, allowedRoute2_3]
         };
 
         const { rerender } = render(
             <NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet1}/>
         );
-
-        expect(screen.queryAllByLabelText('pod')).toHaveLength(2);
-        expect(screen.queryByText('ns/pod1')).toBeInTheDocument();
-        expect(screen.queryByText('ns/pod2')).toBeInTheDocument();
-        expect(screen.queryAllByLabelText('allowed route')).toHaveLength(1);
-
         rerender(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet2}/>);
 
         expect(screen.queryAllByLabelText('pod')).toHaveLength(3);
-        expect(screen.queryByText('ns/pod1')).not.toBeInTheDocument();
-        expect(screen.queryByText('ns/pod2')).not.toBeInTheDocument();
-        expect(screen.queryByText('pod1')).toBeInTheDocument();
-        expect(screen.queryByText('pod2')).toBeInTheDocument();
-        expect(screen.queryByText('pod3')).toBeInTheDocument();
+        expect(screen.queryByText(pod1.displayName)).not.toBeInTheDocument();
+        expect(screen.queryByText(pod2.displayName)).not.toBeInTheDocument();
+        expect(screen.queryByText(pod1WithoutNamespaceDisplay.displayName)).toBeInTheDocument();
+        expect(screen.queryByText(pod2WithoutNamespaceDisplay.displayName)).toBeInTheDocument();
+        expect(screen.queryByText(pod3WithoutNamespaceDisplay.displayName)).toBeInTheDocument();
         expect(screen.queryAllByLabelText('allowed route')).toHaveLength(2);
     });
 
     it('highlighted pods have a different appearance', () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2', highlighted: true };
+        const pod2Highlighted = { ...pod2, highlighted: true };
         const dataSet = {
-            podIsolations: [pod1, pod2],
+            podIsolations: [pod1, pod2Highlighted],
             allowedRoutes: []
         };
         render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
@@ -145,8 +130,6 @@ describe('NetworkPolicyMap component', () => {
     });
 
     it('focused pods have a different appearance', async () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
         const dataSet = {
             podIsolations: [pod1, pod2],
             allowedRoutes: []
@@ -161,10 +144,9 @@ describe('NetworkPolicyMap component', () => {
     }, timeout);
 
     it('focused highlighted pods have a different appearance', async () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2', highlighted: true };
+        const pod2Highlighted = { ...pod2, highlighted: true };
         const dataSet = {
-            podIsolations: [pod1, pod2],
+            podIsolations: [pod1, pod2Highlighted],
             allowedRoutes: []
         };
         render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
@@ -177,20 +159,9 @@ describe('NetworkPolicyMap component', () => {
     }, timeout);
 
     it('focused allowed routes have a different appearance', async () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-        const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
-        const allowedRoute1 = {
-            sourcePod: { namespace: 'ns', name: 'pod1' },
-            targetPod: { namespace: 'ns', name: 'pod2' }
-        };
-        const allowedRoute2 = {
-            sourcePod: { namespace: 'ns', name: 'pod2' },
-            targetPod: { namespace: 'ns', name: 'pod3' }
-        };
         const dataSet = {
             podIsolations: [pod1, pod2, pod3],
-            allowedRoutes: [allowedRoute1, allowedRoute2]
+            allowedRoutes: [allowedRoute1_2, allowedRoute2_3]
         };
         render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], timeout);
@@ -202,25 +173,9 @@ describe('NetworkPolicyMap component', () => {
     }, timeout);
 
     it('focusing a pod also focuses connected pods and allowed routes', async () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-        const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
-        const pod4 = { namespace: 'ns', name: 'pod4', displayName: 'ns/pod4' };
-        const allowedRoute1 = {
-            sourcePod: { namespace: 'ns', name: 'pod1' },
-            targetPod: { namespace: 'ns', name: 'pod2' }
-        };
-        const allowedRoute2 = {
-            sourcePod: { namespace: 'ns', name: 'pod3' },
-            targetPod: { namespace: 'ns', name: 'pod1' }
-        };
-        const allowedRoute3 = {
-            sourcePod: { namespace: 'ns', name: 'pod3' },
-            targetPod: { namespace: 'ns', name: 'pod4' }
-        };
         const dataSet = {
             podIsolations: [pod1, pod2, pod3, pod4],
-            allowedRoutes: [allowedRoute1, allowedRoute2, allowedRoute3]
+            allowedRoutes: [allowedRoute1_2, allowedRoute3_1, allowedRoute3_4]
         };
         render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], timeout);
@@ -237,20 +192,9 @@ describe('NetworkPolicyMap component', () => {
     }, timeout);
 
     it('focusing an allowed route also focuses source and target pods', async () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-        const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
-        const allowedRoute1 = {
-            sourcePod: { namespace: 'ns', name: 'pod1' },
-            targetPod: { namespace: 'ns', name: 'pod2' }
-        };
-        const allowedRoute2 = {
-            sourcePod: { namespace: 'ns', name: 'pod2' },
-            targetPod: { namespace: 'ns', name: 'pod3' }
-        };
         const dataSet = {
             podIsolations: [pod1, pod2, pod3],
-            allowedRoutes: [allowedRoute1, allowedRoute2]
+            allowedRoutes: [allowedRoute1_2, allowedRoute2_3]
         };
         render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], timeout);
@@ -265,16 +209,9 @@ describe('NetworkPolicyMap component', () => {
     }, timeout);
 
     it('unfocusing an element should unfocus all', async () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-        const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
-        const allowedRoute1 = {
-            sourcePod: { namespace: 'ns', name: 'pod1' },
-            targetPod: { namespace: 'ns', name: 'pod2' }
-        };
         const dataSet = {
             podIsolations: [pod1, pod2, pod3],
-            allowedRoutes: [allowedRoute1]
+            allowedRoutes: [allowedRoute1_2]
         };
         render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], timeout);
@@ -289,9 +226,6 @@ describe('NetworkPolicyMap component', () => {
     }, timeout);
 
     it('focused element should stay focused after component update', async () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-        const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
         const dataSet1 = {
             podIsolations: [pod1, pod2],
             allowedRoutes: []
@@ -306,10 +240,6 @@ describe('NetworkPolicyMap component', () => {
         await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], timeout);
 
         hoverItem(screen.getAllByLabelText('pod')[0]);
-
-        expect(screen.getAllByLabelText('pod')[0]).toHaveAttribute('class', 'item');
-        expect(screen.getAllByLabelText('pod')[1]).toHaveAttribute('class', 'item-faded');
-
         rerender(
             <NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet2}/>
         );
@@ -319,9 +249,6 @@ describe('NetworkPolicyMap component', () => {
     }, timeout);
 
     it('drag and dropped pods do not move anymore', async () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-        const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
         const dataSet1 = {
             podIsolations: [pod1, pod2],
             allowedRoutes: []
@@ -339,7 +266,6 @@ describe('NetworkPolicyMap component', () => {
         await waitForItemPositionStable(screen.getAllByLabelText('pod')[1], timeout);
         const oldPod1Position = getItemPosition(screen.getAllByLabelText('pod')[0]);
         const oldPod2Position = getItemPosition(screen.getAllByLabelText('pod')[1]);
-
         rerender(
             <NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet2}/>
         );
@@ -352,7 +278,6 @@ describe('NetworkPolicyMap component', () => {
     }, timeout);
 
     it('pods and their labels keep same apparent size despite zoom', async () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
         const dataSet = {
             podIsolations: [pod1],
             allowedRoutes: []
@@ -360,12 +285,12 @@ describe('NetworkPolicyMap component', () => {
         render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
         patchGraphViewBox();
         await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], timeout);
-        const oldFontSize = parseFloat(screen.getByText('ns/pod1').getAttribute('font-size'));
+        const oldFontSize = parseFloat(screen.getByText(pod1.displayName).getAttribute('font-size'));
 
         fireEvent.wheel(screen.getByLabelText('layers container'), { deltaY: -100 }); // scroll down
         const containerScale = getScale(screen.queryByLabelText('layers container'));
         const podScale = getScale(screen.getAllByLabelText('pod')[0]);
-        const newFontSize = parseFloat(screen.getByText('ns/pod1').getAttribute('font-size'));
+        const newFontSize = parseFloat(screen.getByText(pod1.displayName).getAttribute('font-size'));
         const fontScale = newFontSize / oldFontSize;
 
         expect(containerScale).toBeGreaterThan(1);
@@ -374,15 +299,9 @@ describe('NetworkPolicyMap component', () => {
     });
 
     it('allowed routes keep same apparent size despite zoom', async () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-        const allowedRoute1 = {
-            sourcePod: { namespace: 'ns', name: 'pod1' },
-            targetPod: { namespace: 'ns', name: 'pod2' }
-        };
         const dataSet = {
             podIsolations: [pod1, pod2],
-            allowedRoutes: [allowedRoute1]
+            allowedRoutes: [allowedRoute1_2]
         };
         render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
         patchGraphViewBox();

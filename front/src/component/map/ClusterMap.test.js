@@ -18,10 +18,78 @@ describe('ClusterMap component', () => {
     const timeout = 10000;
 
     const noOpHandler = () => null;
+    let mockFocusHandler;
+    let pod1, pod2, pod3, pod4;
+    let podRef1, podRef2, podRef3, podRef4;
+    let service1, service1_2, service1_2_3, service1_2_3_4, service2, service3, service4;
+    let replicaSet1, replicaSet1_2, replicaSet2, replicaSet3, replicaSet4;
+    let replicaSetRef1, replicaSetRef1_2, replicaSetRef2, replicaSetRef3, replicaSetRef4;
+    let deployment1, deployment1_2, deployment12, deployment12_3, deployment2, deployment3, deployment4;
+
+    beforeEach(() => {
+        mockFocusHandler = jest.fn();
+        pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
+        pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
+        pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
+        pod4 = { namespace: 'ns', name: 'pod4', displayName: 'ns/pod4' };
+        podRef1 = { namespace: 'ns', name: 'pod1' };
+        podRef2 = { namespace: 'ns', name: 'pod2' };
+        podRef3 = { namespace: 'ns', name: 'pod3' };
+        podRef4 = { namespace: 'ns', name: 'pod4' };
+        service1 = { namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [podRef1] };
+        service1_2 = { namespace: 'ns', name: 'svc1_2', displayName: 'ns/svc1_2', targetPods: [podRef1, podRef2] };
+        service1_2_3 = {
+            namespace: 'ns', name: 'svc1_2_3', displayName: 'ns/svc1_2_3',
+            targetPods: [podRef1, podRef2, podRef3]
+        };
+        service1_2_3_4 = {
+            namespace: 'ns', name: 'svc1_2_3', displayName: 'ns/svc1_2_3',
+            targetPods: [podRef1, podRef2, podRef3, podRef4]
+        };
+        service2 = { namespace: 'ns', name: 'svc2', displayName: 'ns/svc2', targetPods: [podRef2] };
+        service3 = { namespace: 'ns', name: 'svc3', displayName: 'ns/svc3', targetPods: [podRef3] };
+        service4 = { namespace: 'ns', name: 'svc4', displayName: 'ns/svc4', targetPods: [podRef4] };
+        replicaSet1 = { namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [podRef1] };
+        replicaSet1_2 = { namespace: 'ns', name: 'rs1_2', displayName: 'ns/rs1_2', targetPods: [podRef1, podRef2] };
+        replicaSet2 = { namespace: 'ns', name: 'rs2', displayName: 'ns/rs2', targetPods: [podRef2] };
+        replicaSet3 = { namespace: 'ns', name: 'rs3', displayName: 'ns/rs3', targetPods: [podRef3] };
+        replicaSet4 = { namespace: 'ns', name: 'rs4', displayName: 'ns/rs4', targetPods: [podRef4] };
+        replicaSetRef1 = { namespace: 'ns', name: 'rs1' };
+        replicaSetRef1_2 = { namespace: 'ns', name: 'rs1_2' };
+        replicaSetRef2 = { namespace: 'ns', name: 'rs2' };
+        replicaSetRef3 = { namespace: 'ns', name: 'rs3' };
+        replicaSetRef4 = { namespace: 'ns', name: 'rs4' };
+        deployment1 = {
+            namespace: 'ns', name: 'deploy1', displayName: 'ns/deploy1',
+            targetReplicaSets: [replicaSetRef1]
+        };
+        deployment1_2 = {
+            namespace: 'ns', name: 'deploy1_2', displayName: 'ns/deploy1_2',
+            targetReplicaSets: [replicaSetRef1, replicaSetRef2]
+        };
+        deployment12 = {
+            namespace: 'ns', name: 'deploy12', displayName: 'ns/deploy12',
+            targetReplicaSets: [replicaSetRef1_2]
+        };
+        deployment12_3 = {
+            namespace: 'ns', name: 'deploy12_3', displayName: 'ns/deploy12_3',
+            targetReplicaSets: [replicaSetRef1_2, replicaSetRef3]
+        };
+        deployment2 = {
+            namespace: 'ns', name: 'deploy2', displayName: 'ns/deploy2',
+            targetReplicaSets: [replicaSetRef2]
+        };
+        deployment3 = {
+            namespace: 'ns', name: 'deploy3', displayName: 'ns/deploy3',
+            targetReplicaSets: [replicaSetRef3]
+        };
+        deployment4 = {
+            namespace: 'ns', name: 'deploy4', displayName: 'ns/deploy4',
+            targetReplicaSets: [replicaSetRef4]
+        };
+    });
 
     it('displays pods and their labels', () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
         const dataSet = {
             pods: [pod1, pod2],
             services: [],
@@ -32,28 +100,14 @@ describe('ClusterMap component', () => {
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
 
         expect(screen.queryAllByLabelText('pod')).toHaveLength(2);
-        expect(screen.queryByText('ns/pod1')).toBeInTheDocument();
-        expect(screen.queryByText('ns/pod2')).toBeInTheDocument();
+        expect(screen.queryByText(pod1.displayName)).toBeInTheDocument();
+        expect(screen.queryByText(pod2.displayName)).toBeInTheDocument();
     });
 
     it('displays services with links to pods', () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-        const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
-        const service1 = {
-            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
-                { namespace: 'ns', name: 'pod1' },
-                { namespace: 'ns', name: 'pod2' }
-            ]
-        };
-        const service2 = {
-            namespace: 'ns', name: 'svc2', displayName: 'ns/svc2', targetPods: [
-                { namespace: 'ns', name: 'pod3' }
-            ]
-        };
         const dataSet = {
             pods: [pod1, pod2, pod3],
-            services: [service1, service2],
+            services: [service1_2, service3],
             replicaSets: [],
             deployments: []
         };
@@ -61,319 +115,178 @@ describe('ClusterMap component', () => {
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
 
         expect(screen.queryAllByLabelText('service')).toHaveLength(2);
-        expect(screen.queryByText('ns/svc1')).toBeInTheDocument();
-        expect(screen.queryByText('ns/svc2')).toBeInTheDocument();
+        expect(screen.queryByText(service1_2.displayName)).toBeInTheDocument();
+        expect(screen.queryByText(service3.displayName)).toBeInTheDocument();
         expect(screen.queryAllByLabelText('service link')).toHaveLength(3);
     });
 
     it('displays replicaSets with links to pods', () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-        const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
-        const replicaSet1 = {
-            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
-                { namespace: 'ns', name: 'pod1' },
-                { namespace: 'ns', name: 'pod2' }
-            ]
-        };
-        const replicaSet2 = {
-            namespace: 'ns', name: 'rs2', displayName: 'ns/rs2', targetPods: [
-                { namespace: 'ns', name: 'pod3' }
-            ]
-        };
         const dataSet = {
             pods: [pod1, pod2, pod3],
             services: [],
-            replicaSets: [replicaSet1, replicaSet2],
+            replicaSets: [replicaSet1_2, replicaSet3],
             deployments: []
         };
         render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
 
         expect(screen.queryAllByLabelText('replicaset')).toHaveLength(2);
-        expect(screen.queryByText('ns/rs1')).toBeInTheDocument();
-        expect(screen.queryByText('ns/rs2')).toBeInTheDocument();
+        expect(screen.queryByText(replicaSet1_2.displayName)).toBeInTheDocument();
+        expect(screen.queryByText(replicaSet3.displayName)).toBeInTheDocument();
         expect(screen.queryAllByLabelText('replicaset link')).toHaveLength(3);
     });
 
     it('displays deployments with links to replicasets', () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-        const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
-        const replicaSet1 = {
-            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
-                { namespace: 'ns', name: 'pod1' }
-            ]
-        };
-        const replicaSet2 = {
-            namespace: 'ns', name: 'rs2', displayName: 'ns/rs2', targetPods: [
-                { namespace: 'ns', name: 'pod2' }
-            ]
-        };
-        const replicaSet3 = {
-            namespace: 'ns', name: 'rs3', displayName: 'ns/rs3', targetPods: [
-                { namespace: 'ns', name: 'pod3' }
-            ]
-        };
-        const deployment1 = {
-            namespace: 'ns', name: 'deploy2', displayName: 'ns/deploy1', targetReplicaSets: [
-                { namespace: 'ns', name: 'rs1' },
-                { namespace: 'ns', name: 'rs2' }
-            ]
-        };
-        const deployment2 = {
-            namespace: 'ns', name: 'deploy3', displayName: 'ns/deploy2', targetReplicaSets: [
-                { namespace: 'ns', name: 'rs3' }
-            ]
-        };
         const dataSet = {
             pods: [pod1, pod2, pod3],
             services: [],
             replicaSets: [replicaSet1, replicaSet2, replicaSet3],
-            deployments: [deployment1, deployment2]
+            deployments: [deployment1_2, deployment3]
         };
         render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
 
         expect(screen.queryAllByLabelText('deployment')).toHaveLength(2);
-        expect(screen.queryByText('ns/deploy1')).toBeInTheDocument();
-        expect(screen.queryByText('ns/deploy2')).toBeInTheDocument();
+        expect(screen.queryByText(deployment1_2.displayName)).toBeInTheDocument();
+        expect(screen.queryByText(deployment3.displayName)).toBeInTheDocument();
         expect(screen.queryAllByLabelText('deployment link')).toHaveLength(3);
     });
 
     it('calls handler on pod focus', async () => {
-        const focusHandler = jest.fn();
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
         const dataSet = {
             pods: [pod1],
             services: [],
             replicaSets: [],
             deployments: []
         };
-        render(<ClusterMap onPodFocus={focusHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
+        render(<ClusterMap onPodFocus={mockFocusHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], timeout);
 
         hoverItem(screen.getAllByLabelText('pod')[0]);
 
-        expect(focusHandler).toHaveBeenCalledWith(pod1);
+        expect(mockFocusHandler).toHaveBeenCalledWith(pod1);
     }, timeout);
 
     it('calls handler on service or service link focus', async () => {
-        const focusHandler = jest.fn();
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const service1 = {
-            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
-                { namespace: 'ns', name: 'pod1' }
-            ]
-        };
         const dataSet = {
             pods: [pod1],
             services: [service1],
             replicaSets: [],
             deployments: []
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={focusHandler} onReplicaSetFocus={noOpHandler}
+        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={mockFocusHandler} onReplicaSetFocus={noOpHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('service')[0], timeout);
 
         hoverItem(screen.getAllByLabelText('service')[0]);
 
-        expect(focusHandler).toHaveBeenCalledWith(service1);
+        expect(mockFocusHandler).toHaveBeenCalledWith(service1);
 
         hoverAway();
-        focusHandler.mockClear();
+        mockFocusHandler.mockClear();
         hoverLink(screen.getAllByLabelText('service link')[0]);
 
-        expect(focusHandler).toHaveBeenCalledWith(service1);
+        expect(mockFocusHandler).toHaveBeenCalledWith(service1);
     }, timeout);
 
     it('calls handler on replicaSet or replicaSet link focus', async () => {
-        const focusHandler = jest.fn();
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const replicaSet1 = {
-            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
-                { namespace: 'ns', name: 'pod1' }
-            ]
-        };
         const dataSet = {
             pods: [pod1],
             services: [],
             replicaSets: [replicaSet1],
             deployments: []
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={focusHandler}
+        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={mockFocusHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('replicaset')[0], timeout);
 
         hoverItem(screen.getAllByLabelText('replicaset')[0]);
 
-        expect(focusHandler).toHaveBeenCalledWith(replicaSet1);
+        expect(mockFocusHandler).toHaveBeenCalledWith(replicaSet1);
 
         hoverAway();
-        focusHandler.mockClear();
+        mockFocusHandler.mockClear();
         hoverLink(screen.getAllByLabelText('replicaset link')[0]);
 
-        expect(focusHandler).toHaveBeenCalledWith(replicaSet1);
+        expect(mockFocusHandler).toHaveBeenCalledWith(replicaSet1);
     }, timeout);
 
     it('calls handler on deployment or deployment link focus', async () => {
-        const focusHandler = jest.fn();
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const replicaSet1 = {
-            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
-                { namespace: 'ns', name: 'pod1' }
-            ]
-        };
-        const deployment1 = {
-            namespace: 'ns', name: 'deploy2', displayName: 'ns/deploy1', targetReplicaSets: [
-                { namespace: 'ns', name: 'rs1' }
-            ]
-        };
         const dataSet = {
             pods: [pod1],
             services: [],
-            replicaSets: [
-                replicaSet1
-            ],
-            deployments: [
-                deployment1
-            ]
+            replicaSets: [replicaSet1],
+            deployments: [deployment1]
         };
         render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
-                           onDeploymentFocus={focusHandler} dataSet={dataSet}/>);
+                           onDeploymentFocus={mockFocusHandler} dataSet={dataSet}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('deployment')[0], timeout);
 
         hoverItem(screen.getAllByLabelText('deployment')[0]);
 
-        expect(focusHandler).toHaveBeenCalledWith(deployment1);
+        expect(mockFocusHandler).toHaveBeenCalledWith(deployment1);
 
         hoverAway();
-        focusHandler.mockClear();
+        mockFocusHandler.mockClear();
         hoverLink(screen.getAllByLabelText('deployment link')[0]);
 
-        expect(focusHandler).toHaveBeenCalledWith(deployment1);
+        expect(mockFocusHandler).toHaveBeenCalledWith(deployment1);
     }, timeout);
 
     it('updates local state properly', () => {
+        const pod1WithoutNamespaceDisplay = { ...pod1, displayName: 'pod1' };
+        const pod2WithoutNamespaceDisplay = { ...pod2, displayName: 'pod2' };
+        const pod3WithoutNamespaceDisplay = { ...pod3, displayName: 'pod3' };
+        const service1_2WithoutNamespaceDisplay = { ...service1_2, displayName: 'svc12' };
+        const service3WithoutNamespaceDisplay = { ...service3, displayName: 'svc3' };
+        const replicaSet1_2WithoutNamespaceDisplay = { ...replicaSet1_2, displayName: 'replicaSet12' };
+        const replicaSet3WithoutNamespaceDisplay = { ...replicaSet3, displayName: 'replicaSet3' };
+        const deployment1WithoutNamespaceDisplay = { ...deployment1, displayName: 'deployment1' };
+        const deployment12_3WithoutNamespaceDisplay = { ...deployment12_3, displayName: 'deployment12' };
         const dataSet1 = {
-            pods: [
-                { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' }
-            ],
-            services: [
-                {
-                    namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
-                        { namespace: 'ns', name: 'pod1' }
-                    ]
-                }
-            ],
-            replicaSets: [
-                {
-                    namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
-                        { namespace: 'ns', name: 'pod1' }
-                    ]
-                }
-            ],
-            deployments: [
-                {
-                    namespace: 'ns', name: 'deploy2', displayName: 'ns/deploy1', targetReplicaSets: [
-                        { namespace: 'ns', name: 'rs1' }
-                    ]
-                }
-            ]
+            pods: [pod1],
+            services: [service1],
+            replicaSets: [replicaSet1],
+            deployments: [deployment1]
         };
         const dataSet2 = {
-            pods: [
-                { namespace: 'ns', name: 'pod1', displayName: 'pod1' },
-                { namespace: 'ns', name: 'pod2', displayName: 'pod2' },
-                { namespace: 'ns', name: 'pod3', displayName: 'pod3' }
-            ],
-            services: [
-                {
-                    namespace: 'ns', name: 'svc1', displayName: 'svc1', targetPods: [
-                        { namespace: 'ns', name: 'pod1' },
-                        { namespace: 'ns', name: 'pod2' }
-                    ]
-                },
-                {
-                    namespace: 'ns', name: 'svc2', displayName: 'svc2', targetPods: [
-                        { namespace: 'ns', name: 'pod3' }
-                    ]
-                }
-            ],
-            replicaSets: [
-                {
-                    namespace: 'ns', name: 'rs1', displayName: 'rs1', targetPods: [
-                        { namespace: 'ns', name: 'pod1' },
-                        { namespace: 'ns', name: 'pod2' }
-                    ]
-                },
-                {
-                    namespace: 'ns', name: 'rs2', displayName: 'rs2', targetPods: [
-                        { namespace: 'ns', name: 'pod3' }
-                    ]
-                }
-            ],
-            deployments: [
-                {
-                    namespace: 'ns', name: 'deploy2', displayName: 'deploy1', targetReplicaSets: [
-                        { namespace: 'ns', name: 'rs1' }
-                    ]
-                },
-                {
-                    namespace: 'ns', name: 'deploy3', displayName: 'deploy2', targetReplicaSets: [
-                        { namespace: 'ns', name: 'rs2' }
-                    ]
-                }
-            ]
+            pods: [pod1WithoutNamespaceDisplay, pod2WithoutNamespaceDisplay, pod3WithoutNamespaceDisplay],
+            services: [service1_2WithoutNamespaceDisplay, service3WithoutNamespaceDisplay],
+            replicaSets: [replicaSet1_2WithoutNamespaceDisplay, replicaSet3WithoutNamespaceDisplay],
+            deployments: [deployment1WithoutNamespaceDisplay, deployment12_3WithoutNamespaceDisplay]
         };
-
 
         const { rerender } = render(
             <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                         onDeploymentFocus={noOpHandler} dataSet={dataSet1}/>
         );
-
-        expect(screen.queryAllByLabelText('pod')).toHaveLength(1);
-        expect(screen.queryByText('ns/pod1')).toBeInTheDocument();
-        expect(screen.queryAllByLabelText('service')).toHaveLength(1);
-        expect(screen.queryByText('ns/svc1')).toBeInTheDocument();
-        expect(screen.queryAllByLabelText('service link')).toHaveLength(1);
-        expect(screen.queryAllByLabelText('replicaset')).toHaveLength(1);
-        expect(screen.queryByText('ns/rs1')).toBeInTheDocument();
-        expect(screen.queryAllByLabelText('replicaset link')).toHaveLength(1);
-        expect(screen.queryAllByLabelText('deployment')).toHaveLength(1);
-        expect(screen.queryByText('ns/deploy1')).toBeInTheDocument();
-        expect(screen.queryAllByLabelText('deployment link')).toHaveLength(1);
-
         rerender(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                              onDeploymentFocus={noOpHandler} dataSet={dataSet2}/>);
 
         expect(screen.queryAllByLabelText('pod')).toHaveLength(3);
-        expect(screen.queryByText('ns/pod1')).not.toBeInTheDocument();
-        expect(screen.queryByText('pod1')).toBeInTheDocument();
-        expect(screen.queryByText('pod2')).toBeInTheDocument();
-        expect(screen.queryByText('pod3')).toBeInTheDocument();
+        expect(screen.queryByText(pod1.displayName)).not.toBeInTheDocument();
+        expect(screen.queryByText(pod1WithoutNamespaceDisplay.displayName)).toBeInTheDocument();
+        expect(screen.queryByText(pod2WithoutNamespaceDisplay.displayName)).toBeInTheDocument();
+        expect(screen.queryByText(pod3WithoutNamespaceDisplay.displayName)).toBeInTheDocument();
         expect(screen.queryAllByLabelText('service')).toHaveLength(2);
-        expect(screen.queryByText('ns/svc1')).not.toBeInTheDocument();
-        expect(screen.queryByText('svc1')).toBeInTheDocument();
-        expect(screen.queryByText('svc2')).toBeInTheDocument();
+        expect(screen.queryByText(service1.displayName)).not.toBeInTheDocument();
+        expect(screen.queryByText(service1_2WithoutNamespaceDisplay.displayName)).toBeInTheDocument();
+        expect(screen.queryByText(service3WithoutNamespaceDisplay.displayName)).toBeInTheDocument();
         expect(screen.queryAllByLabelText('service link')).toHaveLength(3);
         expect(screen.queryAllByLabelText('replicaset')).toHaveLength(2);
-        expect(screen.queryByText('ns/rs1')).not.toBeInTheDocument();
-        expect(screen.queryByText('rs1')).toBeInTheDocument();
-        expect(screen.queryByText('rs2')).toBeInTheDocument();
+        expect(screen.queryByText(replicaSet1.displayName)).not.toBeInTheDocument();
+        expect(screen.queryByText(replicaSet1_2WithoutNamespaceDisplay.displayName)).toBeInTheDocument();
+        expect(screen.queryByText(replicaSet3WithoutNamespaceDisplay.displayName)).toBeInTheDocument();
         expect(screen.queryAllByLabelText('replicaset link')).toHaveLength(3);
         expect(screen.queryAllByLabelText('deployment')).toHaveLength(2);
-        expect(screen.queryByText('ns/deploy1')).not.toBeInTheDocument();
-        expect(screen.queryByText('deploy1')).toBeInTheDocument();
-        expect(screen.queryByText('deploy2')).toBeInTheDocument();
+        expect(screen.queryByText(deployment1.displayName)).not.toBeInTheDocument();
+        expect(screen.queryByText(deployment1WithoutNamespaceDisplay.displayName)).toBeInTheDocument();
+        expect(screen.queryByText(deployment12_3WithoutNamespaceDisplay.displayName)).toBeInTheDocument();
         expect(screen.queryAllByLabelText('deployment link')).toHaveLength(2);
     });
 
     it('focused pods have a different appearance', async () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
         const dataSet = {
             pods: [pod1, pod2],
             services: [],
@@ -391,18 +304,6 @@ describe('ClusterMap component', () => {
     }, timeout);
 
     it('focused services and service links have a different appearance', async () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-        const service1 = {
-            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
-                { namespace: 'ns', name: 'pod1' }
-            ]
-        };
-        const service2 = {
-            namespace: 'ns', name: 'svc2', displayName: 'ns/svc2', targetPods: [
-                { namespace: 'ns', name: 'pod2' }
-            ]
-        };
         const dataSet = {
             pods: [pod1, pod2],
             services: [service1, service2],
@@ -422,18 +323,6 @@ describe('ClusterMap component', () => {
     }, timeout);
 
     it('focused replicaSets and replicaSet links have a different appearance', async () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-        const replicaSet1 = {
-            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
-                { namespace: 'ns', name: 'pod1' }
-            ]
-        };
-        const replicaSet2 = {
-            namespace: 'ns', name: 'rs2', displayName: 'ns/rs2', targetPods: [
-                { namespace: 'ns', name: 'pod2' }
-            ]
-        };
         const dataSet = {
             pods: [pod1, pod2],
             services: [],
@@ -453,28 +342,6 @@ describe('ClusterMap component', () => {
     }, timeout);
 
     it('focused deployments and deployment links have a different appearance', async () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-        const replicaSet1 = {
-            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
-                { namespace: 'ns', name: 'pod1' }
-            ]
-        };
-        const replicaSet2 = {
-            namespace: 'ns', name: 'rs2', displayName: 'ns/rs2', targetPods: [
-                { namespace: 'ns', name: 'pod2' }
-            ]
-        };
-        const deployment1 = {
-            namespace: 'ns', name: 'deploy1', displayName: 'ns/deploy1', targetReplicaSets: [
-                { namespace: 'ns', name: 'rs1' }
-            ]
-        };
-        const deployment2 = {
-            namespace: 'ns', name: 'deploy2', displayName: 'ns/deploy2', targetReplicaSets: [
-                { namespace: 'ns', name: 'rs2' }
-            ]
-        };
         const dataSet = {
             pods: [pod1, pod2],
             services: [],
@@ -494,58 +361,11 @@ describe('ClusterMap component', () => {
     }, timeout);
 
     it('focusing a pod also focuses connected services, replicaSets and deployments', async () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-        const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
-        const pod4 = { namespace: 'ns', name: 'pod4', displayName: 'ns/pod4' };
-        const service1 = {
-            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
-                { namespace: 'ns', name: 'pod1' },
-                { namespace: 'ns', name: 'pod2' }
-            ]
-        };
-        const service2 = {
-            namespace: 'ns', name: 'svc2', displayName: 'ns/svc2', targetPods: [
-                { namespace: 'ns', name: 'pod3' }
-            ]
-        };
-        const service3 = {
-            namespace: 'ns', name: 'svc3', displayName: 'ns/svc3', targetPods: [
-                { namespace: 'ns', name: 'pod4' }
-            ]
-        };
-        const replicaSet1 = {
-            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
-                { namespace: 'ns', name: 'pod1' },
-                { namespace: 'ns', name: 'pod2' }
-            ]
-        };
-        const replicaSet2 = {
-            namespace: 'ns', name: 'rs2', displayName: 'ns/rs2', targetPods: [
-                { namespace: 'ns', name: 'pod3' }
-            ]
-        };
-        const replicaSet3 = {
-            namespace: 'ns', name: 'rs3', displayName: 'ns/rs3', targetPods: [
-                { namespace: 'ns', name: 'pod4' }
-            ]
-        };
-        const deployment1 = {
-            namespace: 'ns', name: 'deploy1', displayName: 'ns/deploy1', targetReplicaSets: [
-                { namespace: 'ns', name: 'rs1' },
-                { namespace: 'ns', name: 'rs2' }
-            ]
-        };
-        const deployment2 = {
-            namespace: 'ns', name: 'deploy2', displayName: 'ns/deploy2', targetReplicaSets: [
-                { namespace: 'ns', name: 'rs3' }
-            ]
-        };
         const dataSet = {
             pods: [pod1, pod2, pod3, pod4],
-            services: [service1, service2, service3],
-            replicaSets: [replicaSet1, replicaSet2, replicaSet3],
-            deployments: [deployment1, deployment2]
+            services: [service1_2, service3, service4],
+            replicaSets: [replicaSet1_2, replicaSet3, replicaSet4],
+            deployments: [deployment12_3, deployment4]
         };
         render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
@@ -576,36 +396,11 @@ describe('ClusterMap component', () => {
     }, timeout);
 
     it('focusing a service also focuses its target pods', async () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-        const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
-        const service1 = {
-            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
-                { namespace: 'ns', name: 'pod1' },
-                { namespace: 'ns', name: 'pod2' }
-            ]
-        };
-        const service2 = {
-            namespace: 'ns', name: 'svc2', displayName: 'ns/svc2', targetPods: [
-                { namespace: 'ns', name: 'pod3' }
-            ]
-        };
-        const replicaSet1 = {
-            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
-                { namespace: 'ns', name: 'pod1' },
-                { namespace: 'ns', name: 'pod2' }
-            ]
-        };
-        const deployment1 = {
-            namespace: 'ns', name: 'deploy1', displayName: 'ns/deploy1', targetReplicaSets: [
-                { namespace: 'ns', name: 'rs1' }
-            ]
-        };
         const dataSet = {
             pods: [pod1, pod2, pod3],
-            services: [service1, service2],
-            replicaSets: [replicaSet1],
-            deployments: [deployment1]
+            services: [service1_2, service3],
+            replicaSets: [replicaSet1_2],
+            deployments: [deployment12]
         };
         render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
@@ -629,36 +424,11 @@ describe('ClusterMap component', () => {
     }, timeout);
 
     it('focusing a service link also focuses its service and target pod', async () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-        const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
-        const service1 = {
-            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
-                { namespace: 'ns', name: 'pod1' },
-                { namespace: 'ns', name: 'pod2' }
-            ]
-        };
-        const service2 = {
-            namespace: 'ns', name: 'svc2', displayName: 'ns/svc2', targetPods: [
-                { namespace: 'ns', name: 'pod3' }
-            ]
-        };
-        const replicaSet1 = {
-            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
-                { namespace: 'ns', name: 'pod1' },
-                { namespace: 'ns', name: 'pod2' }
-            ]
-        };
-        const deployment1 = {
-            namespace: 'ns', name: 'deploy1', displayName: 'ns/deploy1', targetReplicaSets: [
-                { namespace: 'ns', name: 'rs1' }
-            ]
-        };
         const dataSet = {
             pods: [pod1, pod2, pod3],
-            services: [service1, service2],
-            replicaSets: [replicaSet1],
-            deployments: [deployment1]
+            services: [service1_2, service3],
+            replicaSets: [replicaSet1_2],
+            deployments: [deployment12]
         };
         render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
@@ -682,42 +452,11 @@ describe('ClusterMap component', () => {
     }, timeout);
 
     it('focusing a replicaSet also focuses its target pods', async () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-        const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
-        const service1 = {
-            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
-                { namespace: 'ns', name: 'pod1' },
-                { namespace: 'ns', name: 'pod2' },
-                { namespace: 'ns', name: 'pod3' }
-            ]
-        };
-        const replicaSet1 = {
-            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
-                { namespace: 'ns', name: 'pod1' },
-                { namespace: 'ns', name: 'pod2' }
-            ]
-        };
-        const replicaSet2 = {
-            namespace: 'ns', name: 'rs2', displayName: 'ns/rs2', targetPods: [
-                { namespace: 'ns', name: 'pod3' }
-            ]
-        };
-        const deployment1 = {
-            namespace: 'ns', name: 'deploy1', displayName: 'ns/deploy1', targetReplicaSets: [
-                { namespace: 'ns', name: 'rs1' }
-            ]
-        };
-        const deployment2 = {
-            namespace: 'ns', name: 'deploy2', displayName: 'ns/deploy2', targetReplicaSets: [
-                { namespace: 'ns', name: 'rs2' }
-            ]
-        };
         const dataSet = {
             pods: [pod1, pod2, pod3],
-            services: [service1],
-            replicaSets: [replicaSet1, replicaSet2],
-            deployments: [deployment1, deployment2]
+            services: [service1_2_3],
+            replicaSets: [replicaSet1_2, replicaSet3],
+            deployments: [deployment12, deployment3]
         };
         render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
@@ -742,42 +481,11 @@ describe('ClusterMap component', () => {
     }, timeout);
 
     it('focusing a replicaSet link also focuses its replicaSet and target pod', async () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-        const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
-        const service1 = {
-            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
-                { namespace: 'ns', name: 'pod1' },
-                { namespace: 'ns', name: 'pod2' },
-                { namespace: 'ns', name: 'pod3' }
-            ]
-        };
-        const replicaSet1 = {
-            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
-                { namespace: 'ns', name: 'pod1' },
-                { namespace: 'ns', name: 'pod2' }
-            ]
-        };
-        const replicaSet2 = {
-            namespace: 'ns', name: 'rs2', displayName: 'ns/rs2', targetPods: [
-                { namespace: 'ns', name: 'pod3' }
-            ]
-        };
-        const deployment1 = {
-            namespace: 'ns', name: 'deploy1', displayName: 'ns/deploy1', targetReplicaSets: [
-                { namespace: 'ns', name: 'rs1' }
-            ]
-        };
-        const deployment2 = {
-            namespace: 'ns', name: 'deploy2', displayName: 'ns/deploy2', targetReplicaSets: [
-                { namespace: 'ns', name: 'rs2' }
-            ]
-        };
         const dataSet = {
             pods: [pod1, pod2, pod3],
-            services: [service1],
-            replicaSets: [replicaSet1, replicaSet2],
-            deployments: [deployment1, deployment2]
+            services: [service1_2_3],
+            replicaSets: [replicaSet1_2, replicaSet3],
+            deployments: [deployment12, deployment3]
         };
         render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
@@ -802,50 +510,11 @@ describe('ClusterMap component', () => {
     }, timeout);
 
     it('focusing a deployment also focuses its target replicaSets and their target pods', async () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-        const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
-        const pod4 = { namespace: 'ns', name: 'pod4', displayName: 'ns/pod4' };
-        const service1 = {
-            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
-                { namespace: 'ns', name: 'pod1' },
-                { namespace: 'ns', name: 'pod2' },
-                { namespace: 'ns', name: 'pod3' },
-                { namespace: 'ns', name: 'pod4' }
-            ]
-        };
-        const replicaSet1 = {
-            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
-                { namespace: 'ns', name: 'pod1' },
-                { namespace: 'ns', name: 'pod2' }
-            ]
-        };
-        const replicaSet2 = {
-            namespace: 'ns', name: 'rs2', displayName: 'ns/rs2', targetPods: [
-                { namespace: 'ns', name: 'pod3' }
-            ]
-        };
-        const replicaSet3 = {
-            namespace: 'ns', name: 'rs3', displayName: 'ns/rs3', targetPods: [
-                { namespace: 'ns', name: 'pod4' }
-            ]
-        };
-        const deployment1 = {
-            namespace: 'ns', name: 'deploy1', displayName: 'ns/deploy1', targetReplicaSets: [
-                { namespace: 'ns', name: 'rs1' },
-                { namespace: 'ns', name: 'rs2' }
-            ]
-        };
-        const deployment2 = {
-            namespace: 'ns', name: 'deploy2', displayName: 'ns/deploy2', targetReplicaSets: [
-                { namespace: 'ns', name: 'rs3' }
-            ]
-        };
         const dataSet = {
             pods: [pod1, pod2, pod3, pod4],
-            services: [service1],
-            replicaSets: [replicaSet1, replicaSet2, replicaSet3],
-            deployments: [deployment1, deployment2]
+            services: [service1_2_3_4],
+            replicaSets: [replicaSet1_2, replicaSet3, replicaSet4],
+            deployments: [deployment12_3, deployment4]
         };
         render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
@@ -874,47 +543,11 @@ describe('ClusterMap component', () => {
     }, timeout);
 
     it('focusing a deployment link also focuses its deployment and target replicaSet', async () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-        const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
-        const service1 = {
-            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
-                { namespace: 'ns', name: 'pod1' },
-                { namespace: 'ns', name: 'pod2' },
-                { namespace: 'ns', name: 'pod3' }
-            ]
-        };
-        const replicaSet1 = {
-            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
-                { namespace: 'ns', name: 'pod1' }
-            ]
-        };
-        const replicaSet2 = {
-            namespace: 'ns', name: 'rs2', displayName: 'ns/rs2', targetPods: [
-                { namespace: 'ns', name: 'pod2' }
-            ]
-        };
-        const replicaSet3 = {
-            namespace: 'ns', name: 'rs3', displayName: 'ns/rs3', targetPods: [
-                { namespace: 'ns', name: 'pod3' }
-            ]
-        };
-        const deployment1 = {
-            namespace: 'ns', name: 'deploy1', displayName: 'ns/deploy1', targetReplicaSets: [
-                { namespace: 'ns', name: 'rs1' },
-                { namespace: 'ns', name: 'rs2' }
-            ]
-        };
-        const deployment2 = {
-            namespace: 'ns', name: 'deploy2', displayName: 'ns/deploy2', targetReplicaSets: [
-                { namespace: 'ns', name: 'rs3' }
-            ]
-        };
         const dataSet = {
             pods: [pod1, pod2, pod3],
-            services: [service1],
+            services: [service1_2_3],
             replicaSets: [replicaSet1, replicaSet2, replicaSet3],
-            deployments: [deployment1, deployment2]
+            deployments: [deployment1_2, deployment3]
         };
         render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
@@ -941,22 +574,6 @@ describe('ClusterMap component', () => {
     }, timeout);
 
     it('unfocusing an element should remove all fades', async () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const service1 = {
-            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
-                { namespace: 'ns', name: 'pod1' }
-            ]
-        };
-        const replicaSet1 = {
-            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
-                { namespace: 'ns', name: 'pod1' }
-            ]
-        };
-        const deployment1 = {
-            namespace: 'ns', name: 'deploy1', displayName: 'ns/deploy1', targetReplicaSets: [
-                { namespace: 'ns', name: 'rs1' }
-            ]
-        };
         const dataSet = {
             pods: [pod1],
             services: [service1],
@@ -980,28 +597,6 @@ describe('ClusterMap component', () => {
     }, timeout);
 
     it('focused element should stay focused after component update', async () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-        const service1 = {
-            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
-                { namespace: 'ns', name: 'pod1' }
-            ]
-        };
-        const service2 = {
-            namespace: 'ns', name: 'svc2', displayName: 'ns/svc2', targetPods: [
-                { namespace: 'ns', name: 'pod2' }
-            ]
-        };
-        const replicaSet1 = {
-            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
-                { namespace: 'ns', name: 'pod1' }
-            ]
-        };
-        const deployment1 = {
-            namespace: 'ns', name: 'deploy1', displayName: 'ns/deploy1', targetReplicaSets: [
-                { namespace: 'ns', name: 'rs1' }
-            ]
-        };
         const dataSet1 = {
             pods: [pod1, pod2],
             services: [service1],
@@ -1021,7 +616,6 @@ describe('ClusterMap component', () => {
         await waitForItemPositionStable(screen.getAllByLabelText('service')[0], timeout);
 
         hoverItem(screen.getAllByLabelText('service')[0]);
-
         rerender(
             <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                         onDeploymentFocus={noOpHandler} dataSet={dataSet2}/>
@@ -1040,34 +634,6 @@ describe('ClusterMap component', () => {
     }, timeout);
 
     it('drag and dropped services do not move anymore', async () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-        const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
-        const service1 = {
-            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
-                { namespace: 'ns', name: 'pod1' }
-            ]
-        };
-        const service2 = {
-            namespace: 'ns', name: 'svc2', displayName: 'ns/svc2', targetPods: [
-                { namespace: 'ns', name: 'pod2' }
-            ]
-        };
-        const service3 = {
-            namespace: 'ns', name: 'svc3', displayName: 'ns/svc3', targetPods: [
-                { namespace: 'ns', name: 'pod3' }
-            ]
-        };
-        const replicaSet1 = {
-            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
-                { namespace: 'ns', name: 'pod1' }
-            ]
-        };
-        const deployment1 = {
-            namespace: 'ns', name: 'deploy1', displayName: 'ns/deploy1', targetReplicaSets: [
-                { namespace: 'ns', name: 'rs1' }
-            ]
-        };
         const dataSet1 = {
             pods: [pod1, pod2],
             services: [service1, service2],
@@ -1090,7 +656,6 @@ describe('ClusterMap component', () => {
         await waitForItemPositionStable(screen.getAllByLabelText('service')[1], timeout);
         const oldService1Position = getItemPosition(screen.getAllByLabelText('service')[0]);
         const oldService2Position = getItemPosition(screen.getAllByLabelText('service')[1]);
-
         rerender(
             <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                         onDeploymentFocus={noOpHandler} dataSet={dataSet2}/>
@@ -1104,34 +669,6 @@ describe('ClusterMap component', () => {
     }, timeout);
 
     it('drag and dropped replicaSets do not move anymore', async () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-        const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
-        const service1 = {
-            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
-                { namespace: 'ns', name: 'pod1' }
-            ]
-        };
-        const replicaSet1 = {
-            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
-                { namespace: 'ns', name: 'pod1' }
-            ]
-        };
-        const replicaSet2 = {
-            namespace: 'ns', name: 'rs2', displayName: 'ns/rs2', targetPods: [
-                { namespace: 'ns', name: 'pod2' }
-            ]
-        };
-        const replicaSet3 = {
-            namespace: 'ns', name: 'rs3', displayName: 'ns/rs3', targetPods: [
-                { namespace: 'ns', name: 'pod3' }
-            ]
-        };
-        const deployment1 = {
-            namespace: 'ns', name: 'deploy1', displayName: 'ns/deploy1', targetReplicaSets: [
-                { namespace: 'ns', name: 'rs1' }
-            ]
-        };
         const dataSet1 = {
             pods: [pod1, pod2],
             services: [service1],
@@ -1154,7 +691,6 @@ describe('ClusterMap component', () => {
         await waitForItemPositionStable(screen.getAllByLabelText('replicaset')[1], timeout);
         const oldReplicaSet1Position = getItemPosition(screen.getAllByLabelText('replicaset')[0]);
         const oldReplicaSet2Position = getItemPosition(screen.getAllByLabelText('replicaset')[1]);
-
         rerender(
             <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                         onDeploymentFocus={noOpHandler} dataSet={dataSet2}/>
@@ -1168,44 +704,6 @@ describe('ClusterMap component', () => {
     }, timeout);
 
     it('drag and dropped deployments do not move anymore', async () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
-        const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
-        const service1 = {
-            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
-                { namespace: 'ns', name: 'pod1' }
-            ]
-        };
-        const replicaSet1 = {
-            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
-                { namespace: 'ns', name: 'pod1' }
-            ]
-        };
-        const replicaSet2 = {
-            namespace: 'ns', name: 'rs2', displayName: 'ns/rs2', targetPods: [
-                { namespace: 'ns', name: 'pod2' }
-            ]
-        };
-        const replicaSet3 = {
-            namespace: 'ns', name: 'rs3', displayName: 'ns/rs3', targetPods: [
-                { namespace: 'ns', name: 'pod3' }
-            ]
-        };
-        const deployment1 = {
-            namespace: 'ns', name: 'deploy1', displayName: 'ns/deploy1', targetReplicaSets: [
-                { namespace: 'ns', name: 'rs1' }
-            ]
-        };
-        const deployment2 = {
-            namespace: 'ns', name: 'deploy2', displayName: 'ns/deploy2', targetReplicaSets: [
-                { namespace: 'ns', name: 'rs2' }
-            ]
-        };
-        const deployment3 = {
-            namespace: 'ns', name: 'deploy3', displayName: 'ns/deploy3', targetReplicaSets: [
-                { namespace: 'ns', name: 'rs3' }
-            ]
-        };
         const dataSet1 = {
             pods: [pod1, pod2],
             services: [service1],
@@ -1228,7 +726,6 @@ describe('ClusterMap component', () => {
         await waitForItemPositionStable(screen.getAllByLabelText('deployment')[1], timeout);
         const oldDeployment1Position = getItemPosition(screen.getAllByLabelText('deployment')[0]);
         const oldDeployment2Position = getItemPosition(screen.getAllByLabelText('deployment')[1]);
-
         rerender(
             <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                         onDeploymentFocus={noOpHandler} dataSet={dataSet2}/>
@@ -1242,22 +739,6 @@ describe('ClusterMap component', () => {
     }, timeout);
 
     it('pods, services, replicaSets, deployments and their labels keep same apparent size despite zoom', async () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const service1 = {
-            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
-                { namespace: 'ns', name: 'pod1' }
-            ]
-        };
-        const replicaSet1 = {
-            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
-                { namespace: 'ns', name: 'pod1' }
-            ]
-        };
-        const deployment1 = {
-            namespace: 'ns', name: 'deploy1', displayName: 'ns/deploy1', targetReplicaSets: [
-                { namespace: 'ns', name: 'rs1' }
-            ]
-        };
         const dataSet = {
             pods: [pod1],
             services: [service1],
@@ -1268,7 +749,7 @@ describe('ClusterMap component', () => {
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
         patchGraphViewBox();
         await waitForItemPositionStable(screen.getAllByLabelText('service')[0], timeout);
-        const oldPodFontSize = parseFloat(screen.getByText('ns/pod1').getAttribute('font-size'));
+        const oldPodFontSize = parseFloat(screen.getByText(pod1.displayName).getAttribute('font-size'));
         const oldServiceFontSize = parseFloat(screen.getByText('ns/svc1').getAttribute('font-size'));
         const oldReplicaSetFontSize = parseFloat(screen.getByText('ns/rs1').getAttribute('font-size'));
         const oldDeploymentFontSize = parseFloat(screen.getByText('ns/deploy1').getAttribute('font-size'));
@@ -1279,7 +760,7 @@ describe('ClusterMap component', () => {
         const serviceScale = getScale(screen.getAllByLabelText('service')[0]);
         const replicaSetScale = getScale(screen.getAllByLabelText('replicaset')[0]);
         const deploymentScale = getScale(screen.getAllByLabelText('deployment')[0]);
-        const newPodFontSize = parseFloat(screen.getByText('ns/pod1').getAttribute('font-size'));
+        const newPodFontSize = parseFloat(screen.getByText(pod1.displayName).getAttribute('font-size'));
         const newServiceFontSize = parseFloat(screen.getByText('ns/svc1').getAttribute('font-size'));
         const newReplicaSetFontSize = parseFloat(screen.getByText('ns/rs1').getAttribute('font-size'));
         const newDeploymentFontSize = parseFloat(screen.getByText('ns/deploy1').getAttribute('font-size'));
@@ -1300,22 +781,6 @@ describe('ClusterMap component', () => {
     });
 
     it('pod, service, replicaSet and deployments links keep same apparent size despite zoom', async () => {
-        const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
-        const service1 = {
-            namespace: 'ns', name: 'svc1', displayName: 'ns/svc1', targetPods: [
-                { namespace: 'ns', name: 'pod1' }
-            ]
-        };
-        const replicaSet1 = {
-            namespace: 'ns', name: 'rs1', displayName: 'ns/rs1', targetPods: [
-                { namespace: 'ns', name: 'pod1' }
-            ]
-        };
-        const deployment1 = {
-            namespace: 'ns', name: 'deploy1', displayName: 'ns/deploy1', targetReplicaSets: [
-                { namespace: 'ns', name: 'rs1' }
-            ]
-        };
         const dataSet = {
             pods: [pod1],
             services: [service1],
