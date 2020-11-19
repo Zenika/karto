@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom/extend-expect';
 import NetworkPolicyMap from './NetworkPolicyMap';
 import {
@@ -10,12 +10,14 @@ import {
     hoverItem,
     hoverLink,
     patchGraphViewBox,
+    scrollDown,
     waitForItemPositionStable
 } from '../utils/testutils';
 
 describe('NetworkPolicyMap component', () => {
 
-    const timeout = 10000;
+    const testTimeout = 10000;
+    const waitTimeout = 5000;
 
     const noOpHandler = () => null;
     let mockFocusHandler;
@@ -70,12 +72,12 @@ describe('NetworkPolicyMap component', () => {
             allowedRoutes: []
         };
         render(<NetworkPolicyMap onPodFocus={mockFocusHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
-        await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('pod')[0]);
 
         expect(mockFocusHandler).toHaveBeenCalledWith(pod1);
-    }, timeout);
+    }, testTimeout);
 
     it('calls handler on allowed route focus', async () => {
         const dataSet = {
@@ -83,12 +85,12 @@ describe('NetworkPolicyMap component', () => {
             allowedRoutes: [allowedRoute1_2]
         };
         render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={mockFocusHandler} dataSet={dataSet}/>);
-        await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], waitTimeout);
 
         hoverLink(screen.getAllByLabelText('allowed route')[0]);
 
         expect(mockFocusHandler).toHaveBeenCalledWith(allowedRoute1_2);
-    }, timeout);
+    }, testTimeout);
 
     it('updates local state properly', () => {
         const dataSet1 = {
@@ -135,13 +137,13 @@ describe('NetworkPolicyMap component', () => {
             allowedRoutes: []
         };
         render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
-        await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('pod')[0]);
 
         expect(screen.getAllByLabelText('pod')[0]).toHaveAttribute('class', 'item');
         expect(screen.getAllByLabelText('pod')[1]).toHaveAttribute('class', 'item-faded');
-    }, timeout);
+    }, testTimeout);
 
     it('focused highlighted pods have a different appearance', async () => {
         const pod2Highlighted = { ...pod2, highlighted: true };
@@ -150,13 +152,13 @@ describe('NetworkPolicyMap component', () => {
             allowedRoutes: []
         };
         render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
-        await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('pod')[0]);
 
         expect(screen.getAllByLabelText('pod')[0]).toHaveAttribute('class', 'item');
         expect(screen.getAllByLabelText('pod')[1]).toHaveAttribute('class', 'item-faded-highlight');
-    }, timeout);
+    }, testTimeout);
 
     it('focused allowed routes have a different appearance', async () => {
         const dataSet = {
@@ -164,13 +166,13 @@ describe('NetworkPolicyMap component', () => {
             allowedRoutes: [allowedRoute1_2, allowedRoute2_3]
         };
         render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
-        await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], waitTimeout);
 
         hoverLink(screen.getAllByLabelText('allowed route')[0]);
 
         expect(screen.getAllByLabelText('allowed route')[0]).toHaveAttribute('class', 'link');
         expect(screen.getAllByLabelText('allowed route')[1]).toHaveAttribute('class', 'link-faded');
-    }, timeout);
+    }, testTimeout);
 
     it('focusing a pod also focuses connected pods and allowed routes', async () => {
         const dataSet = {
@@ -178,7 +180,7 @@ describe('NetworkPolicyMap component', () => {
             allowedRoutes: [allowedRoute1_2, allowedRoute3_1, allowedRoute3_4]
         };
         render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
-        await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('pod')[0]);
 
@@ -189,7 +191,7 @@ describe('NetworkPolicyMap component', () => {
         expect(screen.getAllByLabelText('allowed route')[0]).toHaveAttribute('class', 'link');
         expect(screen.getAllByLabelText('allowed route')[1]).toHaveAttribute('class', 'link');
         expect(screen.getAllByLabelText('allowed route')[2]).toHaveAttribute('class', 'link-faded');
-    }, timeout);
+    }, testTimeout);
 
     it('focusing an allowed route also focuses source and target pods', async () => {
         const dataSet = {
@@ -197,7 +199,7 @@ describe('NetworkPolicyMap component', () => {
             allowedRoutes: [allowedRoute1_2, allowedRoute2_3]
         };
         render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
-        await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], waitTimeout);
 
         hoverLink(screen.getAllByLabelText('allowed route')[0]);
 
@@ -206,7 +208,7 @@ describe('NetworkPolicyMap component', () => {
         expect(screen.getAllByLabelText('pod')[2]).toHaveAttribute('class', 'item-faded');
         expect(screen.getAllByLabelText('allowed route')[0]).toHaveAttribute('class', 'link');
         expect(screen.getAllByLabelText('allowed route')[1]).toHaveAttribute('class', 'link-faded');
-    }, timeout);
+    }, testTimeout);
 
     it('unfocusing an element should unfocus all', async () => {
         const dataSet = {
@@ -214,7 +216,7 @@ describe('NetworkPolicyMap component', () => {
             allowedRoutes: [allowedRoute1_2]
         };
         render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
-        await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('pod')[2]);
         hoverAway();
@@ -223,7 +225,7 @@ describe('NetworkPolicyMap component', () => {
         expect(screen.getAllByLabelText('pod')[1]).toHaveAttribute('class', 'item');
         expect(screen.getAllByLabelText('pod')[2]).toHaveAttribute('class', 'item');
         expect(screen.getAllByLabelText('allowed route')[0]).toHaveAttribute('class', 'link');
-    }, timeout);
+    }, testTimeout);
 
     it('focused element should stay focused after component update', async () => {
         const dataSet1 = {
@@ -237,7 +239,7 @@ describe('NetworkPolicyMap component', () => {
         const { rerender } = render(
             <NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet1}/>
         );
-        await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('pod')[0]);
         rerender(
@@ -246,7 +248,7 @@ describe('NetworkPolicyMap component', () => {
 
         expect(screen.getAllByLabelText('pod')[0]).toHaveAttribute('class', 'item');
         expect(screen.getAllByLabelText('pod')[1]).toHaveAttribute('class', 'item-faded');
-    }, timeout);
+    }, testTimeout);
 
     it('drag and dropped pods do not move anymore', async () => {
         const dataSet1 = {
@@ -260,22 +262,22 @@ describe('NetworkPolicyMap component', () => {
         const { rerender } = render(
             <NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet1}/>
         );
-        await waitForItemPositionStable(screen.getAllByLabelText('pod')[1], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('pod')[1], waitTimeout);
 
         dragAndDropItem(screen.getAllByLabelText('pod')[0], { clientX: 20, clientY: 20 });
-        await waitForItemPositionStable(screen.getAllByLabelText('pod')[1], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('pod')[1], waitTimeout);
         const oldPod1Position = getItemPosition(screen.getAllByLabelText('pod')[0]);
         const oldPod2Position = getItemPosition(screen.getAllByLabelText('pod')[1]);
         rerender(
             <NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet2}/>
         );
-        await waitForItemPositionStable(screen.getAllByLabelText('pod')[1], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('pod')[1], waitTimeout);
         const newPod1Position = getItemPosition(screen.getAllByLabelText('pod')[0]);
         const newPod2Position = getItemPosition(screen.getAllByLabelText('pod')[1]);
 
         expect(newPod1Position).toEqual(oldPod1Position);
         expect(newPod2Position).not.toEqual(oldPod2Position);
-    }, timeout);
+    }, testTimeout);
 
     it('pods and their labels keep same apparent size despite zoom', async () => {
         const dataSet = {
@@ -284,10 +286,10 @@ describe('NetworkPolicyMap component', () => {
         };
         render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
         patchGraphViewBox();
-        await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], waitTimeout);
         const oldFontSize = parseFloat(screen.getByText(pod1.displayName).getAttribute('font-size'));
 
-        fireEvent.wheel(screen.getByLabelText('layers container'), { deltaY: -100 }); // scroll down
+        scrollDown();
         const containerScale = getScale(screen.queryByLabelText('layers container'));
         const podScale = getScale(screen.getAllByLabelText('pod')[0]);
         const newFontSize = parseFloat(screen.getByText(pod1.displayName).getAttribute('font-size'));
@@ -305,10 +307,10 @@ describe('NetworkPolicyMap component', () => {
         };
         render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
         patchGraphViewBox();
-        await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], waitTimeout);
         const oldWidth = parseFloat(screen.getAllByLabelText('allowed route')[0].getAttribute('stroke-width'));
 
-        fireEvent.wheel(screen.getByLabelText('layers container'), { deltaY: -100 }); // scroll down
+        scrollDown();
         const containerScale = getScale(screen.queryByLabelText('layers container'));
         const newWidth = parseFloat(screen.getAllByLabelText('allowed route')[0].getAttribute('stroke-width'));
         const strokeScale = newWidth / oldWidth;

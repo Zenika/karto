@@ -63,7 +63,7 @@ export function waitForItemPositionStable(item, timeout) {
             previousPosition = currentPosition;
         }
         return new Promise((resolve, reject) => isStable ? resolve() : setTimeout(reject, 200));
-    }, { timeout: 0.9 * timeout });
+    }, { timeout });
 }
 
 export function hoverLink(link) {
@@ -83,4 +83,9 @@ export function dragAndDropItem(item, targetPosition) {
     fireEvent.mouseDown(item, { view: global.window });
     fireEvent.mouseMove(screen.getByLabelText('graph'), targetPosition);
     fireEvent.mouseUp(item, { view: global.window });
+}
+
+export function scrollDown() {
+    const layersContainer = screen.getByLabelText('layers container');
+    fireEvent.wheel(layersContainer, { deltaY: -100 });
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom/extend-expect';
 import ClusterMap from './ClusterMap';
 import {
@@ -10,12 +10,14 @@ import {
     hoverItem,
     hoverLink,
     patchGraphViewBox,
+    scrollDown,
     waitForItemPositionStable
 } from '../utils/testutils';
 
 describe('ClusterMap component', () => {
 
-    const timeout = 10000;
+    const testTimeout = 10000;
+    const waitTimeout = 5000;
 
     const noOpHandler = () => null;
     let mockFocusHandler;
@@ -161,12 +163,12 @@ describe('ClusterMap component', () => {
         };
         render(<ClusterMap onPodFocus={mockFocusHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
-        await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('pod')[0]);
 
         expect(mockFocusHandler).toHaveBeenCalledWith(pod1);
-    }, timeout);
+    }, testTimeout);
 
     it('calls handler on service or service link focus', async () => {
         const dataSet = {
@@ -177,7 +179,7 @@ describe('ClusterMap component', () => {
         };
         render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={mockFocusHandler} onReplicaSetFocus={noOpHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
-        await waitForItemPositionStable(screen.getAllByLabelText('service')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('service')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('service')[0]);
 
@@ -188,7 +190,7 @@ describe('ClusterMap component', () => {
         hoverLink(screen.getAllByLabelText('service link')[0]);
 
         expect(mockFocusHandler).toHaveBeenCalledWith(service1);
-    }, timeout);
+    }, testTimeout);
 
     it('calls handler on replicaSet or replicaSet link focus', async () => {
         const dataSet = {
@@ -199,7 +201,7 @@ describe('ClusterMap component', () => {
         };
         render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={mockFocusHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
-        await waitForItemPositionStable(screen.getAllByLabelText('replicaset')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('replicaset')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('replicaset')[0]);
 
@@ -210,7 +212,7 @@ describe('ClusterMap component', () => {
         hoverLink(screen.getAllByLabelText('replicaset link')[0]);
 
         expect(mockFocusHandler).toHaveBeenCalledWith(replicaSet1);
-    }, timeout);
+    }, testTimeout);
 
     it('calls handler on deployment or deployment link focus', async () => {
         const dataSet = {
@@ -221,7 +223,7 @@ describe('ClusterMap component', () => {
         };
         render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                            onDeploymentFocus={mockFocusHandler} dataSet={dataSet}/>);
-        await waitForItemPositionStable(screen.getAllByLabelText('deployment')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('deployment')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('deployment')[0]);
 
@@ -232,7 +234,7 @@ describe('ClusterMap component', () => {
         hoverLink(screen.getAllByLabelText('deployment link')[0]);
 
         expect(mockFocusHandler).toHaveBeenCalledWith(deployment1);
-    }, timeout);
+    }, testTimeout);
 
     it('updates local state properly', () => {
         const pod1WithoutNamespaceDisplay = { ...pod1, displayName: 'pod1' };
@@ -295,13 +297,13 @@ describe('ClusterMap component', () => {
         };
         render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
-        await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('pod')[0]);
 
         expect(screen.getAllByLabelText('pod')[0]).toHaveAttribute('class', 'item');
         expect(screen.getAllByLabelText('pod')[1]).toHaveAttribute('class', 'item-faded');
-    }, timeout);
+    }, testTimeout);
 
     it('focused services and service links have a different appearance', async () => {
         const dataSet = {
@@ -312,7 +314,7 @@ describe('ClusterMap component', () => {
         };
         render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
-        await waitForItemPositionStable(screen.getAllByLabelText('service')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('service')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('service')[0]);
 
@@ -320,7 +322,7 @@ describe('ClusterMap component', () => {
         expect(screen.getAllByLabelText('service')[1]).toHaveAttribute('class', 'item-faded');
         expect(screen.getAllByLabelText('service link')[0]).toHaveAttribute('class', 'link');
         expect(screen.getAllByLabelText('service link')[1]).toHaveAttribute('class', 'link-faded');
-    }, timeout);
+    }, testTimeout);
 
     it('focused replicaSets and replicaSet links have a different appearance', async () => {
         const dataSet = {
@@ -331,7 +333,7 @@ describe('ClusterMap component', () => {
         };
         render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
-        await waitForItemPositionStable(screen.getAllByLabelText('replicaset')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('replicaset')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('replicaset')[0]);
 
@@ -339,7 +341,7 @@ describe('ClusterMap component', () => {
         expect(screen.getAllByLabelText('replicaset')[1]).toHaveAttribute('class', 'item-faded');
         expect(screen.getAllByLabelText('replicaset link')[0]).toHaveAttribute('class', 'link');
         expect(screen.getAllByLabelText('replicaset link')[1]).toHaveAttribute('class', 'link-faded');
-    }, timeout);
+    }, testTimeout);
 
     it('focused deployments and deployment links have a different appearance', async () => {
         const dataSet = {
@@ -350,7 +352,7 @@ describe('ClusterMap component', () => {
         };
         render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
-        await waitForItemPositionStable(screen.getAllByLabelText('deployment')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('deployment')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('deployment')[0]);
 
@@ -358,7 +360,7 @@ describe('ClusterMap component', () => {
         expect(screen.getAllByLabelText('deployment')[1]).toHaveAttribute('class', 'item-faded');
         expect(screen.getAllByLabelText('deployment link')[0]).toHaveAttribute('class', 'link');
         expect(screen.getAllByLabelText('deployment link')[1]).toHaveAttribute('class', 'link-faded');
-    }, timeout);
+    }, testTimeout);
 
     it('focusing a pod also focuses connected services, replicaSets and deployments', async () => {
         const dataSet = {
@@ -369,7 +371,7 @@ describe('ClusterMap component', () => {
         };
         render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
-        await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('pod')[0]);
 
@@ -393,7 +395,7 @@ describe('ClusterMap component', () => {
         expect(screen.getAllByLabelText('deployment link')[0]).toHaveAttribute('class', 'link');
         expect(screen.getAllByLabelText('deployment')[1]).toHaveAttribute('class', 'item-faded');
         expect(screen.getAllByLabelText('deployment link')[1]).toHaveAttribute('class', 'link-faded');
-    }, timeout);
+    }, testTimeout);
 
     it('focusing a service also focuses its target pods', async () => {
         const dataSet = {
@@ -404,7 +406,7 @@ describe('ClusterMap component', () => {
         };
         render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
-        await waitForItemPositionStable(screen.getAllByLabelText('service')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('service')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('service')[0]);
 
@@ -421,7 +423,7 @@ describe('ClusterMap component', () => {
         expect(screen.getAllByLabelText('replicaset link')[1]).toHaveAttribute('class', 'link-faded');
         expect(screen.getAllByLabelText('deployment')[0]).toHaveAttribute('class', 'item-faded');
         expect(screen.getAllByLabelText('deployment link')[0]).toHaveAttribute('class', 'link-faded');
-    }, timeout);
+    }, testTimeout);
 
     it('focusing a service link also focuses its service and target pod', async () => {
         const dataSet = {
@@ -432,7 +434,7 @@ describe('ClusterMap component', () => {
         };
         render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
-        await waitForItemPositionStable(screen.getAllByLabelText('service')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('service')[0], waitTimeout);
 
         hoverLink(screen.getAllByLabelText('service link')[0]);
 
@@ -449,7 +451,7 @@ describe('ClusterMap component', () => {
         expect(screen.getAllByLabelText('replicaset link')[1]).toHaveAttribute('class', 'link-faded');
         expect(screen.getAllByLabelText('deployment')[0]).toHaveAttribute('class', 'item-faded');
         expect(screen.getAllByLabelText('deployment link')[0]).toHaveAttribute('class', 'link-faded');
-    }, timeout);
+    }, testTimeout);
 
     it('focusing a replicaSet also focuses its target pods', async () => {
         const dataSet = {
@@ -460,7 +462,7 @@ describe('ClusterMap component', () => {
         };
         render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
-        await waitForItemPositionStable(screen.getAllByLabelText('replicaset')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('replicaset')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('replicaset')[0]);
 
@@ -478,7 +480,7 @@ describe('ClusterMap component', () => {
         expect(screen.getAllByLabelText('deployment link')[0]).toHaveAttribute('class', 'link');
         expect(screen.getAllByLabelText('deployment')[1]).toHaveAttribute('class', 'item-faded');
         expect(screen.getAllByLabelText('deployment link')[1]).toHaveAttribute('class', 'link-faded');
-    }, timeout);
+    }, testTimeout);
 
     it('focusing a replicaSet link also focuses its replicaSet and target pod', async () => {
         const dataSet = {
@@ -489,7 +491,7 @@ describe('ClusterMap component', () => {
         };
         render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
-        await waitForItemPositionStable(screen.getAllByLabelText('replicaset')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('replicaset')[0], waitTimeout);
 
         hoverLink(screen.getAllByLabelText('replicaset link')[0]);
 
@@ -507,7 +509,7 @@ describe('ClusterMap component', () => {
         expect(screen.getAllByLabelText('deployment link')[0]).toHaveAttribute('class', 'link-faded');
         expect(screen.getAllByLabelText('deployment')[1]).toHaveAttribute('class', 'item-faded');
         expect(screen.getAllByLabelText('deployment link')[1]).toHaveAttribute('class', 'link-faded');
-    }, timeout);
+    }, testTimeout);
 
     it('focusing a deployment also focuses its target replicaSets and their target pods', async () => {
         const dataSet = {
@@ -518,7 +520,7 @@ describe('ClusterMap component', () => {
         };
         render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
-        await waitForItemPositionStable(screen.getAllByLabelText('deployment')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('deployment')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('deployment')[0]);
 
@@ -540,7 +542,7 @@ describe('ClusterMap component', () => {
         expect(screen.getAllByLabelText('deployment link')[1]).toHaveAttribute('class', 'link');
         expect(screen.getAllByLabelText('deployment')[1]).toHaveAttribute('class', 'item-faded');
         expect(screen.getAllByLabelText('deployment link')[2]).toHaveAttribute('class', 'link-faded');
-    }, timeout);
+    }, testTimeout);
 
     it('focusing a deployment link also focuses its deployment and target replicaSet', async () => {
         const dataSet = {
@@ -551,7 +553,7 @@ describe('ClusterMap component', () => {
         };
         render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
-        await waitForItemPositionStable(screen.getAllByLabelText('deployment')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('deployment')[0], waitTimeout);
 
         hoverLink(screen.getAllByLabelText('deployment link')[0]);
 
@@ -571,7 +573,7 @@ describe('ClusterMap component', () => {
         expect(screen.getAllByLabelText('deployment link')[1]).toHaveAttribute('class', 'link-faded');
         expect(screen.getAllByLabelText('deployment')[1]).toHaveAttribute('class', 'item-faded');
         expect(screen.getAllByLabelText('deployment link')[2]).toHaveAttribute('class', 'link-faded');
-    }, timeout);
+    }, testTimeout);
 
     it('unfocusing an element should remove all fades', async () => {
         const dataSet = {
@@ -582,7 +584,7 @@ describe('ClusterMap component', () => {
         };
         render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
-        await waitForItemPositionStable(screen.getAllByLabelText('service')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('service')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('service')[0]);
         hoverAway();
@@ -594,7 +596,7 @@ describe('ClusterMap component', () => {
         expect(screen.getAllByLabelText('replicaset link')[0]).toHaveAttribute('class', 'link');
         expect(screen.getAllByLabelText('deployment')[0]).toHaveAttribute('class', 'item');
         expect(screen.getAllByLabelText('deployment link')[0]).toHaveAttribute('class', 'link');
-    }, timeout);
+    }, testTimeout);
 
     it('focused element should stay focused after component update', async () => {
         const dataSet1 = {
@@ -613,7 +615,7 @@ describe('ClusterMap component', () => {
             <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                         onDeploymentFocus={noOpHandler} dataSet={dataSet1}/>
         );
-        await waitForItemPositionStable(screen.getAllByLabelText('service')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('service')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('service')[0]);
         rerender(
@@ -631,7 +633,7 @@ describe('ClusterMap component', () => {
         expect(screen.getAllByLabelText('replicaset link')[0]).toHaveAttribute('class', 'link-faded');
         expect(screen.getAllByLabelText('deployment')[0]).toHaveAttribute('class', 'item-faded');
         expect(screen.getAllByLabelText('deployment link')[0]).toHaveAttribute('class', 'link-faded');
-    }, timeout);
+    }, testTimeout);
 
     it('drag and dropped services do not move anymore', async () => {
         const dataSet1 = {
@@ -650,23 +652,23 @@ describe('ClusterMap component', () => {
             <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                         onDeploymentFocus={noOpHandler} dataSet={dataSet1}/>
         );
-        await waitForItemPositionStable(screen.getAllByLabelText('service')[1], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('service')[1], waitTimeout);
 
         dragAndDropItem(screen.getAllByLabelText('service')[1], { clientX: -20, clientY: 10 });
-        await waitForItemPositionStable(screen.getAllByLabelText('service')[1], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('service')[1], waitTimeout);
         const oldService1Position = getItemPosition(screen.getAllByLabelText('service')[0]);
         const oldService2Position = getItemPosition(screen.getAllByLabelText('service')[1]);
         rerender(
             <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                         onDeploymentFocus={noOpHandler} dataSet={dataSet2}/>
         );
-        await waitForItemPositionStable(screen.getAllByLabelText('service')[2], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('service')[2], waitTimeout);
         const newService1Position = getItemPosition(screen.getAllByLabelText('service')[0]);
         const newService2Position = getItemPosition(screen.getAllByLabelText('service')[1]);
 
         expect(newService1Position).not.toEqual(oldService1Position);
         expect(newService2Position).toEqual(oldService2Position);
-    }, timeout);
+    }, testTimeout);
 
     it('drag and dropped replicaSets do not move anymore', async () => {
         const dataSet1 = {
@@ -685,23 +687,23 @@ describe('ClusterMap component', () => {
             <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                         onDeploymentFocus={noOpHandler} dataSet={dataSet1}/>
         );
-        await waitForItemPositionStable(screen.getAllByLabelText('replicaset')[1], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('replicaset')[1], waitTimeout);
 
         dragAndDropItem(screen.getAllByLabelText('replicaset')[1], { clientX: 20, clientY: 10 });
-        await waitForItemPositionStable(screen.getAllByLabelText('replicaset')[1], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('replicaset')[1], waitTimeout);
         const oldReplicaSet1Position = getItemPosition(screen.getAllByLabelText('replicaset')[0]);
         const oldReplicaSet2Position = getItemPosition(screen.getAllByLabelText('replicaset')[1]);
         rerender(
             <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                         onDeploymentFocus={noOpHandler} dataSet={dataSet2}/>
         );
-        await waitForItemPositionStable(screen.getAllByLabelText('replicaset')[2], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('replicaset')[2], waitTimeout);
         const newReplicaSet1Position = getItemPosition(screen.getAllByLabelText('replicaset')[0]);
         const newReplicaSet2Position = getItemPosition(screen.getAllByLabelText('replicaset')[1]);
 
         expect(newReplicaSet1Position).not.toEqual(oldReplicaSet1Position);
         expect(newReplicaSet2Position).toEqual(oldReplicaSet2Position);
-    }, timeout);
+    }, testTimeout);
 
     it('drag and dropped deployments do not move anymore', async () => {
         const dataSet1 = {
@@ -720,23 +722,23 @@ describe('ClusterMap component', () => {
             <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                         onDeploymentFocus={noOpHandler} dataSet={dataSet1}/>
         );
-        await waitForItemPositionStable(screen.getAllByLabelText('deployment')[1], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('deployment')[1], waitTimeout);
 
         dragAndDropItem(screen.getAllByLabelText('deployment')[1], { clientX: 40, clientY: 10 });
-        await waitForItemPositionStable(screen.getAllByLabelText('deployment')[1], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('deployment')[1], waitTimeout);
         const oldDeployment1Position = getItemPosition(screen.getAllByLabelText('deployment')[0]);
         const oldDeployment2Position = getItemPosition(screen.getAllByLabelText('deployment')[1]);
         rerender(
             <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                         onDeploymentFocus={noOpHandler} dataSet={dataSet2}/>
         );
-        await waitForItemPositionStable(screen.getAllByLabelText('deployment')[2], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('deployment')[2], waitTimeout);
         const newDeployment1Position = getItemPosition(screen.getAllByLabelText('deployment')[0]);
         const newDeployment2Position = getItemPosition(screen.getAllByLabelText('deployment')[1]);
 
         expect(newDeployment1Position).not.toEqual(oldDeployment1Position);
         expect(newDeployment2Position).toEqual(oldDeployment2Position);
-    }, timeout);
+    }, testTimeout);
 
     it('pods, services, replicaSets, deployments and their labels keep same apparent size despite zoom', async () => {
         const dataSet = {
@@ -748,13 +750,13 @@ describe('ClusterMap component', () => {
         render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
         patchGraphViewBox();
-        await waitForItemPositionStable(screen.getAllByLabelText('service')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('service')[0], waitTimeout);
         const oldPodFontSize = parseFloat(screen.getByText(pod1.displayName).getAttribute('font-size'));
         const oldServiceFontSize = parseFloat(screen.getByText('ns/svc1').getAttribute('font-size'));
         const oldReplicaSetFontSize = parseFloat(screen.getByText('ns/rs1').getAttribute('font-size'));
         const oldDeploymentFontSize = parseFloat(screen.getByText('ns/deploy1').getAttribute('font-size'));
 
-        fireEvent.wheel(screen.getByLabelText('layers container'), { deltaY: -100 }); // scroll down
+        scrollDown();
         const containerScale = getScale(screen.queryByLabelText('layers container'));
         const podScale = getScale(screen.getAllByLabelText('pod')[0]);
         const serviceScale = getScale(screen.getAllByLabelText('service')[0]);
@@ -790,7 +792,7 @@ describe('ClusterMap component', () => {
         render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
         patchGraphViewBox();
-        await waitForItemPositionStable(screen.getAllByLabelText('service')[0], timeout);
+        await waitForItemPositionStable(screen.getAllByLabelText('service')[0], waitTimeout);
         const oldServiceLinkWidth = parseFloat(
             screen.getAllByLabelText('service link')[0].getAttribute('stroke-width'));
         const oldReplicaSetLinkWidth = parseFloat(
@@ -798,7 +800,7 @@ describe('ClusterMap component', () => {
         const oldDeploymentLinkWidth = parseFloat(
             screen.getAllByLabelText('deployment link')[0].getAttribute('stroke-width'));
 
-        fireEvent.wheel(screen.getByLabelText('layers container'), { deltaY: -100 }); // scroll down
+        scrollDown();
         const newServiceLinkWidth = parseFloat(
             screen.getAllByLabelText('service link')[0].getAttribute('stroke-width'));
         const newReplicaSetLinkWidth = parseFloat(

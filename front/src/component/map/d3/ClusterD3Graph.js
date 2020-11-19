@@ -180,7 +180,7 @@ export default class ClusterD3Graph extends D3Graph {
             focusHandler: 'onReplicaSetFocus',
             svgElementAttributesApplier: selection => {
                 selection
-                    .attr('aria-label', 'replicaset link')
+                    .attr('aria-label', 'replicaset link');
             }
         });
         this.deploymentsLayer = new D3GraphItemLayer({
@@ -223,7 +223,7 @@ export default class ClusterD3Graph extends D3Graph {
             focusHandler: 'onDeploymentFocus',
             svgElementAttributesApplier: selection => {
                 selection
-                    .attr('aria-label', 'deployment link')
+                    .attr('aria-label', 'deployment link');
             }
         });
     }
@@ -246,10 +246,16 @@ export default class ClusterD3Graph extends D3Graph {
     }
 
     sortLayersDataForNiceDisplay() {
-        return this.sortPodsFollowingOrderOfTheirService();
+        const indexedPodsToService = this.buildPodsToServiceIndex();
+        const indexedPodsToReplicaSet = this.buildPodsToReplicaSetIndex();
+        this.sortPodsByServiceAndReplicaSet(indexedPodsToService, indexedPodsToReplicaSet);
+        const indexedPods = this.buildPodsIndex();
+        this.sortReplicaSetsByPodIndex(indexedPods);
+        const indexedReplicaSets = this.buildReplicaSetsIndex();
+        this.sortDeploymentsByReplicaSet(indexedReplicaSets);
     }
 
-    sortPodsFollowingOrderOfTheirService() {
+    buildPodsToServiceIndex() {
         const indexedPodsToService = new Map();
         this.servicesLayer.data.forEach((service, i) => {
             service.index = i;
@@ -257,18 +263,75 @@ export default class ClusterD3Graph extends D3Graph {
                 indexedPodsToService.set(podId, service);
             });
         });
+        return indexedPodsToService;
+    }
+
+    buildPodsToReplicaSetIndex() {
+        const indexedPodsToReplicaSet = new Map();
+        this.replicaSetsLayer.data.forEach((replicaSet, i) => {
+            replicaSet.index = i;
+            replicaSet.targetPods.forEach(podId => {
+                indexedPodsToReplicaSet.set(podId, replicaSet);
+            });
+        });
+        return indexedPodsToReplicaSet;
+    }
+
+    sortPodsByServiceAndReplicaSet(indexedPodsToService, indexedPodsToReplicaSet) {
         this.podsLayer.data.sort((pod1, pod2) => {
             const service1 = indexedPodsToService.get(pod1.id);
             const service2 = indexedPodsToService.get(pod2.id);
-            const service1Index = service1 ? service1.index : -1;
-            const service2Index = service2 ? service2.index : -1;
+            const service1Index = service1 ? service1.index : Number.MAX_VALUE;
+            const service2Index = service2 ? service2.index : Number.MAX_VALUE;
+            const replicaSet1 = indexedPodsToReplicaSet.get(pod1.id);
+            const replicaSet2 = indexedPodsToReplicaSet.get(pod2.id);
+            const replicaSet1Index = replicaSet1 ? replicaSet1.index : Number.MAX_VALUE;
+            const replicaSet2Index = replicaSet2 ? replicaSet2.index : Number.MAX_VALUE;
             if (service1Index < service2Index) {
                 return -1;
             } else if (service1Index > service2Index) {
                 return 1;
+            } else if (replicaSet1Index < replicaSet2Index) {
+                return -1;
+            } else if (replicaSet1Index > replicaSet2Index) {
+                return 1;
             } else {
                 return pod1.id.localeCompare(pod2.id);
             }
+        });
+    }
+
+    buildPodsIndex() {
+        const indexedPods = new Map();
+        this.podsLayer.data.forEach((pod, i) => {
+            pod.index = i;
+            indexedPods.set(pod.id, pod);
+        });
+        return indexedPods;
+    }
+
+    sortReplicaSetsByPodIndex(indexedPods) {
+        this.replicaSetsLayer.data.sort((replicaSet1, replicaSet2) => {
+            const podIndex1 = indexedPods.get(replicaSet1.targetPods[0]);
+            const podIndex2 = indexedPods.get(replicaSet2.targetPods[0]);
+            return podIndex1 - podIndex2;
+        });
+    }
+
+    buildReplicaSetsIndex() {
+        const indexedReplicaSets = new Map();
+        this.replicaSetsLayer.data.forEach((replicaSet, i) => {
+            replicaSet.index = i;
+            indexedReplicaSets.set(replicaSet.id, replicaSet);
+        });
+        return indexedReplicaSets;
+    }
+
+    sortDeploymentsByReplicaSet(indexedReplicaSets) {
+        this.deploymentsLayer.data.sort((deployment1, deployment2) => {
+            const replicaSetIndex1 = indexedReplicaSets.get(deployment1.targetReplicaSets[0]);
+            const replicaSetIndex2 = indexedReplicaSets.get(deployment2.targetReplicaSets[0]);
+            return replicaSetIndex1 - replicaSetIndex2;
         });
     }
 
