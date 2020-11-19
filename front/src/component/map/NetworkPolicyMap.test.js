@@ -201,7 +201,7 @@ describe('NetworkPolicyMap component', () => {
         expect(screen.getAllByLabelText('allowed route')[1]).toHaveAttribute('class', 'link-faded');
     }, timeout);
 
-    it('focusing a pod fades all non connected pods and allowed routes', async () => {
+    it('focusing a pod also focuses connected pods and allowed routes', async () => {
         const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
         const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
         const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
@@ -236,7 +236,7 @@ describe('NetworkPolicyMap component', () => {
         expect(screen.getAllByLabelText('allowed route')[2]).toHaveAttribute('class', 'link-faded');
     }, timeout);
 
-    it('focusing an allowed route fades all non connected pods and all allowed routes', async () => {
+    it('focusing an allowed route also focuses source and target pods', async () => {
         const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
         const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
         const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
@@ -264,7 +264,7 @@ describe('NetworkPolicyMap component', () => {
         expect(screen.getAllByLabelText('allowed route')[1]).toHaveAttribute('class', 'link-faded');
     }, timeout);
 
-    it('unfocusing an element should remove all fades', async () => {
+    it('unfocusing an element should unfocus all', async () => {
         const pod1 = { namespace: 'ns', name: 'pod1', displayName: 'ns/pod1' };
         const pod2 = { namespace: 'ns', name: 'pod2', displayName: 'ns/pod2' };
         const pod3 = { namespace: 'ns', name: 'pod3', displayName: 'ns/pod3' };
