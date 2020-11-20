@@ -34,7 +34,7 @@ export default class D3GraphLayer {
         return dataChanged;
     }
 
-    updateElements(newElementAttributesApplier) {
+    updateElements(dataChanged, newElementAttributesApplier) {
 
     }
 

@@ -87,12 +87,12 @@ export default class ClusterD3Graph extends D3Graph {
             d3IdFn: d3PodId,
             d3DatumMapper: d3Pod,
             focusHandler: 'onPodFocus',
-            svgElementAttributesApplier: selection => {
+            svgElementAttributesApplier: (selection, dataChanged) => {
                 selection
                     .attr('aria-label', 'pod')
                     .attr('r', 2)
                     .each((d, i, c) => {
-                        if (d.fx == null) {
+                        if (d.fx == null || (dataChanged & !d.pinned)) {
                             d.fx = d.x = 0;
                             d.fy = d.y = SPACING * (i - (c.length - 1) / 2);
                         }
@@ -106,12 +106,12 @@ export default class ClusterD3Graph extends D3Graph {
             d3IdFn: d3ServiceId,
             d3DatumMapper: d3Service,
             focusHandler: 'onServiceFocus',
-            svgElementAttributesApplier: selection => {
+            svgElementAttributesApplier: (selection, dataChanged) => {
                 selection
                     .attr('aria-label', 'service')
                     .attr('points', '-4,0 0,-2.5 4,0 0,2.5')
                     .each(d => {
-                        if (d.fx == null) {
+                        if (d.fx == null || (dataChanged & !d.pinned)) {
                             const targetPods = d.targetPods.map(targetPodId =>
                                 this.podsLayer.indexedData.get(targetPodId));
                             const targetPodsAvgY = targetPods.reduce((acc, p) => acc + p.y, 0) / targetPods.length;
@@ -148,12 +148,12 @@ export default class ClusterD3Graph extends D3Graph {
             d3IdFn: d3ReplicaSetId,
             d3DatumMapper: d3ReplicaSet,
             focusHandler: 'onReplicaSetFocus',
-            svgElementAttributesApplier: selection => {
+            svgElementAttributesApplier: (selection, dataChanged) => {
                 selection
                     .attr('aria-label', 'replicaset')
                     .attr('d', 'M-2,-2 L2,-2 L2,2 L-2,2 M2.5,-1 L3,-1 L3,3 L-1,3 L-1,2.5 L2.5,2.5 L2.5,-1')
                     .each(d => {
-                        if (d.fx == null) {
+                        if (d.fx == null || (dataChanged & !d.pinned)) {
                             const targetPods = d.targetPods.map(targetPodId =>
                                 this.podsLayer.indexedData.get(targetPodId));
                             const targetPodsAvgY = targetPods.reduce((acc, p) => acc + p.y, 0) / targetPods.length;
@@ -190,17 +190,17 @@ export default class ClusterD3Graph extends D3Graph {
             d3IdFn: d3DeploymentId,
             d3DatumMapper: d3Deployment,
             focusHandler: 'onDeploymentFocus',
-            svgElementAttributesApplier: selection => {
+            svgElementAttributesApplier: (selection, dataChanged) => {
                 selection
                     .attr('aria-label', 'deployment')
                     .attr('d', 'M0,1 A1,1,0,1,1,1,0 L0.5,0 L1.75,1.25 L3,0 L2.5,0 A2.5,2.5,0,1,0,0,2.5')
                     .each(d => {
-                        if (d.fx == null) {
+                        if (d.fx == null || (dataChanged & !d.pinned)) {
                             const targetReplicaSets = d.targetReplicaSets.map(targetReplicaSetId =>
                                 this.replicaSetsLayer.indexedData.get(targetReplicaSetId));
                             const targetReplicaSetsAvgY = targetReplicaSets.reduce((acc, p) => acc + p.y, 0) /
                                 targetReplicaSets.length;
-                            d.fx = d.x = 5 * SPACING;
+                            d.fx = d.x = 6 * SPACING;
                             d.y = targetReplicaSetsAvgY;
                         }
                     });

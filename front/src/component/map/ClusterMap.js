@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { memo, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { makeStyles } from '@material-ui/core/styles';
 import ClusterD3Graph from './d3/ClusterD3Graph';
@@ -70,4 +70,4 @@ ClusterMap.propTypes = {
     onDeploymentFocus: PropTypes.func.isRequired
 };
 
-export default ClusterMap;
+export default memo(ClusterMap);

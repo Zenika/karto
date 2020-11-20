@@ -90,8 +90,8 @@ export default class D3Graph {
 
     updateAllLayers(dataSet) {
         const dataChanged = this.updateAllLayersData(dataSet);
-        this.updateLinkLayersElements();
-        this.updateItemAndLabelLayersElements();
+        this.updateLinkLayersElements(dataChanged);
+        this.updateItemAndLabelLayersElements(dataChanged);
         return dataChanged;
     }
 
@@ -105,14 +105,14 @@ export default class D3Graph {
         return atLeastOneChange;
     }
 
-    updateLinkLayersElements() {
-        this.getLinkLayers().forEach(layer => layer.updateElements(
+    updateLinkLayersElements(dataChanged) {
+        this.getLinkLayers().forEach(layer => layer.updateElements(dataChanged,
             d3Selection => this.addLinkArrowTo(d3Selection))
         );
     }
 
-    updateItemAndLabelLayersElements() {
-        this.getItemLayers().forEach(layer => layer.updateElements(
+    updateItemAndLabelLayersElements(dataChanged) {
+        this.getItemLayers().forEach(layer => layer.updateElements(dataChanged,
             d3Selection => this.attachDragHandlerTo(layer, d3Selection))
         );
     }
@@ -233,7 +233,7 @@ export default class D3Graph {
             this.isDragging = true;
             this.maintainSimulationRunning();
         }
-        layer.pinItemAtCurrentPosition(item);
+        layer.pinItemAtPosition(item, d3.event.x, d3.event.y);
     };
 
     handleDragUpdate(layer, item) {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import classNames from 'classnames';
@@ -132,6 +132,37 @@ const Content = ({ className }) => {
         storeControls(state.controls);
     }, [state.controls]);
 
+    const onPodFocus = useCallback(pod => {
+        setState(oldState => ({
+            ...oldState,
+            podDetails: pod
+        }));
+    }, []);
+    const onAllowedRouteFocus = useCallback(allowedRoute => {
+        setState(oldState => ({
+            ...oldState,
+            allowedRouteDetails: allowedRoute
+        }));
+    }, []);
+    const onServiceFocus = useCallback(service => {
+        setState(oldState => ({
+            ...oldState,
+            serviceDetails: service
+        }));
+    }, []);
+    const onReplicaSetFocus = useCallback(replicaSet => {
+        setState(oldState => ({
+            ...oldState,
+            replicaSetDetails: replicaSet
+        }));
+    }, []);
+    const onDeploymentFocus = useCallback(deployment => {
+        setState(oldState => ({
+            ...oldState,
+            deploymentDetails: deployment
+        }));
+    }, []);
+
     const isSafeToDisplay = (dataSet, displayLargeDatasets) => {
         const tooLarge = dataSet.pods.length > maxRecommendedPods
             || dataSet.allowedRoutes.length > maxRecommendedAllowedRoutes;
@@ -146,36 +177,6 @@ const Content = ({ className }) => {
                 dataSet: computeDataSet(oldState.analysisResult, newControls)
             });
         });
-    };
-    const onPodFocus = pod => {
-        setState(oldState => ({
-            ...oldState,
-            podDetails: pod
-        }));
-    };
-    const onAllowedRouteFocus = allowedRoute => {
-        setState(oldState => ({
-            ...oldState,
-            allowedRouteDetails: allowedRoute
-        }));
-    };
-    const onServiceFocus = service => {
-        setState(oldState => ({
-            ...oldState,
-            serviceDetails: service
-        }));
-    };
-    const onReplicaSetFocus = replicaSet => {
-        setState(oldState => ({
-            ...oldState,
-            replicaSetDetails: replicaSet
-        }));
-    };
-    const onDeploymentFocus = deployment => {
-        setState(oldState => ({
-            ...oldState,
-            deploymentDetails: deployment
-        }));
     };
     const namespaceFiltersCount = () => {
         return state.controls.namespaceFilters.length;

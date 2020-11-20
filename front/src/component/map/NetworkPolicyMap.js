@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { memo, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { makeStyles } from '@material-ui/core/styles';
 import NetworkPolicyD3Graph from './d3/NetworkPolicyD3Graph';
@@ -74,4 +74,4 @@ NetworkPolicyMap.propTypes = {
     onAllowedRouteFocus: PropTypes.func.isRequired
 };
 
-export default NetworkPolicyMap;
+export default memo(NetworkPolicyMap);

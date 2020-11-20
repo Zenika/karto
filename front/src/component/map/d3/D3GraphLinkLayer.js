@@ -7,13 +7,13 @@ export default class D3GraphLinkLayer extends D3GraphLayer {
         this.linkSvgContainer = linkLayersContainer.append('g').attr('class', this.name);
     }
 
-    updateElements(newElementAttributesApplier) {
-        super.updateElements(newElementAttributesApplier);
+    updateElements(dataChanged, newElementAttributesApplier) {
+        super.updateElements(dataChanged, newElementAttributesApplier);
         this.linkSvgContainer
             .selectAll(this.svgElement)
             .data(this.data, d => d.id)
             .join(this.svgElement)
-            .call(this.svgElementAttributesApplier)
+            .call(selection => this.svgElementAttributesApplier(selection, dataChanged))
             .attr('class', 'link')
             .call(newElementAttributesApplier);
     }
