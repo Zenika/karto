@@ -48,6 +48,11 @@ export default class D3GraphLayer {
         focusHandler(datum);
     }
 
+    onElementUnFocused(focusHandlers) {
+        const focusHandler = focusHandlers[this.focusHandler];
+        focusHandler(null);
+    }
+
     applyFocus(focusPolicy) {
 
     }

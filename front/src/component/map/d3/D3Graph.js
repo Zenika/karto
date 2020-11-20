@@ -293,38 +293,29 @@ export default class D3Graph {
     }
 
     focusOnElement(element) {
-        if (this.isDragging) {
+        if (this.isDragging || this.isAlreadyFocused(element)) {
             return;
         }
-        if (!this.isAlreadyFocused(element.id)) {
-            this.unFocus();
-            this.focusedElement = element;
-            const layer = this.getLayer(element.layerName);
-            layer.onElementFocused(element.id, this.focusHandlers);
+        if (this.focusedElement) {
+            this.getLayer(this.focusedElement.layerName).onElementUnFocused(this.focusHandlers);
         }
+        this.getLayer(element.layerName).onElementFocused(element.id, this.focusHandlers);
+        this.focusedElement = element;
         this.applyFocusRules();
     };
-
-    isInDataSet(element) {
-        if (!element) {
-            return;
-        }
-        const layer = this.getLayer(element.layerName);
-        return layer.indexedData.has(element.id);
-    }
-
-    isAlreadyFocused(elementId) {
-        return this.focusedElement != null && this.focusedElement.id === elementId;
-    }
 
     unFocus() {
         if (this.focusedElement == null) {
             return;
         }
+        this.getLayer(this.focusedElement.layerName).onElementUnFocused(this.focusHandlers);
         this.focusedElement = null;
-        Object.values(this.focusHandlers).forEach(focusHandler => focusHandler(null));
         this.applyFocusRules();
     };
+
+    isAlreadyFocused(element) {
+        return this.focusedElement != null && this.focusedElement.id === element.id;
+    }
 
     applyFocusRules() {
         if (this.isDragging) {
@@ -334,4 +325,12 @@ export default class D3Graph {
             datum => this.isFocused(this.focusedElement, layer.name, datum))
         );
     };
+
+    isInDataSet(element) {
+        if (!element) {
+            return;
+        }
+        const layer = this.getLayer(element.layerName);
+        return layer.indexedData.has(element.id);
+    }
 }
