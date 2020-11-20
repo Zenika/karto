@@ -312,8 +312,8 @@ export default class ClusterD3Graph extends D3Graph {
 
     sortReplicaSetsByPodIndex(indexedPods) {
         this.replicaSetsLayer.data.sort((replicaSet1, replicaSet2) => {
-            const podIndex1 = indexedPods.get(replicaSet1.targetPods[0]);
-            const podIndex2 = indexedPods.get(replicaSet2.targetPods[0]);
+            const podIndex1 = indexedPods.get(replicaSet1.targetPods[0]).index;
+            const podIndex2 = indexedPods.get(replicaSet2.targetPods[0]).index;
             return podIndex1 - podIndex2;
         });
     }
@@ -329,8 +329,8 @@ export default class ClusterD3Graph extends D3Graph {
 
     sortDeploymentsByReplicaSet(indexedReplicaSets) {
         this.deploymentsLayer.data.sort((deployment1, deployment2) => {
-            const replicaSetIndex1 = indexedReplicaSets.get(deployment1.targetReplicaSets[0]);
-            const replicaSetIndex2 = indexedReplicaSets.get(deployment2.targetReplicaSets[0]);
+            const replicaSetIndex1 = indexedReplicaSets.get(deployment1.targetReplicaSets[0]).index;
+            const replicaSetIndex2 = indexedReplicaSets.get(deployment2.targetReplicaSets[0]).index;
             return replicaSetIndex1 - replicaSetIndex2;
         });
     }

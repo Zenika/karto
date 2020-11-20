@@ -138,6 +138,67 @@ describe('ClusterMap component', () => {
         expect(screen.queryAllByLabelText('replicaset link')).toHaveLength(3);
     });
 
+    it('sorts pods by service index and replicaset index', () => {
+        const dataSet = {
+            pods: [pod3, pod2, pod1],
+            services: [service1_2, service3],
+            replicaSets: [replicaSet1, replicaSet2, replicaSet3],
+            deployments: []
+        };
+        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
+                           onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+
+        const allPodLabels = screen.queryAllByText(/ns\/pod\d/);
+        expect(allPodLabels[0].textContent).toEqual(pod1.displayName);
+        expect(allPodLabels[1].textContent).toEqual(pod2.displayName);
+        expect(allPodLabels[2].textContent).toEqual(pod3.displayName);
+    });
+
+    it('sorts services by their index', () => {
+        const dataSet = {
+            pods: [pod2, pod1],
+            services: [service1, service2],
+            replicaSets: [],
+            deployments: []
+        };
+        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
+                           onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+
+        const allServiceLabels = screen.queryAllByText(/ns\/svc\d/);
+        expect(allServiceLabels[0].textContent).toEqual(service1.displayName);
+        expect(allServiceLabels[1].textContent).toEqual(service2.displayName);
+    });
+
+    it('sorts replicaSets by index of their first target pod', () => {
+        const dataSet = {
+            pods: [pod2, pod1],
+            services: [service1, service2],
+            replicaSets: [replicaSet2, replicaSet1],
+            deployments: []
+        };
+        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
+                           onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+
+        const allReplicaSetLabels = screen.queryAllByText(/ns\/rs\d/);
+        expect(allReplicaSetLabels[0].textContent).toEqual(replicaSet1.displayName);
+        expect(allReplicaSetLabels[1].textContent).toEqual(replicaSet2.displayName);
+    });
+
+    it('sorts deployments by index of their first target replicaSet', () => {
+        const dataSet = {
+            pods: [pod2, pod1],
+            services: [service1, service2],
+            replicaSets: [replicaSet2, replicaSet1],
+            deployments: [deployment2, deployment1]
+        };
+        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onReplicaSetFocus={noOpHandler}
+                           onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+
+        const allDeploymentLabels = screen.queryAllByText(/ns\/deploy\d/);
+        expect(allDeploymentLabels[0].textContent).toEqual(deployment1.displayName);
+        expect(allDeploymentLabels[1].textContent).toEqual(deployment2.displayName);
+    });
+
     it('displays deployments with links to replicasets', () => {
         const dataSet = {
             pods: [pod1, pod2, pod3],
@@ -244,8 +305,8 @@ describe('ClusterMap component', () => {
         const service3WithoutNamespaceDisplay = { ...service3, displayName: 'svc3' };
         const replicaSet1_2WithoutNamespaceDisplay = { ...replicaSet1_2, displayName: 'replicaSet12' };
         const replicaSet3WithoutNamespaceDisplay = { ...replicaSet3, displayName: 'replicaSet3' };
-        const deployment1WithoutNamespaceDisplay = { ...deployment1, displayName: 'deployment1' };
         const deployment12_3WithoutNamespaceDisplay = { ...deployment12_3, displayName: 'deployment12' };
+        const deployment3WithoutNamespaceDisplay = { ...deployment3, displayName: 'deployment3' };
         const dataSet1 = {
             pods: [pod1],
             services: [service1],
@@ -256,7 +317,7 @@ describe('ClusterMap component', () => {
             pods: [pod1WithoutNamespaceDisplay, pod2WithoutNamespaceDisplay, pod3WithoutNamespaceDisplay],
             services: [service1_2WithoutNamespaceDisplay, service3WithoutNamespaceDisplay],
             replicaSets: [replicaSet1_2WithoutNamespaceDisplay, replicaSet3WithoutNamespaceDisplay],
-            deployments: [deployment1WithoutNamespaceDisplay, deployment12_3WithoutNamespaceDisplay]
+            deployments: [deployment12_3WithoutNamespaceDisplay, deployment3WithoutNamespaceDisplay]
         };
 
         const { rerender } = render(
@@ -283,9 +344,9 @@ describe('ClusterMap component', () => {
         expect(screen.queryAllByLabelText('replicaset link')).toHaveLength(3);
         expect(screen.queryAllByLabelText('deployment')).toHaveLength(2);
         expect(screen.queryByText(deployment1.displayName)).not.toBeInTheDocument();
-        expect(screen.queryByText(deployment1WithoutNamespaceDisplay.displayName)).toBeInTheDocument();
         expect(screen.queryByText(deployment12_3WithoutNamespaceDisplay.displayName)).toBeInTheDocument();
-        expect(screen.queryAllByLabelText('deployment link')).toHaveLength(2);
+        expect(screen.queryByText(deployment3WithoutNamespaceDisplay.displayName)).toBeInTheDocument();
+        expect(screen.queryAllByLabelText('deployment link')).toHaveLength(3);
     });
 
     it('focused pods have a different appearance', async () => {
