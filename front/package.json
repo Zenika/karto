@@ -10,13 +10,13 @@
     "d3": "5.16.0",
     "local-storage": "2.0.0",
     "prop-types": "15.7.2",
-    "react": "16.13.1",
-    "react-dom": "16.13.1",
+    "react": "17.0.1",
+    "react-dom": "17.0.1",
     "react-scripts": "4.0.0"
   },
   "devDependencies": {
-    "@testing-library/jest-dom": "5.11.5",
-    "@testing-library/react": "11.1.2"
+    "@testing-library/jest-dom": "5.11.6",
+    "@testing-library/react": "11.2.2"
   },
   "scripts": {
     "start": "react-scripts start",
