@@ -129,7 +129,7 @@ export default class D3Graph {
     }
 
     restorePreviousFocus() {
-        if (this.focusedElement) {
+        if (this.isInDataSet(this.focusedElement)) {
             this.applyFocusRules();
         }
     }
@@ -299,6 +299,14 @@ export default class D3Graph {
         }
         this.applyFocusRules();
     };
+
+    isInDataSet(element) {
+        if (!element) {
+            return;
+        }
+        const layer = this.getLayer(element.layerName);
+        return layer.indexedData.has(element.id);
+    }
 
     isAlreadyFocused(elementId) {
         return this.focusedElement != null && this.focusedElement.id === elementId;
