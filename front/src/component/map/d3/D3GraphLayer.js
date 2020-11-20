@@ -6,7 +6,7 @@ export default class D3GraphLayer {
         this.dataExtractor = layerConfig.dataExtractor;
         this.d3IdFn = layerConfig.d3IdFn;
         this.d3DatumMapper = layerConfig.d3DatumMapper;
-        this.focusHandler = layerConfig.focusHandler;
+        this.focusHandlerName = layerConfig.focusHandlerName;
         this.svgElementAttributesApplier = layerConfig.svgElementAttributesApplier;
         this.data = [];
         this.indexedData = new Map();
@@ -34,6 +34,10 @@ export default class D3GraphLayer {
         return dataChanged;
     }
 
+    updateFocusHandlers(focusHandlers) {
+        this.focusHandler = focusHandlers[this.focusHandlerName];
+    }
+
     updateElements(dataChanged, newElementAttributesApplier) {
 
     }
@@ -42,15 +46,13 @@ export default class D3GraphLayer {
 
     }
 
-    onElementFocused(id, focusHandlers) {
-        const focusHandler = focusHandlers[this.focusHandler];
+    onElementFocused(id) {
         const datum = this.indexedData.get(id).sourceData;
-        focusHandler(datum);
+        this.focusHandler(datum);
     }
 
-    onElementUnFocused(focusHandlers) {
-        const focusHandler = focusHandlers[this.focusHandler];
-        focusHandler(null);
+    onElementUnFocused() {
+        this.focusHandler(null);
     }
 
     applyFocus(focusPolicy) {

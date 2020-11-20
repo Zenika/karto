@@ -86,7 +86,7 @@ export default class ClusterD3Graph extends D3Graph {
             dataExtractor: dataSet => dataSet.pods,
             d3IdFn: d3PodId,
             d3DatumMapper: d3Pod,
-            focusHandler: 'onPodFocus',
+            focusHandlerName: 'onPodFocus',
             svgElementAttributesApplier: (selection, dataChanged) => {
                 selection
                     .attr('aria-label', 'pod')
@@ -105,7 +105,7 @@ export default class ClusterD3Graph extends D3Graph {
             dataExtractor: dataSet => dataSet.services,
             d3IdFn: d3ServiceId,
             d3DatumMapper: d3Service,
-            focusHandler: 'onServiceFocus',
+            focusHandlerName: 'onServiceFocus',
             svgElementAttributesApplier: (selection, dataChanged) => {
                 selection
                     .attr('aria-label', 'service')
@@ -135,7 +135,7 @@ export default class ClusterD3Graph extends D3Graph {
             },
             d3IdFn: d3ServiceLinkId,
             d3DatumMapper: d3ServiceLink,
-            focusHandler: 'onServiceFocus',
+            focusHandlerName: 'onServiceFocus',
             svgElementAttributesApplier: selection => {
                 selection
                     .attr('aria-label', 'service link');
@@ -147,7 +147,7 @@ export default class ClusterD3Graph extends D3Graph {
             dataExtractor: dataSet => dataSet.replicaSets,
             d3IdFn: d3ReplicaSetId,
             d3DatumMapper: d3ReplicaSet,
-            focusHandler: 'onReplicaSetFocus',
+            focusHandlerName: 'onReplicaSetFocus',
             svgElementAttributesApplier: (selection, dataChanged) => {
                 selection
                     .attr('aria-label', 'replicaset')
@@ -177,7 +177,7 @@ export default class ClusterD3Graph extends D3Graph {
             },
             d3IdFn: d3ReplicaSetLinkId,
             d3DatumMapper: d3ReplicaSetLink,
-            focusHandler: 'onReplicaSetFocus',
+            focusHandlerName: 'onReplicaSetFocus',
             svgElementAttributesApplier: selection => {
                 selection
                     .attr('aria-label', 'replicaset link');
@@ -189,7 +189,7 @@ export default class ClusterD3Graph extends D3Graph {
             dataExtractor: dataSet => dataSet.deployments,
             d3IdFn: d3DeploymentId,
             d3DatumMapper: d3Deployment,
-            focusHandler: 'onDeploymentFocus',
+            focusHandlerName: 'onDeploymentFocus',
             svgElementAttributesApplier: (selection, dataChanged) => {
                 selection
                     .attr('aria-label', 'deployment')
@@ -220,7 +220,7 @@ export default class ClusterD3Graph extends D3Graph {
             },
             d3IdFn: d3DeploymentLinkId,
             d3DatumMapper: d3DeploymentLink,
-            focusHandler: 'onDeploymentFocus',
+            focusHandlerName: 'onDeploymentFocus',
             svgElementAttributesApplier: selection => {
                 selection
                     .attr('aria-label', 'deployment link');

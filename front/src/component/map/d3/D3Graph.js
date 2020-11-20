@@ -21,8 +21,7 @@ export default class D3Graph {
     }
 
     update(dataSet, focusHandlers) {
-        this.focusHandlers = focusHandlers;
-        const dataChanged = this.updateAllLayers(dataSet);
+        const dataChanged = this.updateAllLayers(dataSet, focusHandlers);
         this.updateForceSimulation(dataChanged);
         this.restorePreviousFocus();
     }
@@ -93,11 +92,16 @@ export default class D3Graph {
         this.simulation = this.createForceSimulationEngine(onTick);
     }
 
-    updateAllLayers(dataSet) {
+    updateAllLayers(dataSet, focusHandlers) {
+        this.updateAllLayersFocusHandlers(focusHandlers);
         const dataChanged = this.updateAllLayersData(dataSet);
         this.updateLinkLayersElements(dataChanged);
         this.updateItemAndLabelLayersElements(dataChanged);
         return dataChanged;
+    }
+
+    updateAllLayersFocusHandlers(focusHandlers) {
+        this.getLayers().forEach(layer => layer.updateFocusHandlers(focusHandlers));
     }
 
     updateAllLayersData(dataSet) {
@@ -297,9 +301,9 @@ export default class D3Graph {
             return;
         }
         if (this.focusedElement) {
-            this.getLayer(this.focusedElement.layerName).onElementUnFocused(this.focusHandlers);
+            this.getLayer(this.focusedElement.layerName).onElementUnFocused();
         }
-        this.getLayer(element.layerName).onElementFocused(element.id, this.focusHandlers);
+        this.getLayer(element.layerName).onElementFocused(element.id);
         this.focusedElement = element;
         this.applyFocusRules();
     };
@@ -308,7 +312,7 @@ export default class D3Graph {
         if (this.focusedElement == null) {
             return;
         }
-        this.getLayer(this.focusedElement.layerName).onElementUnFocused(this.focusHandlers);
+        this.getLayer(this.focusedElement.layerName).onElementUnFocused();
         this.focusedElement = null;
         this.applyFocusRules();
     };
