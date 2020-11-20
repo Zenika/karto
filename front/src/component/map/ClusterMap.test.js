@@ -154,10 +154,10 @@ describe('ClusterMap component', () => {
         expect(allPodLabels[2].textContent).toEqual(pod3.displayName);
     });
 
-    it('sorts services by their index', () => {
+    it('sorts services by their name', () => {
         const dataSet = {
-            pods: [pod2, pod1],
-            services: [service1, service2],
+            pods: [pod1, pod2],
+            services: [service2, service1],
             replicaSets: [],
             deployments: []
         };

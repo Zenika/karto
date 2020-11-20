@@ -39,7 +39,10 @@ const ClusterMap = ({ dataSet, onPodFocus, onServiceFocus, onReplicaSetFocus, on
     const classes = useStyles();
     const d3Graph = useRef(new ClusterD3Graph());
 
-    useEffect(() => d3Graph.current.init(), []);
+    useEffect(() => {
+        d3Graph.current.init();
+        return () => d3Graph.current.destroy();
+    }, []);
 
     useEffect(() => d3Graph.current.update(dataSet, {
         onPodFocus, onServiceFocus, onReplicaSetFocus, onDeploymentFocus

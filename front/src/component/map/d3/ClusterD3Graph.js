@@ -246,6 +246,7 @@ export default class ClusterD3Graph extends D3Graph {
     }
 
     sortLayersDataForNiceDisplay() {
+        this.sortServicesByName();
         const indexedPodsToService = this.buildPodsToServiceIndex();
         const indexedPodsToReplicaSet = this.buildPodsToReplicaSetIndex();
         this.sortPodsByServiceAndReplicaSet(indexedPodsToService, indexedPodsToReplicaSet);
@@ -275,6 +276,12 @@ export default class ClusterD3Graph extends D3Graph {
             });
         });
         return indexedPodsToReplicaSet;
+    }
+
+    sortServicesByName() {
+        this.servicesLayer.data.sort((service1, service2) => {
+            return service1.id.localeCompare(service2.id);
+        });
     }
 
     sortPodsByServiceAndReplicaSet(indexedPodsToService, indexedPodsToReplicaSet) {

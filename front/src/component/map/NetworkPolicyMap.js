@@ -45,7 +45,10 @@ const NetworkPolicyMap = ({ dataSet, onPodFocus, onAllowedRouteFocus }) => {
     const classes = useStyles();
     const d3Graph = useRef(new NetworkPolicyD3Graph());
 
-    useEffect(() => d3Graph.current.init(), []);
+    useEffect(() => {
+        d3Graph.current.init();
+        return () => d3Graph.current.destroy();
+    }, []);
 
     useEffect(() => d3Graph.current.update(dataSet, { onPodFocus, onAllowedRouteFocus }));
 

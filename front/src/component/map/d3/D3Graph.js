@@ -13,7 +13,6 @@ import flatten from '../../utils/utils';
 
 export default class D3Graph {
 
-    // Main
     init() {
         this.zoomFactor = 1;
         this.initStructure();
@@ -26,6 +25,12 @@ export default class D3Graph {
         const dataChanged = this.updateAllLayers(dataSet);
         this.updateForceSimulation(dataChanged);
         this.restorePreviousFocus();
+    }
+
+    destroy() {
+        if (this.simulation) {
+            this.simulation.stop();
+        }
     }
 
     getLayers() {
