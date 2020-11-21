@@ -7,13 +7,13 @@ export default class D3GraphLinkLayer extends D3GraphLayer {
         this.linkSvgContainer = linkLayersContainer.append('g').attr('class', this.name);
     }
 
-    updateElements(newElementAttributesApplier) {
-        super.updateElements(newElementAttributesApplier);
+    updateElements(dataChanged, newElementAttributesApplier) {
+        super.updateElements(dataChanged, newElementAttributesApplier);
         this.linkSvgContainer
             .selectAll(this.svgElement)
             .data(this.data, d => d.id)
             .join(this.svgElement)
-            .call(this.svgElementAttributesApplier)
+            .call(selection => this.svgElementAttributesApplier(selection, dataChanged))
             .attr('class', 'link')
             .call(newElementAttributesApplier);
     }
@@ -22,10 +22,10 @@ export default class D3GraphLinkLayer extends D3GraphLayer {
         super.updateElementsPositionAndScale(zoomFactor);
         this.linkSvgContainer
             .selectAll(this.svgElement)
-            .attr('x1', d => d.source.x || null)
-            .attr('y1', d => d.source.y || null)
-            .attr('x2', d => d.target.x || null)
-            .attr('y2', d => d.target.y || null)
+            .attr('x1', d => d.source.x)
+            .attr('y1', d => d.source.y)
+            .attr('x2', d => d.target.x)
+            .attr('y2', d => d.target.y)
             .attr('stroke-width', LINK_WIDTH / zoomFactor);
     }
 

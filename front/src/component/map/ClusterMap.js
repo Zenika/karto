@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { makeStyles } from '@material-ui/core/styles';
 import ClusterD3Graph from './d3/ClusterD3Graph';
@@ -39,11 +39,13 @@ const ClusterMap = ({ dataSet, onPodFocus, onServiceFocus, onReplicaSetFocus, on
     const classes = useStyles();
     const d3Graph = useRef(new ClusterD3Graph());
 
-    useEffect(() => d3Graph.current.init(), []);
+    useEffect(() => {
+        d3Graph.current.init();
+        return () => d3Graph.current.destroy();
+    }, []);
 
     useEffect(() => d3Graph.current.update(dataSet, {
-        onPodFocus, onServiceFocus,
-        onReplicaSetFocus, onDeploymentFocus
+        onPodFocus, onServiceFocus, onReplicaSetFocus, onDeploymentFocus
     }));
 
     return <div id="graph" className={classes.root}/>;
@@ -71,4 +73,4 @@ ClusterMap.propTypes = {
     onDeploymentFocus: PropTypes.func.isRequired
 };
 
-export default ClusterMap;
+export default memo(ClusterMap);

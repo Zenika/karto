@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
 import Control from './Control';
@@ -68,8 +68,7 @@ const MultiKeyValueSelectControl = (
         }
     };
     const operatorForLabel = label => {
-        const operator = operators.find(operator => operator.label === label);
-        return operator || '';
+        return operators.find(operator => operator.label === label);
     };
     const labelOptionsForKey = key => {
         if (key == null) {
@@ -173,10 +172,12 @@ const MultiKeyValueSelectControl = (
                             )}
                             <div className={classNames(classes.entryRow, classes.entryActions)}>
                                 <Button color="primary" onClick={() => removeEntry(index)}>
-                                    <RemoveIcon className={classes.buttonIcon} viewBox="5 5 14 14"/>
+                                    <RemoveIcon aria-label="remove entry" className={classes.buttonIcon}
+                                                viewBox="5 5 14 14"/>
                                 </Button>
                                 <Button color="primary" onClick={() => addEntry(index + 1)}>
-                                    <AddIcon className={classes.buttonIcon} viewBox="5 5 14 14"/>
+                                    <AddIcon aria-label="add entry" className={classes.buttonIcon}
+                                             viewBox="5 5 14 14"/>
                                 </Button>
                             </div>
                         </div>

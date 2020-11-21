@@ -11,7 +11,7 @@ describe('fetchAnalysisResult', () => {
         });
     };
 
-    it('should fetch analysis results and return body content', async () => {
+    it('fetches analysis results and returns body content', async () => {
         const analysisResult = {
             pods: [{ name: 'pod1', labels: {} }],
             podIsolations: [{ pod: { name: 'pod1' } }],
@@ -32,12 +32,12 @@ describe('fetchAnalysisResult', () => {
         expect(actual.deployments).toEqual(analysisResult.deployments);
     });
 
-    it('should aggregate all namespaces', async () => {
+    it('aggregates all namespaces', async () => {
         const analysisResult = {
             pods: [
-                { name: 'pod1', namespace: 'ns2', labels: {} },
-                { name: 'pod2', namespace: 'ns2', labels: {} },
-                { name: 'pod3', namespace: 'ns1', labels: {} }
+                { namespace: 'ns2', name: 'pod1', labels: {} },
+                { namespace: 'ns2', name: 'pod2', labels: {} },
+                { namespace: 'ns1', name: 'pod3', labels: {} }
             ]
         };
         mockGlobalFetch(analysisResult);
@@ -47,7 +47,7 @@ describe('fetchAnalysisResult', () => {
         expect(actual.allNamespaces).toEqual(['ns1', 'ns2']);
     });
 
-    it('should aggregate all pod labels', async () => {
+    it('aggregates all pod labels', async () => {
         const analysisResult = {
             pods: [
                 { name: 'pod2', labels: { k2: 'v3' } },
@@ -84,13 +84,13 @@ describe('computeDataSet', () => {
         includeEgressNeighbors: false
     };
 
-    it('should filter pods by namespace', () => {
+    it('filters pods by namespace', () => {
         const analysisResult = {
             ...emptyAnalysisResult,
             pods: [
-                { name: 'pod1', namespace: 'ns1' },
-                { name: 'pod2', namespace: 'ns2' },
-                { name: 'pod3', namespace: 'ns3' }
+                { namespace: 'ns1', name: 'pod1' },
+                { namespace: 'ns2', name: 'pod2' },
+                { namespace: 'ns3', name: 'pod3' }
             ]
         };
         const controls = {
@@ -101,18 +101,18 @@ describe('computeDataSet', () => {
         const actual = computeDataSet(analysisResult, controls);
 
         expect(actual.pods).toEqual([
-            { name: 'pod1', namespace: 'ns1', displayName: 'pod1' },
-            { name: 'pod3', namespace: 'ns3', displayName: 'pod3' }
+            { namespace: 'ns1', name: 'pod1', displayName: 'pod1' },
+            { namespace: 'ns3', name: 'pod3', displayName: 'pod3' }
         ]);
     });
 
-    it('should filter pods by name with regex', () => {
+    it('filters pods by name with regex', () => {
         const analysisResult = {
             ...emptyAnalysisResult,
             pods: [
-                { name: 'pod1', namespace: defaultNamespace },
-                { name: 'pod2', namespace: defaultNamespace },
-                { name: 'pod3', namespace: defaultNamespace }
+                { namespace: defaultNamespace, name: 'pod1' },
+                { namespace: defaultNamespace, name: 'pod2' },
+                { namespace: defaultNamespace, name: 'pod3' }
             ]
         };
         const controls = {
@@ -123,23 +123,42 @@ describe('computeDataSet', () => {
         const actual = computeDataSet(analysisResult, controls);
 
         expect(actual.pods).toEqual([
-            { name: 'pod1', namespace: defaultNamespace, displayName: 'pod1' },
-            { name: 'pod2', namespace: defaultNamespace, displayName: 'pod2' }
+            { namespace: defaultNamespace, name: 'pod1', displayName: 'pod1' },
+            { namespace: defaultNamespace, name: 'pod2', displayName: 'pod2' }
         ]);
     });
 
-    it('should filter pods by labels', () => {
+    it('filters pods by name with invalid regex treated as no filter', () => {
+        const analysisResult = {
+            ...emptyAnalysisResult,
+            pods: [
+                { namespace: defaultNamespace, name: 'pod1' }
+            ]
+        };
+        const controls = {
+            ...defaultControls,
+            nameFilter: '/\\invalid regex/\\'
+        };
+
+        const actual = computeDataSet(analysisResult, controls);
+
+        expect(actual.pods).toEqual([
+            { namespace: defaultNamespace, name: 'pod1', displayName: 'pod1' }
+        ]);
+    });
+
+    it('filters pods by labels', () => {
         const selectedLabels = { k1: 'v1', k2: 'not-v2', k3: 'v3a', k4: 'v4c', k5: 'v5' };
         const analysisResult = {
             ...emptyAnalysisResult,
             pods: [
-                { name: 'pod1', namespace: defaultNamespace, labels: { ...selectedLabels, k1: 'not-v1' } },
-                { name: 'pod2', namespace: defaultNamespace, labels: { ...selectedLabels, k2: 'v2' } },
-                { name: 'pod3', namespace: defaultNamespace, labels: { ...selectedLabels, k3: 'v3c' } },
-                { name: 'pod4', namespace: defaultNamespace, labels: { ...selectedLabels, k4: 'v4a' } },
-                { name: 'pod5', namespace: defaultNamespace, labels: { ...selectedLabels, k5: undefined } },
-                { name: 'pod6', namespace: defaultNamespace, labels: { ...selectedLabels, k6: 'any' } },
-                { name: 'pod7', namespace: defaultNamespace, labels: selectedLabels }
+                { namespace: defaultNamespace, name: 'pod1', labels: { ...selectedLabels, k1: 'not-v1' } },
+                { namespace: defaultNamespace, name: 'pod2', labels: { ...selectedLabels, k2: 'v2' } },
+                { namespace: defaultNamespace, name: 'pod3', labels: { ...selectedLabels, k3: 'v3c' } },
+                { namespace: defaultNamespace, name: 'pod4', labels: { ...selectedLabels, k4: 'v4a' } },
+                { namespace: defaultNamespace, name: 'pod5', labels: { ...selectedLabels, k5: undefined } },
+                { namespace: defaultNamespace, name: 'pod6', labels: { ...selectedLabels, k6: 'any' } },
+                { namespace: defaultNamespace, name: 'pod7', labels: selectedLabels }
             ]
         };
         const controls = {
@@ -157,20 +176,20 @@ describe('computeDataSet', () => {
         const actual = computeDataSet(analysisResult, controls);
 
         expect(actual.pods).toEqual([
-            { name: 'pod7', namespace: defaultNamespace, displayName: 'pod7', labels: selectedLabels }
+            { namespace: defaultNamespace, name: 'pod7', displayName: 'pod7', labels: selectedLabels }
         ]);
     });
 
-    it('should filter podIsolations using their pods', () => {
+    it('filters podIsolations using their pods', () => {
         const analysisResult = {
             ...emptyAnalysisResult,
             pods: [
-                { name: 'pod1', namespace: defaultNamespace },
-                { name: 'pod2', namespace: defaultNamespace }
+                { namespace: defaultNamespace, name: 'pod1' },
+                { namespace: defaultNamespace, name: 'pod2' }
             ],
             podIsolations: [
-                { pod: { name: 'pod1', namespace: defaultNamespace } },
-                { pod: { name: 'pod2', namespace: defaultNamespace } }
+                { pod: { namespace: defaultNamespace, name: 'pod1' } },
+                { pod: { namespace: defaultNamespace, name: 'pod2' } }
             ]
         };
         const controls = {
@@ -181,38 +200,38 @@ describe('computeDataSet', () => {
         const actual = computeDataSet(analysisResult, controls);
 
         expect(actual.podIsolations).toEqual([
-            { name: 'pod1', namespace: defaultNamespace, displayName: 'pod1', highlighted: false }
+            { namespace: defaultNamespace, name: 'pod1', displayName: 'pod1', highlighted: false }
         ]);
     });
 
-    it('should filter allowed routes using their pods', () => {
+    it('filters allowed routes using their pods', () => {
         const analysisResult = {
             ...emptyAnalysisResult,
             pods: [
-                { name: 'pod1', namespace: defaultNamespace },
-                { name: 'pod2', namespace: defaultNamespace },
-                { name: 'pod3', namespace: defaultNamespace }
+                { namespace: defaultNamespace, name: 'pod1' },
+                { namespace: defaultNamespace, name: 'pod2' },
+                { namespace: defaultNamespace, name: 'pod3' }
             ],
             podIsolations: [
-                { pod: { name: 'pod1', namespace: defaultNamespace } },
-                { pod: { name: 'pod2', namespace: defaultNamespace } },
-                { pod: { name: 'pod3', namespace: defaultNamespace } }
+                { pod: { namespace: defaultNamespace, name: 'pod1' } },
+                { pod: { namespace: defaultNamespace, name: 'pod2' } },
+                { pod: { namespace: defaultNamespace, name: 'pod3' } }
             ],
             allowedRoutes: [
                 {
-                    name: 'route1', namespace: defaultNamespace,
-                    sourcePod: { name: 'pod1', namespace: defaultNamespace },
-                    targetPod: { name: 'pod2', namespace: defaultNamespace }
+                    namespace: defaultNamespace, name: 'route1',
+                    sourcePod: { namespace: defaultNamespace, name: 'pod1' },
+                    targetPod: { namespace: defaultNamespace, name: 'pod2' }
                 },
                 {
-                    name: 'route2', namespace: defaultNamespace,
-                    sourcePod: { name: 'pod1', namespace: defaultNamespace },
-                    targetPod: { name: 'pod3', namespace: defaultNamespace }
+                    namespace: defaultNamespace, name: 'route2',
+                    sourcePod: { namespace: defaultNamespace, name: 'pod1' },
+                    targetPod: { namespace: defaultNamespace, name: 'pod3' }
                 },
                 {
-                    name: 'route3', namespace: defaultNamespace,
-                    sourcePod: { name: 'pod3', namespace: defaultNamespace },
-                    targetPod: { name: 'pod2', namespace: defaultNamespace }
+                    namespace: defaultNamespace, name: 'route3',
+                    sourcePod: { namespace: defaultNamespace, name: 'pod3' },
+                    targetPod: { namespace: defaultNamespace, name: 'pod2' }
                 }
             ]
         };
@@ -225,35 +244,35 @@ describe('computeDataSet', () => {
 
         expect(actual.allowedRoutes).toEqual([
             {
-                name: 'route1', namespace: defaultNamespace,
-                sourcePod: { name: 'pod1', namespace: defaultNamespace, displayName: 'pod1', highlighted: false },
-                targetPod: { name: 'pod2', namespace: defaultNamespace, displayName: 'pod2', highlighted: false }
+                namespace: defaultNamespace, name: 'route1',
+                sourcePod: { namespace: defaultNamespace, name: 'pod1', displayName: 'pod1', highlighted: false },
+                targetPod: { namespace: defaultNamespace, name: 'pod2', displayName: 'pod2', highlighted: false }
             }
         ]);
     });
 
-    it('should filter services using their pods', () => {
+    it('filters services using their pods', () => {
         const analysisResult = {
             ...emptyAnalysisResult,
             pods: [
-                { name: 'pod1', namespace: defaultNamespace },
-                { name: 'pod2', namespace: defaultNamespace }
+                { namespace: defaultNamespace, name: 'pod1' },
+                { namespace: defaultNamespace, name: 'pod2' }
             ],
             services: [
                 {
                     name: 'svc1', targetPods: [
-                        { name: 'pod1', namespace: defaultNamespace },
-                        { name: 'pod2', namespace: defaultNamespace }
+                        { namespace: defaultNamespace, name: 'pod1' },
+                        { namespace: defaultNamespace, name: 'pod2' }
                     ]
                 },
                 {
                     name: 'svc2', targetPods: [
-                        { name: 'pod1', namespace: defaultNamespace }
+                        { namespace: defaultNamespace, name: 'pod1' }
                     ]
                 },
                 {
                     name: 'svc3', targetPods: [
-                        { name: 'pod2', namespace: defaultNamespace }
+                        { namespace: defaultNamespace, name: 'pod2' }
                     ]
                 }
             ]
@@ -268,40 +287,39 @@ describe('computeDataSet', () => {
         expect(actual.services).toEqual([
             {
                 name: 'svc1', displayName: 'svc1', targetPods: [
-                    { name: 'pod1', namespace: defaultNamespace },
-                    { name: 'pod2', namespace: defaultNamespace }
+                    { namespace: defaultNamespace, name: 'pod1' }
                 ]
             },
             {
                 name: 'svc2', displayName: 'svc2', targetPods: [
-                    { name: 'pod1', namespace: defaultNamespace }
+                    { namespace: defaultNamespace, name: 'pod1' }
                 ]
             }
         ]);
     });
 
-    it('should filter replicaSets using their pods', () => {
+    it('filters replicaSets using their pods', () => {
         const analysisResult = {
             ...emptyAnalysisResult,
             pods: [
-                { name: 'pod1', namespace: defaultNamespace },
-                { name: 'pod2', namespace: defaultNamespace }
+                { namespace: defaultNamespace, name: 'pod1' },
+                { namespace: defaultNamespace, name: 'pod2' }
             ],
             replicaSets: [
                 {
-                    name: 'replicaSet1', namespace: defaultNamespace, targetPods: [
-                        { name: 'pod1', namespace: defaultNamespace },
-                        { name: 'pod2', namespace: defaultNamespace }
+                    namespace: defaultNamespace, name: 'replicaSet1', targetPods: [
+                        { namespace: defaultNamespace, name: 'pod1' },
+                        { namespace: defaultNamespace, name: 'pod2' }
                     ]
                 },
                 {
-                    name: 'replicaSet2', namespace: defaultNamespace, targetPods: [
-                        { name: 'pod1', namespace: defaultNamespace }
+                    namespace: defaultNamespace, name: 'replicaSet2', targetPods: [
+                        { namespace: defaultNamespace, name: 'pod1' }
                     ]
                 },
                 {
-                    name: 'replicaSet3', namespace: defaultNamespace, targetPods: [
-                        { name: 'pod2', namespace: defaultNamespace }
+                    namespace: defaultNamespace, name: 'replicaSet3', targetPods: [
+                        { namespace: defaultNamespace, name: 'pod2' }
                     ]
                 }
             ]
@@ -315,65 +333,64 @@ describe('computeDataSet', () => {
 
         expect(actual.replicaSets).toEqual([
             {
-                name: 'replicaSet1', namespace: defaultNamespace, displayName: 'replicaSet1', targetPods: [
-                    { name: 'pod1', namespace: defaultNamespace },
-                    { name: 'pod2', namespace: defaultNamespace }
+                namespace: defaultNamespace, name: 'replicaSet1', displayName: 'replicaSet1', targetPods: [
+                    { namespace: defaultNamespace, name: 'pod1' }
                 ]
             },
             {
-                name: 'replicaSet2', namespace: defaultNamespace, displayName: 'replicaSet2', targetPods: [
-                    { name: 'pod1', namespace: defaultNamespace }
+                namespace: defaultNamespace, name: 'replicaSet2', displayName: 'replicaSet2', targetPods: [
+                    { namespace: defaultNamespace, name: 'pod1' }
                 ]
             }
         ]);
     });
 
-    it('should filter deployments using their replicaSets', () => {
+    it('filters deployments using their replicaSets', () => {
         const analysisResult = {
             ...emptyAnalysisResult,
             pods: [
-                { name: 'pod1', namespace: defaultNamespace },
-                { name: 'pod2', namespace: defaultNamespace },
-                { name: 'pod3', namespace: defaultNamespace },
-                { name: 'pod4', namespace: defaultNamespace }
+                { namespace: defaultNamespace, name: 'pod1' },
+                { namespace: defaultNamespace, name: 'pod2' },
+                { namespace: defaultNamespace, name: 'pod3' },
+                { namespace: defaultNamespace, name: 'pod4' }
             ],
             replicaSets: [
                 {
-                    name: 'replicaSet1', namespace: defaultNamespace, targetPods: [
-                        { name: 'pod1', namespace: defaultNamespace }
+                    namespace: defaultNamespace, name: 'replicaSet1', targetPods: [
+                        { namespace: defaultNamespace, name: 'pod1' }
                     ]
                 },
                 {
-                    name: 'replicaSet2', namespace: defaultNamespace, targetPods: [
-                        { name: 'pod2', namespace: defaultNamespace }
+                    namespace: defaultNamespace, name: 'replicaSet2', targetPods: [
+                        { namespace: defaultNamespace, name: 'pod2' }
                     ]
                 },
                 {
-                    name: 'replicaSet3', namespace: defaultNamespace, targetPods: [
-                        { name: 'pod3', namespace: defaultNamespace }
+                    namespace: defaultNamespace, name: 'replicaSet3', targetPods: [
+                        { namespace: defaultNamespace, name: 'pod3' }
                     ]
                 },
                 {
-                    name: 'replicaSet4', namespace: defaultNamespace, targetPods: [
-                        { name: 'pod4', namespace: defaultNamespace }
+                    namespace: defaultNamespace, name: 'replicaSet4', targetPods: [
+                        { namespace: defaultNamespace, name: 'pod4' }
                     ]
                 }
             ],
             deployments: [
                 {
-                    name: 'deployment1', namespace: defaultNamespace, targetReplicaSets: [
-                        { name: 'replicaSet1', namespace: defaultNamespace },
-                        { name: 'replicaSet3', namespace: defaultNamespace }
+                    namespace: defaultNamespace, name: 'deployment1', targetReplicaSets: [
+                        { namespace: defaultNamespace, name: 'replicaSet1' },
+                        { namespace: defaultNamespace, name: 'replicaSet3' }
                     ]
                 },
                 {
-                    name: 'deployment2', namespace: defaultNamespace, targetReplicaSets: [
-                        { name: 'replicaSet2', namespace: defaultNamespace }
+                    namespace: defaultNamespace, name: 'deployment2', targetReplicaSets: [
+                        { namespace: defaultNamespace, name: 'replicaSet2' }
                     ]
                 },
                 {
-                    name: 'deployment2', namespace: defaultNamespace, targetReplicaSets: [
-                        { name: 'replicaSet4', namespace: defaultNamespace }
+                    namespace: defaultNamespace, name: 'deployment2', targetReplicaSets: [
+                        { namespace: defaultNamespace, name: 'replicaSet4' }
                     ]
                 }
             ]
@@ -387,42 +404,41 @@ describe('computeDataSet', () => {
 
         expect(actual.deployments).toEqual([
             {
-                name: 'deployment1', namespace: defaultNamespace, displayName: 'deployment1', targetReplicaSets: [
-                    { name: 'replicaSet1', namespace: defaultNamespace },
-                    { name: 'replicaSet3', namespace: defaultNamespace }
+                namespace: defaultNamespace, name: 'deployment1', displayName: 'deployment1', targetReplicaSets: [
+                    { namespace: defaultNamespace, name: 'replicaSet1' }
                 ]
             },
             {
-                name: 'deployment2', namespace: defaultNamespace, displayName: 'deployment2', targetReplicaSets: [
-                    { name: 'replicaSet2', namespace: defaultNamespace }
+                namespace: defaultNamespace, name: 'deployment2', displayName: 'deployment2', targetReplicaSets: [
+                    { namespace: defaultNamespace, name: 'replicaSet2' }
                 ]
             }
         ]);
     });
 
-    it('should include ingress neighbors', () => {
+    it('includes ingress neighbors', () => {
         const analysisResult = {
             ...emptyAnalysisResult,
             pods: [
-                { name: 'pod1', namespace: defaultNamespace },
-                { name: 'pod2', namespace: defaultNamespace },
-                { name: 'pod3', namespace: defaultNamespace }
+                { namespace: defaultNamespace, name: 'pod1' },
+                { namespace: defaultNamespace, name: 'pod2' },
+                { namespace: defaultNamespace, name: 'pod3' }
             ],
             podIsolations: [
-                { pod: { name: 'pod1', namespace: defaultNamespace } },
-                { pod: { name: 'pod2', namespace: defaultNamespace } },
-                { pod: { name: 'pod3', namespace: defaultNamespace } }
+                { pod: { namespace: defaultNamespace, name: 'pod1' } },
+                { pod: { namespace: defaultNamespace, name: 'pod2' } },
+                { pod: { namespace: defaultNamespace, name: 'pod3' } }
             ],
             allowedRoutes: [
                 {
-                    name: 'route1', namespace: defaultNamespace,
-                    sourcePod: { name: 'pod2', namespace: defaultNamespace },
-                    targetPod: { name: 'pod1', namespace: defaultNamespace }
+                    namespace: defaultNamespace, name: 'route1',
+                    sourcePod: { namespace: defaultNamespace, name: 'pod2' },
+                    targetPod: { namespace: defaultNamespace, name: 'pod1' }
                 },
                 {
-                    name: 'route2', namespace: defaultNamespace,
-                    sourcePod: { name: 'pod1', namespace: defaultNamespace },
-                    targetPod: { name: 'pod3', namespace: defaultNamespace }
+                    namespace: defaultNamespace, name: 'route2',
+                    sourcePod: { namespace: defaultNamespace, name: 'pod1' },
+                    targetPod: { namespace: defaultNamespace, name: 'pod3' }
                 }
             ]
         };
@@ -435,41 +451,41 @@ describe('computeDataSet', () => {
         const actual = computeDataSet(analysisResult, controls);
 
         expect(actual.podIsolations).toEqual([
-            { name: 'pod1', namespace: defaultNamespace, displayName: 'pod1', highlighted: false },
-            { name: 'pod2', namespace: defaultNamespace, displayName: 'pod2', highlighted: false }
+            { namespace: defaultNamespace, name: 'pod1', displayName: 'pod1', highlighted: false },
+            { namespace: defaultNamespace, name: 'pod2', displayName: 'pod2', highlighted: false }
         ]);
         expect(actual.allowedRoutes).toEqual([
             {
-                name: 'route1', namespace: defaultNamespace,
-                sourcePod: { name: 'pod2', namespace: defaultNamespace, displayName: 'pod2', highlighted: false },
-                targetPod: { name: 'pod1', namespace: defaultNamespace, displayName: 'pod1', highlighted: false }
+                namespace: defaultNamespace, name: 'route1',
+                sourcePod: { namespace: defaultNamespace, name: 'pod2', displayName: 'pod2', highlighted: false },
+                targetPod: { namespace: defaultNamespace, name: 'pod1', displayName: 'pod1', highlighted: false }
             }
         ]);
     });
 
-    it('should include egress neighbors', () => {
+    it('includes egress neighbors', () => {
         const analysisResult = {
             ...emptyAnalysisResult,
             pods: [
-                { name: 'pod1', namespace: defaultNamespace },
-                { name: 'pod2', namespace: defaultNamespace },
-                { name: 'pod3', namespace: defaultNamespace }
+                { namespace: defaultNamespace, name: 'pod1' },
+                { namespace: defaultNamespace, name: 'pod2' },
+                { namespace: defaultNamespace, name: 'pod3' }
             ],
             podIsolations: [
-                { pod: { name: 'pod1', namespace: defaultNamespace } },
-                { pod: { name: 'pod2', namespace: defaultNamespace } },
-                { pod: { name: 'pod3', namespace: defaultNamespace } }
+                { pod: { namespace: defaultNamespace, name: 'pod1' } },
+                { pod: { namespace: defaultNamespace, name: 'pod2' } },
+                { pod: { namespace: defaultNamespace, name: 'pod3' } }
             ],
             allowedRoutes: [
                 {
-                    name: 'route1', namespace: defaultNamespace,
-                    sourcePod: { name: 'pod1', namespace: defaultNamespace },
-                    targetPod: { name: 'pod2', namespace: defaultNamespace }
+                    namespace: defaultNamespace, name: 'route1',
+                    sourcePod: { namespace: defaultNamespace, name: 'pod1' },
+                    targetPod: { namespace: defaultNamespace, name: 'pod2' }
                 },
                 {
-                    name: 'route2', namespace: defaultNamespace,
-                    sourcePod: { name: 'pod2', namespace: defaultNamespace },
-                    targetPod: { name: 'pod3', namespace: defaultNamespace }
+                    namespace: defaultNamespace, name: 'route2',
+                    sourcePod: { namespace: defaultNamespace, name: 'pod2' },
+                    targetPod: { namespace: defaultNamespace, name: 'pod3' }
                 }
             ]
         };
@@ -482,32 +498,32 @@ describe('computeDataSet', () => {
         const actual = computeDataSet(analysisResult, controls);
 
         expect(actual.podIsolations).toEqual([
-            { name: 'pod1', namespace: defaultNamespace, displayName: 'pod1', highlighted: false },
-            { name: 'pod2', namespace: defaultNamespace, displayName: 'pod2', highlighted: false }
+            { namespace: defaultNamespace, name: 'pod1', displayName: 'pod1', highlighted: false },
+            { namespace: defaultNamespace, name: 'pod2', displayName: 'pod2', highlighted: false }
         ]);
         expect(actual.allowedRoutes).toEqual([
             {
-                name: 'route1', namespace: defaultNamespace,
-                sourcePod: { name: 'pod1', namespace: defaultNamespace, displayName: 'pod1', highlighted: false },
-                targetPod: { name: 'pod2', namespace: defaultNamespace, displayName: 'pod2', highlighted: false }
+                namespace: defaultNamespace, name: 'route1',
+                sourcePod: { namespace: defaultNamespace, name: 'pod1', displayName: 'pod1', highlighted: false },
+                targetPod: { namespace: defaultNamespace, name: 'pod2', displayName: 'pod2', highlighted: false }
             }
         ]);
     });
 
-    it('should highlight podIsolations with no ingress isolation', () => {
+    it('highlights podIsolations with no ingress isolation', () => {
         const analysisResult = {
             ...emptyAnalysisResult,
             pods: [
-                { name: 'pod1', namespace: defaultNamespace },
-                { name: 'pod2', namespace: defaultNamespace }
+                { namespace: defaultNamespace, name: 'pod1' },
+                { namespace: defaultNamespace, name: 'pod2' }
             ],
             podIsolations: [
                 {
-                    pod: { name: 'pod1', namespace: defaultNamespace },
+                    pod: { namespace: defaultNamespace, name: 'pod1' },
                     isIngressIsolated: false, isEgressIsolated: false
                 },
                 {
-                    pod: { name: 'pod2', namespace: defaultNamespace },
+                    pod: { namespace: defaultNamespace, name: 'pod2' },
                     isIngressIsolated: true, isEgressIsolated: false
                 }
             ]
@@ -521,30 +537,30 @@ describe('computeDataSet', () => {
 
         expect(actual.podIsolations).toEqual([
             {
-                name: 'pod1', namespace: defaultNamespace, displayName: 'pod1',
+                namespace: defaultNamespace, name: 'pod1', displayName: 'pod1',
                 isIngressIsolated: false, isEgressIsolated: false, highlighted: true
             },
             {
-                name: 'pod2', namespace: defaultNamespace, displayName: 'pod2',
+                namespace: defaultNamespace, name: 'pod2', displayName: 'pod2',
                 isIngressIsolated: true, isEgressIsolated: false, highlighted: false
             }
         ]);
     });
 
-    it('should highlight podIsolations with no egress isolation', () => {
+    it('highlights podIsolations with no egress isolation', () => {
         const analysisResult = {
             ...emptyAnalysisResult,
             pods: [
-                { name: 'pod1', namespace: defaultNamespace },
-                { name: 'pod2', namespace: defaultNamespace }
+                { namespace: defaultNamespace, name: 'pod1' },
+                { namespace: defaultNamespace, name: 'pod2' }
             ],
             podIsolations: [
                 {
-                    pod: { name: 'pod1', namespace: defaultNamespace },
+                    pod: { namespace: defaultNamespace, name: 'pod1' },
                     isIngressIsolated: false, isEgressIsolated: false
                 },
                 {
-                    pod: { name: 'pod2', namespace: defaultNamespace },
+                    pod: { namespace: defaultNamespace, name: 'pod2' },
                     isIngressIsolated: false, isEgressIsolated: true
                 }
             ]
@@ -558,38 +574,38 @@ describe('computeDataSet', () => {
 
         expect(actual.podIsolations).toEqual([
             {
-                name: 'pod1', namespace: defaultNamespace, displayName: 'pod1',
+                namespace: defaultNamespace, name: 'pod1', displayName: 'pod1',
                 isIngressIsolated: false, isEgressIsolated: false, highlighted: true
             },
             {
-                name: 'pod2', namespace: defaultNamespace, displayName: 'pod2',
+                namespace: defaultNamespace, name: 'pod2', displayName: 'pod2',
                 isIngressIsolated: false, isEgressIsolated: true, highlighted: false
             }
         ]);
     });
 
-    it('should include podIsolation data in allowed routes', () => {
+    it('includes podIsolation data in allowed routes', () => {
         const analysisResult = {
             ...emptyAnalysisResult,
             pods: [
-                { name: 'pod1', namespace: defaultNamespace },
-                { name: 'pod2', namespace: defaultNamespace }
+                { namespace: defaultNamespace, name: 'pod1' },
+                { namespace: defaultNamespace, name: 'pod2' }
             ],
             podIsolations: [
                 {
-                    pod: { name: 'pod1', namespace: defaultNamespace },
+                    pod: { namespace: defaultNamespace, name: 'pod1' },
                     isIngressIsolated: true, isEgressIsolated: false
                 },
                 {
-                    pod: { name: 'pod2', namespace: defaultNamespace },
+                    pod: { namespace: defaultNamespace, name: 'pod2' },
                     isIngressIsolated: false, isEgressIsolated: true
                 }
             ],
             allowedRoutes: [
                 {
-                    name: 'route1', namespace: defaultNamespace,
-                    sourcePod: { name: 'pod1', namespace: defaultNamespace },
-                    targetPod: { name: 'pod2', namespace: defaultNamespace }
+                    namespace: defaultNamespace, name: 'route1',
+                    sourcePod: { namespace: defaultNamespace, name: 'pod1' },
+                    targetPod: { namespace: defaultNamespace, name: 'pod2' }
                 }
             ]
         };
@@ -603,56 +619,56 @@ describe('computeDataSet', () => {
 
         expect(actual.allowedRoutes).toEqual([
             {
-                name: 'route1', namespace: defaultNamespace,
+                namespace: defaultNamespace, name: 'route1',
                 sourcePod: {
-                    name: 'pod1', namespace: defaultNamespace, displayName: 'pod1',
+                    namespace: defaultNamespace, name: 'pod1', displayName: 'pod1',
                     isIngressIsolated: true, isEgressIsolated: false, highlighted: true
                 },
                 targetPod: {
-                    name: 'pod2', namespace: defaultNamespace, displayName: 'pod2',
+                    namespace: defaultNamespace, name: 'pod2', displayName: 'pod2',
                     isIngressIsolated: false, isEgressIsolated: true, highlighted: true
                 }
             }
         ]);
     });
 
-    it('should include namespace prefix', () => {
+    it('includes namespace prefix', () => {
         const namespace = 'some-namespace';
         const analysisResult = {
             ...emptyAnalysisResult,
             pods: [
-                { name: 'pod1', namespace: namespace },
-                { name: 'pod2', namespace: namespace }
+                { namespace: namespace, name: 'pod1' },
+                { namespace: namespace, name: 'pod2' }
             ],
             podIsolations: [
-                { pod: { name: 'pod1', namespace: namespace } },
-                { pod: { name: 'pod2', namespace: namespace } }
+                { pod: { namespace: namespace, name: 'pod1' } },
+                { pod: { namespace: namespace, name: 'pod2' } }
             ],
             allowedRoutes: [
                 {
-                    name: 'route1', namespace: namespace,
-                    sourcePod: { name: 'pod1', namespace: namespace },
-                    targetPod: { name: 'pod2', namespace: namespace }
+                    namespace: namespace, name: 'route1',
+                    sourcePod: { namespace: namespace, name: 'pod1' },
+                    targetPod: { namespace: namespace, name: 'pod2' }
                 }
             ],
             services: [
                 {
-                    name: 'svc1', namespace: namespace, targetPods: [
-                        { name: 'pod1', namespace: namespace }
+                    namespace: namespace, name: 'svc1', targetPods: [
+                        { namespace: namespace, name: 'pod1' }
                     ]
                 }
             ],
             replicaSets: [
                 {
-                    name: 'replicaSet1', namespace: namespace, targetPods: [
-                        { name: 'pod1', namespace: namespace }
+                    namespace: namespace, name: 'replicaSet1', targetPods: [
+                        { namespace: namespace, name: 'pod1' }
                     ]
                 }
             ],
             deployments: [
                 {
-                    name: 'deployment1', namespace: namespace, targetReplicaSets: [
-                        { name: 'replicaSet1', namespace: namespace }
+                    namespace: namespace, name: 'deployment1', targetReplicaSets: [
+                        { namespace: namespace, name: 'replicaSet1' }
                     ]
                 }
             ]

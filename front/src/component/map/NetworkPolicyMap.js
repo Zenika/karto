@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { makeStyles } from '@material-ui/core/styles';
 import NetworkPolicyD3Graph from './d3/NetworkPolicyD3Graph';
@@ -45,7 +45,10 @@ const NetworkPolicyMap = ({ dataSet, onPodFocus, onAllowedRouteFocus }) => {
     const classes = useStyles();
     const d3Graph = useRef(new NetworkPolicyD3Graph());
 
-    useEffect(() => d3Graph.current.init(), []);
+    useEffect(() => {
+        d3Graph.current.init();
+        return () => d3Graph.current.destroy();
+    }, []);
 
     useEffect(() => d3Graph.current.update(dataSet, { onPodFocus, onAllowedRouteFocus }));
 
@@ -54,7 +57,7 @@ const NetworkPolicyMap = ({ dataSet, onPodFocus, onAllowedRouteFocus }) => {
 
 NetworkPolicyMap.propTypes = {
     dataSet: PropTypes.shape({
-        pods: PropTypes.arrayOf(PropTypes.shape({
+        podIsolations: PropTypes.arrayOf(PropTypes.shape({
             displayName: PropTypes.string.isRequired,
             name: PropTypes.string.isRequired,
             namespace: PropTypes.string.isRequired
@@ -74,4 +77,4 @@ NetworkPolicyMap.propTypes = {
     onAllowedRouteFocus: PropTypes.func.isRequired
 };
 
-export default NetworkPolicyMap;
+export default memo(NetworkPolicyMap);

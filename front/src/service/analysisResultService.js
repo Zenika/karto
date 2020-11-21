@@ -1,12 +1,3 @@
-export const labelSelectorOperators = [
-    { op: 'eq', label: '=', args: 'single' },
-    { op: 'neq', label: '!=', args: 'single' },
-    { op: 'in', label: 'in', args: 'multiple' },
-    { op: 'notin', label: 'not in', args: 'multiple' },
-    { op: 'exists', label: 'exists', args: 'none' },
-    { op: 'notexists', label: 'not exists', args: 'none' }
-];
-
 export async function fetchAnalysisResult() {
     const response = await fetch('./api/analysisResult');
     if (response.status !== 200) {
@@ -124,12 +115,17 @@ function computeNeighbors(analysisResult, filteredPodIds, podIsolationsIndex, co
 }
 
 function mapAnalysisResult(filteredAnalysisResult, podsIndex, podIsolationsIndex, controls) {
+    const filteredPodIds = new Set();
+    filteredAnalysisResult.pods.forEach(pod => filteredPodIds.add(podId(pod)));
+    const filteredReplicaSetIds = new Set();
+    filteredAnalysisResult.replicaSets.forEach(replicaSet => filteredReplicaSetIds.add(replicaSetId(replicaSet)));
+
     const podMapper = makePodMapper(controls);
     const podIsolationMapper = makePodIsolationMapper(controls, podMapper, podsIndex);
     const allowedRouteMapper = makeAllowedRouteMapper(controls, podIsolationMapper, podIsolationsIndex);
-    const serviceMapper = makeServiceMapper(controls);
-    const replicaSetMapper = makeReplicaSetMapper(controls);
-    const deploymentMapper = makeDeploymentMapper(controls);
+    const serviceMapper = makeServiceMapper(controls, filteredPodIds);
+    const replicaSetMapper = makeReplicaSetMapper(controls, filteredPodIds);
+    const deploymentMapper = makeDeploymentMapper(controls, filteredReplicaSetIds);
 
     return {
         pods: filteredAnalysisResult.pods.map(podMapper),
@@ -150,13 +146,12 @@ function makePodFilter(controls) {
 }
 
 function makePodNameFilter(nameFilter) {
-    let nameRegex;
     try {
-        nameRegex = new RegExp(nameFilter);
+        const nameRegex = new RegExp(nameFilter);
+        return pod => nameFilter === '' || nameRegex.test(pod.name);
     } catch (e) {
-        nameRegex = new RegExp('.*');
+        return () => true;
     }
-    return pod => nameFilter === '' || nameRegex.test(pod.name);
 }
 
 function makePodNamespaceFilter(namespaceFilters) {
@@ -237,26 +232,29 @@ function makeAllowedRouteMapper(controls, podIsolationMapper, podIsolationsIndex
     });
 }
 
-function makeServiceMapper(controls) {
+function makeServiceMapper(controls, filteredPodIds) {
     const { showNamespacePrefix } = controls;
     return service => ({
         ...service,
+        targetPods: service.targetPods.filter(pod => filteredPodIds.has(podId(pod))),
         displayName: showNamespacePrefix ? `${service.namespace}/${service.name}` : service.name
     });
 }
 
-function makeReplicaSetMapper(controls) {
+function makeReplicaSetMapper(controls, filteredPodIds) {
     const { showNamespacePrefix } = controls;
     return replicaSet => ({
         ...replicaSet,
+        targetPods: replicaSet.targetPods.filter(pod => filteredPodIds.has(podId(pod))),
         displayName: showNamespacePrefix ? `${replicaSet.namespace}/${replicaSet.name}` : replicaSet.name
     });
 }
 
-function makeDeploymentMapper(controls) {
+function makeDeploymentMapper(controls, filteredReplicaSetIds) {
     const { showNamespacePrefix } = controls;
     return deployment => ({
         ...deployment,
+        targetReplicaSets: deployment.targetReplicaSets.filter(rs => filteredReplicaSetIds.has(replicaSetId(rs))),
         displayName: showNamespacePrefix ? `${deployment.namespace}/${deployment.name}` : deployment.name
     });
 }

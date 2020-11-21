@@ -8,13 +8,13 @@ export default class D3GraphItemLayer extends D3GraphLayer {
         this.labelSvgContainer = labelLayersContainer.append('g').attr('class', `${this.name}-labels`);
     }
 
-    updateElements(newElementAttributesApplier) {
-        super.updateElements(newElementAttributesApplier);
+    updateElements(dataChanged, newElementAttributesApplier) {
+        super.updateElements(dataChanged, newElementAttributesApplier);
         this.itemSvgContainer
             .selectAll(this.svgElement)
             .data(this.data, d => d.id)
             .join(this.svgElement)
-            .call(this.svgElementAttributesApplier)
+            .call(selection => this.svgElementAttributesApplier(selection, dataChanged))
             .attr('class', item => item.highlighted ? 'item-highlight' : 'item')
             .call(newElementAttributesApplier);
         this.labelSvgContainer
@@ -53,12 +53,8 @@ export default class D3GraphItemLayer extends D3GraphLayer {
         return this.data.map(item => ({ ...item, layerName: this.name }));
     }
 
-    pinItemAtCurrentPosition(item) {
-        item.fx = item.x;
-        item.fy = item.y;
-    }
-
     pinItemAtPosition(item, x, y) {
+        item.pinned = true;
         item.fx = x;
         item.fy = y;
     }

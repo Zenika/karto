@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Typography from '@material-ui/core/Typography';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import ExpandLessIcon from '@material-ui/icons/ExpandLess';
 import { makeStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
-import { unstable_StrictModeCollapse as Collapse } from '@material-ui/core/Collapse';
+import Collapse from '@material-ui/core/Collapse';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 
@@ -58,7 +58,7 @@ const Control = ({ className = '', name, checked, children }) => {
         <div className={classNames(classes.root, className)}>
             <div className={classes.summary} onClick={toggleExpand}>
                 <Button className={classNames(classes.button, { [classes.buttonHighlight]: checked })}
-                        variant="outlined">
+                        aria-label={expanded ? 'collapse' : 'expand'} variant="outlined">
                     {expanded
                         ? <ExpandLessIcon className={classes.buttonIcon} viewBox="5 5 14 14"/>
                         : <ExpandMoreIcon className={classes.buttonIcon} viewBox="5 5 14 14"/>

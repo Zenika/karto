@@ -6,6 +6,6 @@ export function storeControls(controls) {
     ls(CONTROLS_KEY, controls);
 }
 
-export function getStoredControls() {
+export function getControls() {
     return ls(CONTROLS_KEY);
 }

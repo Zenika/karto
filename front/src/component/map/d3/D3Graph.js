@@ -9,10 +9,10 @@ import {
     LINK_FORCE
 } from './D3Constants';
 import { closestPointTo, closestSegmentTo } from '../geometry/geometryUtils';
+import flatten from '../../utils/utils';
 
 export default class D3Graph {
 
-    // Main
     init() {
         this.zoomFactor = 1;
         this.initStructure();
@@ -21,10 +21,15 @@ export default class D3Graph {
     }
 
     update(dataSet, focusHandlers) {
-        this.focusHandlers = focusHandlers;
-        const dataChanged = this.updateAllLayers(dataSet);
+        const dataChanged = this.updateAllLayers(dataSet, focusHandlers);
         this.updateForceSimulation(dataChanged);
         this.restorePreviousFocus();
+    }
+
+    destroy() {
+        if (this.simulation) {
+            this.simulation.stop();
+        }
     }
 
     getLayers() {
@@ -87,11 +92,16 @@ export default class D3Graph {
         this.simulation = this.createForceSimulationEngine(onTick);
     }
 
-    updateAllLayers(dataSet) {
+    updateAllLayers(dataSet, focusHandlers) {
+        this.updateAllLayersFocusHandlers(focusHandlers);
         const dataChanged = this.updateAllLayersData(dataSet);
-        this.updateLinkLayersElements();
-        this.updateItemAndLabelLayersElements();
+        this.updateLinkLayersElements(dataChanged);
+        this.updateItemAndLabelLayersElements(dataChanged);
         return dataChanged;
+    }
+
+    updateAllLayersFocusHandlers(focusHandlers) {
+        this.getLayers().forEach(layer => layer.updateFocusHandlers(focusHandlers));
     }
 
     updateAllLayersData(dataSet) {
@@ -104,14 +114,14 @@ export default class D3Graph {
         return atLeastOneChange;
     }
 
-    updateLinkLayersElements() {
-        this.getLinkLayers().forEach(layer => layer.updateElements(
+    updateLinkLayersElements(dataChanged) {
+        this.getLinkLayers().forEach(layer => layer.updateElements(dataChanged,
             d3Selection => this.addLinkArrowTo(d3Selection))
         );
     }
 
-    updateItemAndLabelLayersElements() {
-        this.getItemLayers().forEach(layer => layer.updateElements(
+    updateItemAndLabelLayersElements(dataChanged) {
+        this.getItemLayers().forEach(layer => layer.updateElements(dataChanged,
             d3Selection => this.attachDragHandlerTo(layer, d3Selection))
         );
     }
@@ -128,7 +138,7 @@ export default class D3Graph {
     }
 
     restorePreviousFocus() {
-        if (this.focusedElement) {
+        if (this.isInDataSet(this.focusedElement)) {
             this.applyFocusRules();
         }
     }
@@ -137,22 +147,23 @@ export default class D3Graph {
         return d3.select('#graph').append('svg')
             .attr('width', '100%')
             .attr('height', '100%')
-            .attr('viewBox', [-GRAPH_WIDTH / 2, -GRAPH_HEIGHT / 2, GRAPH_WIDTH, GRAPH_HEIGHT]);
+            .attr('viewBox', [-GRAPH_WIDTH / 2, -GRAPH_HEIGHT / 2, GRAPH_WIDTH, GRAPH_HEIGHT])
+            .attr('aria-label', 'graph');
     }
 
     attachZoomHandlerTo(d3Selection) {
-        d3Selection.call(d3.zoom().on('zoom', () => this.handleZoom()));
+        d3Selection.call(d3.zoom().on('zoom', event => this.handleZoom(event)));
     }
 
-    handleZoom() {
-        this.zoomFactor = d3.event.transform.k;
-        this.svg.attr('transform', d3.event.transform);
+    handleZoom(event) {
+        this.zoomFactor = event.transform.k;
+        this.svg.attr('transform', event.transform);
         this.renderAllLayers();
     };
 
     attachMouseMouveHandlerTo(d3Selection) {
-        d3Selection.on('mousemove', () => {
-            const mouse = d3.mouse(d3.event.currentTarget);
+        d3Selection.on('mousemove', event => {
+            const mouse = d3.pointer(event);
             const zoomTransform = d3.zoomTransform(d3Selection.node());
             this.handleMouseMove(zoomTransform.invert(mouse));
         });
@@ -171,12 +182,12 @@ export default class D3Graph {
     }
 
     getItemClosestTo(targetPoint, upperBound) {
-        const itemPoints = this.getItemLayers().map(layer => layer.getItemsAsPointGeometries()).flat();
+        const itemPoints = flatten(this.getItemLayers().map(layer => layer.getItemsAsPointGeometries()));
         return closestPointTo(targetPoint, itemPoints, upperBound);
     }
 
     getLinkClosestTo(targetPoint, upperBound) {
-        const linkSegments = this.getLinkLayers().map(layer => layer.getLinksAsSegmentGeometries()).flat();
+        const linkSegments = flatten(this.getLinkLayers().map(layer => layer.getLinksAsSegmentGeometries()));
         return closestSegmentTo(targetPoint, linkSegments, upperBound);
     }
 
@@ -201,7 +212,9 @@ export default class D3Graph {
     }
 
     createContentLayout(d3Selection) {
-        return d3Selection.append('g');
+        return d3Selection
+            .append('g')
+            .attr('aria-label', 'layers container');
     }
 
     createLinkLayersContainer() {
@@ -218,37 +231,37 @@ export default class D3Graph {
 
     attachDragHandlerTo(layer, d3Selection) {
         d3Selection.call(d3.drag()
-            .on('start', d => this.handleDragStart(layer, d))
-            .on('drag', d => this.handleDragUpdate(layer, d))
-            .on('end', () => this.handleDragEnd()));
+            .on('start', (event, d) => this.handleDragStart(event, layer, d))
+            .on('drag', (event, d) => this.handleDragUpdate(event, layer, d))
+            .on('end', event => this.handleDragEnd(event)));
     }
 
-    handleDragStart(layer, item) {
-        if (this.isFirstOfSimultaneousDragEvents(d3.event)) {
+    handleDragStart(event, layer, item) {
+        if (this.isFirstOfSimultaneousDragEvents(event)) {
             this.unFocus();
             this.isDragging = true;
             this.maintainSimulationRunning();
         }
-        layer.pinItemAtCurrentPosition(item);
+        layer.pinItemAtPosition(item, event.x, event.y);
     };
 
-    handleDragUpdate(layer, item) {
-        layer.pinItemAtPosition(item, d3.event.x, d3.event.y);
+    handleDragUpdate(event, layer, item) {
+        layer.pinItemAtPosition(item, event.x, event.y);
     };
 
-    handleDragEnd() {
-        if (this.isLastOfSimultaneousDragEvents(d3.event)) {
+    handleDragEnd(event) {
+        if (this.isLastOfSimultaneousDragEvents(event)) {
             this.isDragging = false;
             this.stopMaintainingSimulationRunning();
         }
     };
 
-    isFirstOfSimultaneousDragEvents(d3Event) {
-        return d3Event.active === 0;
+    isFirstOfSimultaneousDragEvents(event) {
+        return event.active === 0;
     }
 
-    isLastOfSimultaneousDragEvents(d3Event) {
-        return d3Event.active === 0;
+    isLastOfSimultaneousDragEvents(event) {
+        return event.active === 0;
     }
 
     createForceSimulationEngine(onTick) {
@@ -261,8 +274,8 @@ export default class D3Graph {
     }
 
     updateForceSimulationData() {
-        const itemsData = this.getItemLayers().map(layer => layer.data).flat();
-        const linksData = this.getLinkLayers().map(layer => layer.data).flat();
+        const itemsData = flatten(this.getItemLayers().map(layer => layer.data));
+        const linksData = flatten(this.getLinkLayers().map(layer => layer.data));
         this.simulation.nodes(itemsData);
         this.simulation.force(LINK_FORCE).links(linksData);
     }
@@ -284,30 +297,29 @@ export default class D3Graph {
     }
 
     focusOnElement(element) {
-        if (this.isDragging) {
+        if (this.isDragging || this.isAlreadyFocused(element)) {
             return;
         }
-        if (!this.isAlreadyFocused(element.id)) {
-            this.unFocus();
-            this.focusedElement = element;
-            const layer = this.getLayer(element.layerName);
-            layer.onElementFocused(element.id, this.focusHandlers);
+        if (this.focusedElement) {
+            this.getLayer(this.focusedElement.layerName).onElementUnFocused();
         }
+        this.getLayer(element.layerName).onElementFocused(element.id);
+        this.focusedElement = element;
         this.applyFocusRules();
     };
-
-    isAlreadyFocused(elementId) {
-        return this.focusedElement != null && this.focusedElement.id === elementId;
-    }
 
     unFocus() {
         if (this.focusedElement == null) {
             return;
         }
+        this.getLayer(this.focusedElement.layerName).onElementUnFocused();
         this.focusedElement = null;
-        Object.values(this.focusHandlers).forEach(focusHandler => focusHandler(null));
         this.applyFocusRules();
     };
+
+    isAlreadyFocused(element) {
+        return this.focusedElement != null && this.focusedElement.id === element.id;
+    }
 
     applyFocusRules() {
         if (this.isDragging) {
@@ -317,4 +329,12 @@ export default class D3Graph {
             datum => this.isFocused(this.focusedElement, layer.name, datum))
         );
     };
+
+    isInDataSet(element) {
+        if (!element) {
+            return;
+        }
+        const layer = this.getLayer(element.layerName);
+        return layer.indexedData.has(element.id);
+    }
 }
