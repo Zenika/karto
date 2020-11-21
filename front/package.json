@@ -7,7 +7,7 @@
     "@material-ui/icons": "4.9.1",
     "@material-ui/lab": "4.0.0-alpha.56",
     "classnames": "2.2.6",
-    "d3": "5.16.0",
+    "d3": "6.2.0",
     "local-storage": "2.0.0",
     "prop-types": "15.7.2",
     "react": "17.0.1",

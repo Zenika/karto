@@ -1,4 +1,4 @@
-import React from 'react';
+import { StrictMode } from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 import App from './component/App';
@@ -7,11 +7,11 @@ import { ThemeProvider } from '@material-ui/core/styles';
 import { theme } from './theme';
 
 ReactDOM.render(
-    <React.StrictMode>
+    <StrictMode>
         <ThemeProvider theme={theme}>
             <CssBaseline/>
             <App/>
         </ThemeProvider>
-    </React.StrictMode>,
+    </StrictMode>,
     document.getElementById('root')
 );

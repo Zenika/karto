@@ -1,4 +1,3 @@
-import React from 'react';
 import ServiceDetails from './ServiceDetails';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom/extend-expect';

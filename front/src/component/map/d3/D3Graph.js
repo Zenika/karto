@@ -152,18 +152,18 @@ export default class D3Graph {
     }
 
     attachZoomHandlerTo(d3Selection) {
-        d3Selection.call(d3.zoom().on('zoom', () => this.handleZoom()));
+        d3Selection.call(d3.zoom().on('zoom', event => this.handleZoom(event)));
     }
 
-    handleZoom() {
-        this.zoomFactor = d3.event.transform.k;
-        this.svg.attr('transform', d3.event.transform);
+    handleZoom(event) {
+        this.zoomFactor = event.transform.k;
+        this.svg.attr('transform', event.transform);
         this.renderAllLayers();
     };
 
     attachMouseMouveHandlerTo(d3Selection) {
-        d3Selection.on('mousemove', () => {
-            const mouse = d3.mouse(d3.event.currentTarget);
+        d3Selection.on('mousemove', event => {
+            const mouse = d3.pointer(event);
             const zoomTransform = d3.zoomTransform(d3Selection.node());
             this.handleMouseMove(zoomTransform.invert(mouse));
         });
@@ -231,37 +231,37 @@ export default class D3Graph {
 
     attachDragHandlerTo(layer, d3Selection) {
         d3Selection.call(d3.drag()
-            .on('start', d => this.handleDragStart(layer, d))
-            .on('drag', d => this.handleDragUpdate(layer, d))
-            .on('end', () => this.handleDragEnd()));
+            .on('start', (event, d) => this.handleDragStart(event, layer, d))
+            .on('drag', (event, d) => this.handleDragUpdate(event, layer, d))
+            .on('end', event => this.handleDragEnd(event)));
     }
 
-    handleDragStart(layer, item) {
-        if (this.isFirstOfSimultaneousDragEvents(d3.event)) {
+    handleDragStart(event, layer, item) {
+        if (this.isFirstOfSimultaneousDragEvents(event)) {
             this.unFocus();
             this.isDragging = true;
             this.maintainSimulationRunning();
         }
-        layer.pinItemAtPosition(item, d3.event.x, d3.event.y);
+        layer.pinItemAtPosition(item, event.x, event.y);
     };
 
-    handleDragUpdate(layer, item) {
-        layer.pinItemAtPosition(item, d3.event.x, d3.event.y);
+    handleDragUpdate(event, layer, item) {
+        layer.pinItemAtPosition(item, event.x, event.y);
     };
 
-    handleDragEnd() {
-        if (this.isLastOfSimultaneousDragEvents(d3.event)) {
+    handleDragEnd(event) {
+        if (this.isLastOfSimultaneousDragEvents(event)) {
             this.isDragging = false;
             this.stopMaintainingSimulationRunning();
         }
     };
 
-    isFirstOfSimultaneousDragEvents(d3Event) {
-        return d3Event.active === 0;
+    isFirstOfSimultaneousDragEvents(event) {
+        return event.active === 0;
     }
 
-    isLastOfSimultaneousDragEvents(d3Event) {
-        return d3Event.active === 0;
+    isLastOfSimultaneousDragEvents(event) {
+        return event.active === 0;
     }
 
     createForceSimulationEngine(onTick) {

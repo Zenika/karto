@@ -1,4 +1,3 @@
-import React from 'react';
 import RadioGroupControl from './RadioGroupControl';
 import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom/extend-expect';

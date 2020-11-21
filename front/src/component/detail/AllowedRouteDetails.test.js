@@ -1,4 +1,3 @@
-import React from 'react';
 import AllowedRouteDetails from './AllowedRouteDetails';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom/extend-expect';
