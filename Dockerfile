@@ -1,5 +1,5 @@
 FROM scratch
 
-COPY ./karto /karto
+COPY ./back/karto /karto
 
 ENTRYPOINT ["/karto"]

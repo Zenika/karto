@@ -5,3 +5,7 @@ export const SPACING = 20;
 export const FONT_SIZE = 4;
 export const FONT_SPACING = 0.1;
 export const FOCUS_THRESHOLD = 2;
+export const LINK_ARROW_DEF_ID = 'arrow';
+export const LINK_ARROW_FADED_DEF_ID = 'arrow-faded';
+export const LINK_FORCE = 'link';
+export const CHARGE_FORCE = 'charge';

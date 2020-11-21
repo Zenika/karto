@@ -6,17 +6,13 @@ export default class D3GraphLayer {
         this.dataExtractor = layerConfig.dataExtractor;
         this.d3IdFn = layerConfig.d3IdFn;
         this.d3DatumMapper = layerConfig.d3DatumMapper;
-        this.focusHandler = layerConfig.focusHandler;
-        this.svgElementAttributesApplier = layerConfig.svgElementAttributesApplier || (() => {
-        });
-    }
-
-    attach(svgElement) {
+        this.focusHandlerName = layerConfig.focusHandlerName;
+        this.svgElementAttributesApplier = layerConfig.svgElementAttributesApplier;
         this.data = [];
         this.indexedData = new Map();
     }
 
-    update(dataSet) {
+    updateData(dataSet) {
         let dataChanged = false;
         const newData = this.dataExtractor(dataSet).map(datum => {
             const oldDatum = this.indexedData.get(this.d3IdFn(datum));
@@ -38,12 +34,28 @@ export default class D3GraphLayer {
         return dataChanged;
     }
 
-    focusDatum(id, focusHandlers) {
-        if (!this.focusHandler) {
-            return;
-        }
-        const focusHandler = focusHandlers[this.focusHandler];
+    updateFocusHandlers(focusHandlers) {
+        this.focusHandler = focusHandlers[this.focusHandlerName];
+    }
+
+    updateElements(dataChanged, newElementAttributesApplier) {
+
+    }
+
+    updateElementsPositionAndScale(zoomFactor) {
+
+    }
+
+    onElementFocused(id) {
         const datum = this.indexedData.get(id).sourceData;
-        focusHandler(datum);
+        this.focusHandler(datum);
+    }
+
+    onElementUnFocused() {
+        this.focusHandler(null);
+    }
+
+    applyFocus(focusPolicy) {
+
     }
 }

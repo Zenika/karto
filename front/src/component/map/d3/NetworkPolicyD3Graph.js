@@ -37,9 +37,10 @@ export default class NetworkPolicyD3Graph extends D3Graph {
             dataExtractor: dataSet => dataSet.podIsolations,
             d3IdFn: d3PodId,
             d3DatumMapper: d3Pod,
-            focusHandler: 'onPodFocus',
+            focusHandlerName: 'onPodFocus',
             svgElementAttributesApplier: selection => {
                 selection
+                    .attr('aria-label', 'pod')
                     .attr('r', 2);
             }
         });
@@ -49,7 +50,11 @@ export default class NetworkPolicyD3Graph extends D3Graph {
             dataExtractor: dataSet => dataSet.allowedRoutes,
             d3IdFn: d3AllowedRouteId,
             d3DatumMapper: d3AllowedRoute,
-            focusHandler: 'onAllowedRouteFocus'
+            focusHandlerName: 'onAllowedRouteFocus',
+            svgElementAttributesApplier: selection => {
+                selection
+                    .attr('aria-label', 'allowed route');
+            }
         });
     }
 
@@ -79,9 +84,9 @@ export default class NetworkPolicyD3Graph extends D3Graph {
         const currentTargetLayerName = currentTarget.layerName;
         const candidateDatumId = candidateDatum.id;
         if (currentTargetLayerName === this.podsLayer.name) {
-            return this.isFocusedWhenTargetIsPod(currentTargetId, candidateLayerName, candidateDatumId)
+            return this.isFocusedWhenTargetIsPod(currentTargetId, candidateLayerName, candidateDatumId);
         } else if (currentTargetLayerName === this.allowedRoutesLayer.name) {
-            return this.isFocusedWhenTargetIsAllowedRoute(currentTargetId, candidateLayerName, candidateDatumId)
+            return this.isFocusedWhenTargetIsAllowedRoute(currentTargetId, candidateLayerName, candidateDatumId);
         }
         return false;
     }
@@ -99,7 +104,7 @@ export default class NetworkPolicyD3Graph extends D3Graph {
         if (candidateLayer === this.podsLayer.name) {
             return this.isPodOfRoute(candidateDatumId, allowedRouteId);
         }
-        return false
+        return false;
     }
 
     isNeighbor(pod1Id, pod2Id) {

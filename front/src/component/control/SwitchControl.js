@@ -1,6 +1,5 @@
 import withStyles from '@material-ui/core/styles/withStyles';
 import { Switch as MuiSwitch } from '@material-ui/core';
-import React from 'react';
 import PropTypes from 'prop-types';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 
@@ -47,7 +46,7 @@ const SwitchControl = ({ className = '', name, checked, onChange }) => {
         <FormControlLabel className={className} label={name} control={
             <CustomSwitch name={name} checked={checked} onChange={handleChange}/>
         }/>
-    )
+    );
 };
 
 SwitchControl.propTypes = {

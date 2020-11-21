@@ -1,4 +1,3 @@
-import React from 'react';
 import Typography from '@material-ui/core/Typography';
 import { makeStyles } from '@material-ui/core/styles';
 import classNames from 'classnames';
@@ -14,7 +13,7 @@ const useStyles = makeStyles(theme => ({
     }
 }));
 
-const Header = ({ className = '' }) => {
+const Header = ({ className }) => {
     const classes = useStyles();
     return (
         <header className={classNames(classes.root, className)}>
@@ -24,7 +23,7 @@ const Header = ({ className = '' }) => {
 };
 
 Header.propTypes = {
-    className: PropTypes.string
+    className: PropTypes.string.isRequired
 };
 
 export default Header;
