@@ -22,6 +22,8 @@ func Listen(k8sConfigPath string, clusterStateChannel chan<- types.ClusterState)
 	podInformer := informerFactory.Core().V1().Pods()
 	servicesInformer := informerFactory.Core().V1().Services()
 	replicaSetsInformer := informerFactory.Apps().V1().ReplicaSets()
+	statefulSetsInformer := informerFactory.Apps().V1().StatefulSets()
+	daemonSetsInformer := informerFactory.Apps().V1().DaemonSets()
 	deploymentsInformer := informerFactory.Apps().V1().Deployments()
 	policiesInformer := informerFactory.Networking().V1().NetworkPolicies()
 	eventHandler := cache.ResourceEventHandlerFuncs{
@@ -33,6 +35,8 @@ func Listen(k8sConfigPath string, clusterStateChannel chan<- types.ClusterState)
 	podInformer.Informer().AddEventHandler(eventHandler)
 	servicesInformer.Informer().AddEventHandler(eventHandler)
 	replicaSetsInformer.Informer().AddEventHandler(eventHandler)
+	statefulSetsInformer.Informer().AddEventHandler(eventHandler)
+	daemonSetsInformer.Informer().AddEventHandler(eventHandler)
 	deploymentsInformer.Informer().AddEventHandler(eventHandler)
 	policiesInformer.Informer().AddEventHandler(eventHandler)
 	informerFactory.Start(wait.NeverStop)
@@ -55,6 +59,14 @@ func Listen(k8sConfigPath string, clusterStateChannel chan<- types.ClusterState)
 		if err != nil {
 			panic(err.Error())
 		}
+		statefulSets, err := statefulSetsInformer.Lister().List(labels.Everything())
+		if err != nil {
+			panic(err.Error())
+		}
+		daemonSets, err := daemonSetsInformer.Lister().List(labels.Everything())
+		if err != nil {
+			panic(err.Error())
+		}
 		deployments, err := deploymentsInformer.Lister().List(labels.Everything())
 		if err != nil {
 			panic(err.Error())
@@ -68,6 +80,8 @@ func Listen(k8sConfigPath string, clusterStateChannel chan<- types.ClusterState)
 			Pods:            pods,
 			Services:        services,
 			ReplicaSets:     replicaSets,
+			StatefulSets:    statefulSets,
+			DaemonSets:      daemonSets,
 			Deployments:     deployments,
 			NetworkPolicies: policies,
 		}

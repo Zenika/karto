@@ -37,6 +37,10 @@ func Test_Analyze(t *testing.T) {
 	k8sService2 := testutils.NewServiceBuilder().WithName("svc2").WithNamespace("ns").Build()
 	k8sReplicaSet1 := testutils.NewReplicaSetBuilder().WithName("rs1").WithNamespace("ns").Build()
 	k8sReplicaSet2 := testutils.NewReplicaSetBuilder().WithName("rs2").WithNamespace("ns").Build()
+	k8sStatefulSet1 := testutils.NewStatefulSetBuilder().WithName("rs1").WithNamespace("ns").Build()
+	k8sStatefulSet2 := testutils.NewStatefulSetBuilder().WithName("rs2").WithNamespace("ns").Build()
+	k8sDaemonSet1 := testutils.NewDaemonSetBuilder().WithName("rs1").WithNamespace("ns").Build()
+	k8sDaemonSet2 := testutils.NewDaemonSetBuilder().WithName("rs2").WithNamespace("ns").Build()
 	k8sDeployment1 := testutils.NewDeploymentBuilder().WithName("deploy1").WithNamespace("ns").Build()
 	k8sDeployment2 := testutils.NewDeploymentBuilder().WithName("deploy2").WithNamespace("ns").Build()
 	pod1 := &types.Pod{Name: k8sPod1.Name, Namespace: k8sPod1.Namespace, Labels: k8sPod1.Labels}
@@ -59,6 +63,14 @@ func Test_Analyze(t *testing.T) {
 		TargetPods: []types.PodRef{podRef1}}
 	replicaSet2 := &types.ReplicaSet{Name: k8sReplicaSet2.Name, Namespace: k8sReplicaSet2.Namespace,
 		TargetPods: []types.PodRef{podRef2}}
+	statefulSet1 := &types.StatefulSet{Name: k8sStatefulSet1.Name, Namespace: k8sStatefulSet1.Namespace,
+		TargetPods: []types.PodRef{podRef1}}
+	statefulSet2 := &types.StatefulSet{Name: k8sStatefulSet2.Name, Namespace: k8sStatefulSet2.Namespace,
+		TargetPods: []types.PodRef{podRef2}}
+	daemonSet1 := &types.DaemonSet{Name: k8sDaemonSet1.Name, Namespace: k8sDaemonSet1.Namespace,
+		TargetPods: []types.PodRef{podRef1}}
+	daemonSet2 := &types.DaemonSet{Name: k8sDaemonSet2.Name, Namespace: k8sDaemonSet2.Namespace,
+		TargetPods: []types.PodRef{podRef2}}
 	replicaSetRef1 := types.ReplicaSetRef{Name: k8sReplicaSet1.Name, Namespace: k8sReplicaSet1.Namespace}
 	replicaSetRef2 := types.ReplicaSetRef{Name: k8sReplicaSet2.Name, Namespace: k8sReplicaSet2.Namespace}
 	deployment1 := &types.Deployment{Name: k8sDeployment1.Name, Namespace: k8sDeployment1.Namespace,
@@ -76,34 +88,44 @@ func Test_Analyze(t *testing.T) {
 			mocks: mocks{
 				pods: []mockPodAnalyzerCall{
 					{
-						args: mockPodAnalyzerCallArgs{
-							pods: []*corev1.Pod{k8sPod1, k8sPod2},
+						clusterState: pod.ClusterState{
+							Pods: []*corev1.Pod{k8sPod1, k8sPod2},
 						},
-						returnValue: []*types.Pod{pod1, pod2},
+						returnValue: pod.AnalysisResult{
+							Pods: []*types.Pod{pod1, pod2},
+						},
 					},
 				},
 				traffic: []mockTrafficAnalyzerCall{
 					{
-						args: mockTrafficAnalyzerCallArgs{
-							pods:            []*corev1.Pod{k8sPod1, k8sPod2},
-							namespaces:      []*corev1.Namespace{k8sNamespace},
-							networkPolicies: []*networkingv1.NetworkPolicy{k8sNetworkPolicy1, k8sNetworkPolicy2},
+						clusterState: traffic.ClusterState{
+							Pods:            []*corev1.Pod{k8sPod1, k8sPod2},
+							Namespaces:      []*corev1.Namespace{k8sNamespace},
+							NetworkPolicies: []*networkingv1.NetworkPolicy{k8sNetworkPolicy1, k8sNetworkPolicy2},
 						},
-						returnValue1: []*types.PodIsolation{podIsolation1, podIsolation2},
-						returnValue2: []*types.AllowedRoute{allowedRoute},
+						returnValue: traffic.AnalysisResult{
+							Pods:          []*types.PodIsolation{podIsolation1, podIsolation2},
+							AllowedRoutes: []*types.AllowedRoute{allowedRoute},
+						},
 					},
 				},
 				workload: []mockWorkloadAnalyzerCall{
 					{
-						args: mockWorkloadAnalyzerCallArgs{
-							pods:        []*corev1.Pod{k8sPod1, k8sPod2},
-							services:    []*corev1.Service{k8sService1, k8sService2},
-							replicaSets: []*appsv1.ReplicaSet{k8sReplicaSet1, k8sReplicaSet2},
-							deployments: []*appsv1.Deployment{k8sDeployment1, k8sDeployment2},
+						clusterState: workload.ClusterState{
+							Pods:         []*corev1.Pod{k8sPod1, k8sPod2},
+							Services:     []*corev1.Service{k8sService1, k8sService2},
+							ReplicaSets:  []*appsv1.ReplicaSet{k8sReplicaSet1, k8sReplicaSet2},
+							StatefulSets: []*appsv1.StatefulSet{k8sStatefulSet1, k8sStatefulSet2},
+							DaemonSets:   []*appsv1.DaemonSet{k8sDaemonSet1, k8sDaemonSet2},
+							Deployments:  []*appsv1.Deployment{k8sDeployment1, k8sDeployment2},
 						},
-						returnValue1: []*types.Service{service1, service2},
-						returnValue2: []*types.ReplicaSet{replicaSet1, replicaSet2},
-						returnValue3: []*types.Deployment{deployment1, deployment2},
+						returnValue: workload.AnalysisResult{
+							Services:     []*types.Service{service1, service2},
+							ReplicaSets:  []*types.ReplicaSet{replicaSet1, replicaSet2},
+							StatefulSets: []*types.StatefulSet{statefulSet1, statefulSet2},
+							DaemonSets:   []*types.DaemonSet{daemonSet1, daemonSet2},
+							Deployments:  []*types.Deployment{deployment1, deployment2},
+						},
 					},
 				},
 			},
@@ -113,6 +135,8 @@ func Test_Analyze(t *testing.T) {
 					Pods:            []*corev1.Pod{k8sPod1, k8sPod2},
 					Services:        []*corev1.Service{k8sService1, k8sService2},
 					ReplicaSets:     []*appsv1.ReplicaSet{k8sReplicaSet1, k8sReplicaSet2},
+					StatefulSets:    []*appsv1.StatefulSet{k8sStatefulSet1, k8sStatefulSet2},
+					DaemonSets:      []*appsv1.DaemonSet{k8sDaemonSet1, k8sDaemonSet2},
 					Deployments:     []*appsv1.Deployment{k8sDeployment1, k8sDeployment2},
 					NetworkPolicies: []*networkingv1.NetworkPolicy{k8sNetworkPolicy1, k8sNetworkPolicy2},
 				},
@@ -123,6 +147,8 @@ func Test_Analyze(t *testing.T) {
 				AllowedRoutes: []*types.AllowedRoute{allowedRoute},
 				Services:      []*types.Service{service1, service2},
 				ReplicaSets:   []*types.ReplicaSet{replicaSet1, replicaSet2},
+				StatefulSets:  []*types.StatefulSet{statefulSet1, statefulSet2},
+				DaemonSets:    []*types.DaemonSet{daemonSet1, daemonSet2},
 				Deployments:   []*types.Deployment{deployment1, deployment2},
 			},
 		},
@@ -145,13 +171,9 @@ func Test_Analyze(t *testing.T) {
 	}
 }
 
-type mockPodAnalyzerCallArgs struct {
-	pods []*corev1.Pod
-}
-
 type mockPodAnalyzerCall struct {
-	args        mockPodAnalyzerCallArgs
-	returnValue []*types.Pod
+	clusterState pod.ClusterState
+	returnValue  pod.AnalysisResult
 }
 
 type mockPodAnalyzer struct {
@@ -159,14 +181,14 @@ type mockPodAnalyzer struct {
 	calls []mockPodAnalyzerCall
 }
 
-func (mock mockPodAnalyzer) Analyze(pods []*corev1.Pod) []*types.Pod {
+func (mock mockPodAnalyzer) Analyze(clusterState pod.ClusterState) pod.AnalysisResult {
 	for _, call := range mock.calls {
-		if reflect.DeepEqual(call.args.pods, pods) {
+		if reflect.DeepEqual(call.clusterState, clusterState) {
 			return call.returnValue
 		}
 	}
 	fmt.Printf("mockPodAnalyzer was called with unexpected arguments: \n")
-	fmt.Printf("\tpods=%s\n", pods)
+	fmt.Printf("\tclusterState=%s\n", clusterState)
 	mock.t.FailNow()
 	panic("unreachable but required to compile")
 }
@@ -178,16 +200,9 @@ func createMockPodAnalyzer(t *testing.T, calls []mockPodAnalyzerCall) pod.Analyz
 	}
 }
 
-type mockTrafficAnalyzerCallArgs struct {
-	pods            []*corev1.Pod
-	namespaces      []*corev1.Namespace
-	networkPolicies []*networkingv1.NetworkPolicy
-}
-
 type mockTrafficAnalyzerCall struct {
-	args         mockTrafficAnalyzerCallArgs
-	returnValue1 []*types.PodIsolation
-	returnValue2 []*types.AllowedRoute
+	clusterState traffic.ClusterState
+	returnValue  traffic.AnalysisResult
 }
 
 type mockTrafficAnalyzer struct {
@@ -195,19 +210,14 @@ type mockTrafficAnalyzer struct {
 	calls []mockTrafficAnalyzerCall
 }
 
-func (mock mockTrafficAnalyzer) Analyze(pods []*corev1.Pod, namespaces []*corev1.Namespace,
-	networkPolicies []*networkingv1.NetworkPolicy) ([]*types.PodIsolation, []*types.AllowedRoute) {
+func (mock mockTrafficAnalyzer) Analyze(clusterState traffic.ClusterState) traffic.AnalysisResult {
 	for _, call := range mock.calls {
-		if reflect.DeepEqual(call.args.pods, pods) &&
-			reflect.DeepEqual(call.args.namespaces, namespaces) &&
-			reflect.DeepEqual(call.args.networkPolicies, networkPolicies) {
-			return call.returnValue1, call.returnValue2
+		if reflect.DeepEqual(call.clusterState, clusterState) {
+			return call.returnValue
 		}
 	}
 	fmt.Printf("mockTrafficAnalyzer was called with unexpected arguments: \n")
-	fmt.Printf("\tpods:%s\n", pods)
-	fmt.Printf("\tnamespaces=%s\n", namespaces)
-	fmt.Printf("\tnetworkPolicies=%s\n", networkPolicies)
+	fmt.Printf("\tclusterState:%s\n", clusterState)
 	mock.t.FailNow()
 	panic("unreachable but required to compile")
 }
@@ -219,18 +229,9 @@ func createMockTrafficAnalyzer(t *testing.T, calls []mockTrafficAnalyzerCall) tr
 	}
 }
 
-type mockWorkloadAnalyzerCallArgs struct {
-	pods        []*corev1.Pod
-	services    []*corev1.Service
-	replicaSets []*appsv1.ReplicaSet
-	deployments []*appsv1.Deployment
-}
-
 type mockWorkloadAnalyzerCall struct {
-	args         mockWorkloadAnalyzerCallArgs
-	returnValue1 []*types.Service
-	returnValue2 []*types.ReplicaSet
-	returnValue3 []*types.Deployment
+	clusterState workload.ClusterState
+	returnValue  workload.AnalysisResult
 }
 
 type mockWorkloadAnalyzer struct {
@@ -238,22 +239,14 @@ type mockWorkloadAnalyzer struct {
 	calls []mockWorkloadAnalyzerCall
 }
 
-func (mock mockWorkloadAnalyzer) Analyze(pods []*corev1.Pod, services []*corev1.Service,
-	replicaSets []*appsv1.ReplicaSet, deployments []*appsv1.Deployment) ([]*types.Service, []*types.ReplicaSet,
-	[]*types.Deployment) {
+func (mock mockWorkloadAnalyzer) Analyze(clusterState workload.ClusterState) workload.AnalysisResult {
 	for _, call := range mock.calls {
-		if reflect.DeepEqual(call.args.pods, pods) &&
-			reflect.DeepEqual(call.args.services, services) &&
-			reflect.DeepEqual(call.args.replicaSets, replicaSets) &&
-			reflect.DeepEqual(call.args.deployments, deployments) {
-			return call.returnValue1, call.returnValue2, call.returnValue3
+		if reflect.DeepEqual(call.clusterState, clusterState) {
+			return call.returnValue
 		}
 	}
 	fmt.Printf("mockWorkloadAnalyzer was called with unexpected arguments: \n")
-	fmt.Printf("\tpods:%s\n", pods)
-	fmt.Printf("\tservices=%s\n", services)
-	fmt.Printf("\treplicaSets=%s\n", replicaSets)
-	fmt.Printf("\tdeployments=%s\n", deployments)
+	fmt.Printf("\tclusterState:%s\n", clusterState)
 	mock.t.FailNow()
 	panic("unreachable but required to compile")
 }

@@ -1,4 +1,4 @@
-package replicaset
+package daemonset
 
 import (
 	"github.com/google/go-cmp/cmp"
@@ -11,44 +11,36 @@ import (
 
 func Test_Analyze(t *testing.T) {
 	type args struct {
-		replicaSet *appsv1.ReplicaSet
-		pods       []*corev1.Pod
+		daemonSet *appsv1.DaemonSet
+		pods      []*corev1.Pod
 	}
 	tests := []struct {
-		name                             string
-		args                             args
-		expectedReplicaSetWithTargetPods *types.ReplicaSet
+		name                            string
+		args                            args
+		expectedDaemonSetWithTargetPods *types.DaemonSet
 	}{
 		{
-			name: "replicaSet name and namespace are propagated",
+			name: "daemonSet name and namespace are propagated",
 			args: args{
-				replicaSet: testutils.NewReplicaSetBuilder().WithName("rs").WithNamespace("ns").Build(),
-				pods:       []*corev1.Pod{},
+				daemonSet: testutils.NewDaemonSetBuilder().WithName("rs").WithNamespace("ns").Build(),
+				pods:      []*corev1.Pod{},
 			},
-			expectedReplicaSetWithTargetPods: &types.ReplicaSet{
+			expectedDaemonSetWithTargetPods: &types.DaemonSet{
 				Name:       "rs",
 				Namespace:  "ns",
 				TargetPods: []types.PodRef{},
 			},
 		},
 		{
-			name: "replicaSets with 0 desired replicas are ignored",
-			args: args{
-				replicaSet: testutils.NewReplicaSetBuilder().WithDesiredReplicas(0).Build(),
-				pods:       []*corev1.Pod{},
-			},
-			expectedReplicaSetWithTargetPods: nil,
-		},
-		{
 			name: "only pods with matching labels are detected as target",
 			args: args{
-				replicaSet: testutils.NewReplicaSetBuilder().WithSelectorLabel("app", "foo").Build(),
+				daemonSet: testutils.NewDaemonSetBuilder().WithSelectorLabel("app", "foo").Build(),
 				pods: []*corev1.Pod{
 					testutils.NewPodBuilder().WithName("name1").WithLabel("app", "foo").Build(),
 					testutils.NewPodBuilder().WithName("name2").WithLabel("app", "bar").Build(),
 				},
 			},
-			expectedReplicaSetWithTargetPods: &types.ReplicaSet{
+			expectedDaemonSetWithTargetPods: &types.DaemonSet{
 				Namespace: "default",
 				TargetPods: []types.PodRef{
 					{Name: "name1", Namespace: "default"},
@@ -58,7 +50,7 @@ func Test_Analyze(t *testing.T) {
 		{
 			name: "only pods within the same namespace are detected as target",
 			args: args{
-				replicaSet: testutils.NewReplicaSetBuilder().WithNamespace("ns").
+				daemonSet: testutils.NewDaemonSetBuilder().WithNamespace("ns").
 					WithSelectorLabel("app", "foo").Build(),
 				pods: []*corev1.Pod{
 					testutils.NewPodBuilder().WithName("name1").WithNamespace("ns").
@@ -67,7 +59,7 @@ func Test_Analyze(t *testing.T) {
 						WithLabel("app", "foo").Build(),
 				},
 			},
-			expectedReplicaSetWithTargetPods: &types.ReplicaSet{
+			expectedDaemonSetWithTargetPods: &types.DaemonSet{
 				Namespace: "ns",
 				TargetPods: []types.PodRef{
 					{Name: "name1", Namespace: "ns"},
@@ -78,8 +70,8 @@ func Test_Analyze(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			analyzer := NewAnalyzer()
-			replicaSetWithTargetPods := analyzer.Analyze(tt.args.replicaSet, tt.args.pods)
-			if diff := cmp.Diff(tt.expectedReplicaSetWithTargetPods, replicaSetWithTargetPods); diff != "" {
+			daemonSetWithTargetPods := analyzer.Analyze(tt.args.daemonSet, tt.args.pods)
+			if diff := cmp.Diff(tt.expectedDaemonSetWithTargetPods, daemonSetWithTargetPods); diff != "" {
 				t.Errorf("Analyze() result mismatch (-want +got):\n%s", diff)
 			}
 		})

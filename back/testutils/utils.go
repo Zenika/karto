@@ -269,6 +269,98 @@ func (replicaSetBuilder *ReplicaSetBuilder) Build() *appsv1.ReplicaSet {
 	}
 }
 
+type StatefulSetBuilder struct {
+	Name            string
+	Namespace       string
+	DesiredReplicas int32
+	Selector        map[string]string
+}
+
+func NewStatefulSetBuilder() *StatefulSetBuilder {
+	return &StatefulSetBuilder{
+		Namespace:       "default",
+		DesiredReplicas: 1,
+		Selector:        map[string]string{},
+	}
+}
+
+func (statefulSetBuilder *StatefulSetBuilder) WithName(name string) *StatefulSetBuilder {
+	statefulSetBuilder.Name = name
+	return statefulSetBuilder
+}
+
+func (statefulSetBuilder *StatefulSetBuilder) WithNamespace(namespace string) *StatefulSetBuilder {
+	statefulSetBuilder.Namespace = namespace
+	return statefulSetBuilder
+}
+
+func (statefulSetBuilder *StatefulSetBuilder) WithDesiredReplicas(replicas int32) *StatefulSetBuilder {
+	statefulSetBuilder.DesiredReplicas = replicas
+	return statefulSetBuilder
+}
+
+func (statefulSetBuilder *StatefulSetBuilder) WithSelectorLabel(key string, value string) *StatefulSetBuilder {
+	statefulSetBuilder.Selector[key] = value
+	return statefulSetBuilder
+}
+
+func (statefulSetBuilder *StatefulSetBuilder) Build() *appsv1.StatefulSet {
+	return &appsv1.StatefulSet{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      statefulSetBuilder.Name,
+			Namespace: statefulSetBuilder.Namespace,
+		},
+		Spec: appsv1.StatefulSetSpec{
+			Replicas: &statefulSetBuilder.DesiredReplicas,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: statefulSetBuilder.Selector,
+			},
+		},
+	}
+}
+
+type DaemonSetBuilder struct {
+	Name      string
+	Namespace string
+	Selector  map[string]string
+}
+
+func NewDaemonSetBuilder() *DaemonSetBuilder {
+	return &DaemonSetBuilder{
+		Namespace: "default",
+		Selector:  map[string]string{},
+	}
+}
+
+func (statefulSetBuilder *DaemonSetBuilder) WithName(name string) *DaemonSetBuilder {
+	statefulSetBuilder.Name = name
+	return statefulSetBuilder
+}
+
+func (statefulSetBuilder *DaemonSetBuilder) WithNamespace(namespace string) *DaemonSetBuilder {
+	statefulSetBuilder.Namespace = namespace
+	return statefulSetBuilder
+}
+
+func (statefulSetBuilder *DaemonSetBuilder) WithSelectorLabel(key string, value string) *DaemonSetBuilder {
+	statefulSetBuilder.Selector[key] = value
+	return statefulSetBuilder
+}
+
+func (statefulSetBuilder *DaemonSetBuilder) Build() *appsv1.DaemonSet {
+	return &appsv1.DaemonSet{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      statefulSetBuilder.Name,
+			Namespace: statefulSetBuilder.Namespace,
+		},
+		Spec: appsv1.DaemonSetSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: statefulSetBuilder.Selector,
+			},
+		},
+	}
+}
+
 type DeploymentBuilder struct {
 	Name      string
 	Namespace string
