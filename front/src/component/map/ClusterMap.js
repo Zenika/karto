@@ -35,7 +35,9 @@ const useStyles = makeStyles(theme => ({
     }
 }));
 
-const ClusterMap = ({ dataSet, onPodFocus, onServiceFocus, onReplicaSetFocus, onDeploymentFocus }) => {
+const ClusterMap = (
+    { dataSet, onPodFocus, onServiceFocus, onReplicaSetFocus, onStatefulSetFocus, onDaemonSetFocus, onDeploymentFocus }
+) => {
     const classes = useStyles();
     const d3Graph = useRef(new ClusterD3Graph());
 
@@ -45,7 +47,7 @@ const ClusterMap = ({ dataSet, onPodFocus, onServiceFocus, onReplicaSetFocus, on
     }, []);
 
     useEffect(() => d3Graph.current.update(dataSet, {
-        onPodFocus, onServiceFocus, onReplicaSetFocus, onDeploymentFocus
+        onPodFocus, onServiceFocus, onReplicaSetFocus, onStatefulSetFocus, onDaemonSetFocus, onDeploymentFocus
     }));
 
     return <div id="graph" className={classes.root}/>;
@@ -65,11 +67,45 @@ ClusterMap.propTypes = {
                 name: PropTypes.string.isRequired,
                 namespace: PropTypes.string.isRequired
             })).isRequired
+        })),
+        replicaSets: PropTypes.arrayOf(PropTypes.shape({
+            name: PropTypes.string.isRequired,
+            namespace: PropTypes.string.isRequired,
+            targetPods: PropTypes.arrayOf(PropTypes.shape({
+                name: PropTypes.string.isRequired,
+                namespace: PropTypes.string.isRequired
+            })).isRequired
+        })),
+        statefulSets: PropTypes.arrayOf(PropTypes.shape({
+            name: PropTypes.string.isRequired,
+            namespace: PropTypes.string.isRequired,
+            targetPods: PropTypes.arrayOf(PropTypes.shape({
+                name: PropTypes.string.isRequired,
+                namespace: PropTypes.string.isRequired
+            })).isRequired
+        })),
+        daemonSets: PropTypes.arrayOf(PropTypes.shape({
+            name: PropTypes.string.isRequired,
+            namespace: PropTypes.string.isRequired,
+            targetPods: PropTypes.arrayOf(PropTypes.shape({
+                name: PropTypes.string.isRequired,
+                namespace: PropTypes.string.isRequired
+            })).isRequired
+        })),
+        deployments: PropTypes.arrayOf(PropTypes.shape({
+            name: PropTypes.string.isRequired,
+            namespace: PropTypes.string.isRequired,
+            targetReplicaSets: PropTypes.arrayOf(PropTypes.shape({
+                name: PropTypes.string.isRequired,
+                namespace: PropTypes.string.isRequired
+            })).isRequired
         }))
     }).isRequired,
     onPodFocus: PropTypes.func.isRequired,
     onServiceFocus: PropTypes.func.isRequired,
     onReplicaSetFocus: PropTypes.func.isRequired,
+    onStatefulSetFocus: PropTypes.func.isRequired,
+    onDaemonSetFocus: PropTypes.func.isRequired,
     onDeploymentFocus: PropTypes.func.isRequired
 };
 

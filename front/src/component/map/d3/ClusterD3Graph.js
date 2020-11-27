@@ -4,6 +4,12 @@ import D3GraphItemLayer from './D3GraphItemLayer';
 import { SPACING } from './D3Constants';
 import flatten from '../../utils/utils';
 
+const CONTROLLER_TYPE = {
+    REPLICASET: 'ReplicaSet',
+    STATEFULSET: 'StatefulSet',
+    DAEMONSET: 'DaemonSet'
+};
+
 function d3PodId(pod) {
     return `pod/${pod.namespace}/${pod.name}`;
 }

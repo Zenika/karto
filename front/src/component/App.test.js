@@ -20,6 +20,8 @@ describe('App component', () => {
     let allowedRouteDetailsHandler;
     let serviceDetailsHandler;
     let replicaSetDetailsHandler;
+    let statefulSetDetailsHandler;
+    let daemonSetDetailsHandler;
     let deploymentDetailsHandler;
 
     function mockAnalysisResult(value) {
@@ -29,6 +31,8 @@ describe('App component', () => {
             allowedRoutes: [],
             services: [],
             replicaSets: [],
+            statefulSets: [],
+            daemonSets: [],
             deployments: [],
             allNamespaces: [],
             allLabels: {}
@@ -46,6 +50,8 @@ describe('App component', () => {
             allowedRoutes: [],
             services: [],
             replicaSets: [],
+            statefulSets: [],
+            daemonSets: [],
             deployments: []
         };
         computeDataSet.mockImplementation(() => ({ ...defaultValue, ...value }));
@@ -71,6 +77,8 @@ describe('App component', () => {
             podDetailsHandler = props.onPodFocus;
             serviceDetailsHandler = props.onServiceFocus;
             replicaSetDetailsHandler = props.onReplicaSetFocus;
+            statefulSetDetailsHandler = props.onStatefulSetFocus;
+            daemonSetDetailsHandler = props.onDaemonSetFocus;
             deploymentDetailsHandler = props.onDeploymentFocus;
             return <div>Mock ClusterMap</div>;
         });
@@ -171,6 +179,8 @@ describe('App component', () => {
             allowedRoutes: [{}],
             services: [{}],
             replicaSets: [{}],
+            statefulSets: [{}],
+            daemonSets: [{}],
             deployments: [{}]
         };
         mockDataSet(dataSet);
@@ -190,6 +200,8 @@ describe('App component', () => {
             allowedRoutes: [{}],
             services: [{}],
             replicaSets: [{}],
+            statefulSets: [{}],
+            daemonSets: [{}],
             deployments: [{}]
         };
         mockDataSet(dataSet);
@@ -221,21 +233,25 @@ describe('App component', () => {
             pods: [{}, {}],
             services: [{}, {}, {}],
             replicaSets: [{}, {}, {}, {}],
-            deployments: [{}, {}, {}, {}, {}]
+            statefulSets: [{}, {}, {}, {}, {}],
+            daemonSets: [{}, {}, {}, {}, {}, {}],
+            deployments: [{}, {}, {}, {}, {}, {}, {}]
         };
         mockAnalysisResult(analysisResult);
         const dataSet = {
             pods: [{}],
             services: [{}, {}],
             replicaSets: [{}, {}, {}],
-            deployments: [{}, {}, {}, {}]
+            statefulSets: [{}, {}, {}, {}],
+            daemonSets: [{}, {}, {}, {}, {}],
+            deployments: [{}, {}, {}, {}, {}, {}]
         };
         mockDataSet(dataSet);
         render(<App/>);
         await waitForComponentUpdate();
 
-        expect(screen.queryByText('Displaying 1/2 pods, 2/3 services, 3/4 replicaSets and 4/5 deployments'))
-            .toBeInTheDocument();
+        expect(screen.queryByText('Displaying 1/2 pods, 2/3 services, 3/4 replicaSets, 4/5 statefulSets, ' +
+            '5/6 daemonSets and 6/7 deployments')).toBeInTheDocument();
     });
 
     it('displays a caption for NetworkPolicyMap', async () => {
@@ -264,6 +280,8 @@ describe('App component', () => {
             allowedRoutes: [],
             services: [],
             replicaSets: [],
+            statefulSets: [],
+            daemonSets: [],
             deployments: [],
             allNamespaces: [],
             allLabels: {}
@@ -314,7 +332,7 @@ describe('App component', () => {
         expect(computeDataSet).toHaveBeenCalledWith(expect.anything(), expectedDefaultControls);
     });
 
-    it('displays specific controld with cluster map', async () => {
+    it('displays specific controls with cluster map', async () => {
         render(<App/>);
         fireEvent.click(screen.getByText('Workloads'));
         await waitForComponentUpdate();
@@ -331,7 +349,7 @@ describe('App component', () => {
         expect(screen.queryByText('Always display large datasets')).toBeInTheDocument();
     });
 
-    it('displays specific controld with network policy map', async () => {
+    it('displays specific controls with network policy map', async () => {
         render(<App/>);
         fireEvent.click(screen.getByText('Network policies'));
         await waitForComponentUpdate();
@@ -525,6 +543,34 @@ describe('App component', () => {
         await waitForComponentUpdate();
 
         expect(screen.queryByText('ReplicaSet details')).toBeInTheDocument();
+    });
+
+    it('displays statefulSet details from cluster map', async () => {
+        render(<App/>);
+        await waitForComponentUpdate();
+
+        act(() => statefulSetDetailsHandler({
+            namespace: 'ns',
+            name: 'ss',
+            targetPods: [{ namespace: 'ns', name: 'po' }]
+        }));
+        await waitForComponentUpdate();
+
+        expect(screen.queryByText('StatefulSet details')).toBeInTheDocument();
+    });
+
+    it('displays daemonSet details from cluster map', async () => {
+        render(<App/>);
+        await waitForComponentUpdate();
+
+        act(() => daemonSetDetailsHandler({
+            namespace: 'ns',
+            name: 'ds',
+            targetPods: [{ namespace: 'ns', name: 'po' }]
+        }));
+        await waitForComponentUpdate();
+
+        expect(screen.queryByText('DaemonSet details')).toBeInTheDocument();
     });
 
     it('displays deployment details from cluster map', async () => {

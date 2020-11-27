@@ -65,6 +65,8 @@ function filterAnalysisResult(analysisResult, podIsolationsIndex, controls) {
     const allowedRouteFilter = makeAllowedRouteFilter(filteredPodIds);
     const serviceFilter = makeServiceFilter(filteredPodIds);
     const replicaSetFilter = makeReplicaSetFilter(filteredPodIds);
+    const statefulSetFilter = makeStatefulSetFilter(filteredPodIds);
+    const daemonSetFilter = makeDaemonSetFilter(filteredPodIds);
     const deploymentFilter = makeDeploymentFilter(filteredReplicaSetIds);
 
     const filteredPods = analysisResult.pods.filter(podFilter);
@@ -74,6 +76,8 @@ function filterAnalysisResult(analysisResult, podIsolationsIndex, controls) {
     const filteredServices = analysisResult.services.filter(serviceFilter);
     const filteredReplicaSets = analysisResult.replicaSets.filter(replicaSetFilter);
     filteredReplicaSets.forEach(replicaSet => filteredReplicaSetIds.add(replicaSetId(replicaSet)));
+    const filteredStatefulSets = analysisResult.statefulSets.filter(statefulSetFilter);
+    const filteredDaemonSets = analysisResult.daemonSets.filter(daemonSetFilter);
     const filteredDeployments = analysisResult.deployments.filter(deploymentFilter);
     const { neighborPodIsolations, neighborAllowedRoutes } = computeNeighbors(analysisResult, filteredPodIds,
         podIsolationsIndex, controls);
@@ -84,6 +88,8 @@ function filterAnalysisResult(analysisResult, podIsolationsIndex, controls) {
         allowedRoutes: [...filteredAllowedRoutes, ...neighborAllowedRoutes],
         services: filteredServices,
         replicaSets: filteredReplicaSets,
+        statefulSets: filteredStatefulSets,
+        daemonSets: filteredDaemonSets,
         deployments: filteredDeployments
     };
 }
@@ -125,6 +131,8 @@ function mapAnalysisResult(filteredAnalysisResult, podsIndex, podIsolationsIndex
     const allowedRouteMapper = makeAllowedRouteMapper(controls, podIsolationMapper, podIsolationsIndex);
     const serviceMapper = makeServiceMapper(controls, filteredPodIds);
     const replicaSetMapper = makeReplicaSetMapper(controls, filteredPodIds);
+    const statefulSetMapper = makeStatefulSetMapper(controls, filteredPodIds);
+    const daemonSetMapper = makeDaemonSetMapper(controls, filteredPodIds);
     const deploymentMapper = makeDeploymentMapper(controls, filteredReplicaSetIds);
 
     return {
@@ -133,6 +141,8 @@ function mapAnalysisResult(filteredAnalysisResult, podsIndex, podIsolationsIndex
         allowedRoutes: filteredAnalysisResult.allowedRoutes.map(allowedRouteMapper),
         services: filteredAnalysisResult.services.map(serviceMapper),
         replicaSets: filteredAnalysisResult.replicaSets.map(replicaSetMapper),
+        statefulSets: filteredAnalysisResult.statefulSets.map(statefulSetMapper),
+        daemonSets: filteredAnalysisResult.daemonSets.map(daemonSetMapper),
         deployments: filteredAnalysisResult.deployments.map(deploymentMapper)
     };
 }
@@ -200,6 +210,14 @@ function makeReplicaSetFilter(filteredPodIds) {
     return replicaSet => replicaSet.targetPods.some(pod => filteredPodIds.has(podId(pod)));
 }
 
+function makeStatefulSetFilter(filteredPodIds) {
+    return statefulSet => statefulSet.targetPods.some(pod => filteredPodIds.has(podId(pod)));
+}
+
+function makeDaemonSetFilter(filteredPodIds) {
+    return daemonSet => daemonSet.targetPods.some(pod => filteredPodIds.has(podId(pod)));
+}
+
 function makeDeploymentFilter(filteredReplicaSetIds) {
     return deployment => deployment.targetReplicaSets.some(replicaSet =>
         filteredReplicaSetIds.has(replicaSetId(replicaSet)));
@@ -247,6 +265,24 @@ function makeReplicaSetMapper(controls, filteredPodIds) {
         ...replicaSet,
         targetPods: replicaSet.targetPods.filter(pod => filteredPodIds.has(podId(pod))),
         displayName: showNamespacePrefix ? `${replicaSet.namespace}/${replicaSet.name}` : replicaSet.name
+    });
+}
+
+function makeStatefulSetMapper(controls, filteredPodIds) {
+    const { showNamespacePrefix } = controls;
+    return statefulSet => ({
+        ...statefulSet,
+        targetPods: statefulSet.targetPods.filter(pod => filteredPodIds.has(podId(pod))),
+        displayName: showNamespacePrefix ? `${statefulSet.namespace}/${statefulSet.name}` : statefulSet.name
+    });
+}
+
+function makeDaemonSetMapper(controls, filteredPodIds) {
+    const { showNamespacePrefix } = controls;
+    return daemonSet => ({
+        ...daemonSet,
+        targetPods: daemonSet.targetPods.filter(pod => filteredPodIds.has(podId(pod))),
+        displayName: showNamespacePrefix ? `${daemonSet.namespace}/${daemonSet.name}` : daemonSet.name
     });
 }
 

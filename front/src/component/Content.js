@@ -19,6 +19,8 @@ import NetworkPolicyMap from './map/NetworkPolicyMap';
 import ReplicaSetDetails from './detail/ReplicaSetDetails';
 import DeploymentDetails from './detail/DeploymentDetails';
 import { labelSelectorOperators, maxRecommendedAllowedRoutes, maxRecommendedPods } from '../constants';
+import StatefulSetDetails from './detail/StatefulSetDetails';
+import DaemonSetDetails from './detail/DaemonSetDetails';
 
 const VIEWS = {
     WORKLOADS: 'Workloads',
@@ -101,9 +103,7 @@ const Content = ({ className }) => {
         isLoading: true,
         analysisResult: null,
         dataSet: null,
-        controls: { ...DEFAULT_CONTROLS, ...getControls() },
-        podDetails: null,
-        allowedRouteDetails: null
+        controls: { ...DEFAULT_CONTROLS, ...getControls() }
     });
     const allNamespaces = state.analysisResult ? state.analysisResult.allNamespaces : [];
     const allLabels = state.analysisResult ? state.analysisResult.allLabels : {};
@@ -154,6 +154,18 @@ const Content = ({ className }) => {
         setState(oldState => ({
             ...oldState,
             replicaSetDetails: replicaSet
+        }));
+    }, []);
+    const onStatefulSetFocus = useCallback(statefulSet => {
+        setState(oldState => ({
+            ...oldState,
+            statefulSetDetails: statefulSet
+        }));
+    }, []);
+    const onDaemonSetFocus = useCallback(daemonSet => {
+        setState(oldState => ({
+            ...oldState,
+            daemonSetDetails: daemonSet
         }));
     }, []);
     const onDeploymentFocus = useCallback(deployment => {
@@ -249,12 +261,15 @@ const Content = ({ className }) => {
                 && state.controls.displayedView === VIEWS.WORKLOADS && <>
                     <ClusterMap dataSet={state.dataSet} onPodFocus={onPodFocus}
                                 onServiceFocus={onServiceFocus} onReplicaSetFocus={onReplicaSetFocus}
+                                onStatefulSetFocus={onStatefulSetFocus} onDaemonSetFocus={onDaemonSetFocus}
                                 onDeploymentFocus={onDeploymentFocus}/>
                     <Typography className={classes.graphCaption} variant="caption">
                         {`Displaying ${state.dataSet.pods.length}/${state.analysisResult.pods.length} pods, `
                         + `${state.dataSet.services.length}/${state.analysisResult.services.length} services, `
-                        + `${state.dataSet.replicaSets.length}/${state.analysisResult.replicaSets.length} replicaSets `
-                        + `and ${state.dataSet.deployments.length}/${state.analysisResult.deployments.length} `
+                        + `${state.dataSet.replicaSets.length}/${state.analysisResult.replicaSets.length} replicaSets, `
+                        + `${state.dataSet.statefulSets.length}/${state.analysisResult.statefulSets.length} 
+                        statefulSets, ${state.dataSet.daemonSets.length}/${state.analysisResult.daemonSets.length} 
+                        daemonSets and ${state.dataSet.deployments.length}/${state.analysisResult.deployments.length} `
                         + `deployments`}
                     </Typography>
                 </>}
@@ -353,6 +368,16 @@ const Content = ({ className }) => {
             {state.replicaSetDetails && (
                 <aside className={classes.details}>
                     <ReplicaSetDetails data={state.replicaSetDetails}/>
+                </aside>
+            )}
+            {state.statefulSetDetails && (
+                <aside className={classes.details}>
+                    <StatefulSetDetails data={state.statefulSetDetails}/>
+                </aside>
+            )}
+            {state.daemonSetDetails && (
+                <aside className={classes.details}>
+                    <DaemonSetDetails data={state.daemonSetDetails}/>
                 </aside>
             )}
             {state.deploymentDetails && (
