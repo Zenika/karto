@@ -181,12 +181,8 @@ export default class ClusterD3Graph extends D3Graph {
             name: 'serviceLinks',
             svgElement: 'line',
             dataExtractor: dataSet => {
-                const podIds = new Set();
-                dataSet.pods.forEach(pod => podIds.add(d3PodId(pod)));
                 return flatten(dataSet.services.map(service => {
-                    return service.targetPods
-                        .filter(pod => podIds.has(d3PodId(pod)))
-                        .map(targetPod => ({ service, targetPod }));
+                    return service.targetPods.map(targetPod => ({ service, targetPod }));
                 }));
             },
             d3IdFn: d3ServiceLinkId,
@@ -223,13 +219,9 @@ export default class ClusterD3Graph extends D3Graph {
             name: 'controllerLinks',
             svgElement: 'line',
             dataExtractor: dataSet => {
-                const podIds = new Set();
-                dataSet.pods.forEach(pod => podIds.add(d3PodId(pod)));
                 const controllers = extractControllers(dataSet);
                 return flatten(controllers.map(controller => {
-                    return controller.targetPods
-                        .filter(pod => podIds.has(d3PodId(pod)))
-                        .map(targetPod => ({ controller, targetPod }));
+                    return controller.targetPods.map(targetPod => ({ controller, targetPod }));
                 }));
             },
             d3IdFn: d3ControllerLinkId,
@@ -267,12 +259,8 @@ export default class ClusterD3Graph extends D3Graph {
             name: 'deploymentLinks',
             svgElement: 'line',
             dataExtractor: dataSet => {
-                const replicaSetIds = new Set();
-                dataSet.replicaSets.forEach(replicaSet => replicaSetIds.add(d3ControllerId(replicaSet)));
                 return flatten(dataSet.deployments.map(deployment => {
-                    return deployment.targetReplicaSets
-                        .filter(replicaSet => replicaSetIds.has(d3ControllerId(replicaSet)))
-                        .map(targetReplicaSet => ({ deployment, targetReplicaSet }));
+                    return deployment.targetReplicaSets.map(targetReplicaSet => ({ deployment, targetReplicaSet }));
                 }));
             },
             d3IdFn: d3DeploymentLinkId,

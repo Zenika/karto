@@ -301,9 +301,9 @@ export default class D3Graph {
             return;
         }
         if (this.focusedElement) {
-            this.getLayer(this.focusedElement.layerName).onElementUnFocused(this.focusedElement.id);
+            this.getLayer(this.focusedElement.layerName).onElementUnFocused(this.focusedElement);
         }
-        this.getLayer(element.layerName).onElementFocused(element.id);
+        this.getLayer(element.layerName).onElementFocused(element);
         this.focusedElement = element;
         this.applyFocusRules();
     };
@@ -312,7 +312,7 @@ export default class D3Graph {
         if (this.focusedElement == null) {
             return;
         }
-        this.getLayer(this.focusedElement.layerName).onElementUnFocused(this.focusedElement.id);
+        this.getLayer(this.focusedElement.layerName).onElementUnFocused(this.focusedElement);
         this.focusedElement = null;
         this.applyFocusRules();
     };
