@@ -272,7 +272,7 @@ describe('ClusterMap component', () => {
                            onStatefulSetFocus={noOpHandler} onDaemonSetFocus={noOpHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
 
-        const allStatefulSetLabels = screen.queryAllByText(/ns\/rs\d/);
+        const allStatefulSetLabels = screen.queryAllByText(/ns\/ss\d/);
         expect(allStatefulSetLabels[0].textContent).toEqual(statefulSet1.displayName);
         expect(allStatefulSetLabels[1].textContent).toEqual(statefulSet2.displayName);
     });
@@ -290,7 +290,7 @@ describe('ClusterMap component', () => {
                            onStatefulSetFocus={noOpHandler} onDaemonSetFocus={noOpHandler}
                            onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
 
-        const allDaemonSetLabels = screen.queryAllByText(/ns\/rs\d/);
+        const allDaemonSetLabels = screen.queryAllByText(/ns\/ds\d/);
         expect(allDaemonSetLabels[0].textContent).toEqual(daemonSet1.displayName);
         expect(allDaemonSetLabels[1].textContent).toEqual(daemonSet2.displayName);
     });
@@ -520,15 +520,20 @@ describe('ClusterMap component', () => {
                              onStatefulSetFocus={noOpHandler} onDaemonSetFocus={noOpHandler}
                              onDeploymentFocus={noOpHandler} dataSet={dataSet2}/>);
 
-        expect(screen.queryAllByLabelText('pod')).toHaveLength(3);
+        expect(screen.queryAllByLabelText('pod')).toHaveLength(6);
         expect(screen.queryByText(pod1.displayName)).not.toBeInTheDocument();
+        expect(screen.queryByText(pod2.displayName)).not.toBeInTheDocument();
+        expect(screen.queryByText(pod3.displayName)).not.toBeInTheDocument();
         expect(screen.queryByText(pod1WithoutNamespaceDisplay.displayName)).toBeInTheDocument();
         expect(screen.queryByText(pod2WithoutNamespaceDisplay.displayName)).toBeInTheDocument();
         expect(screen.queryByText(pod3WithoutNamespaceDisplay.displayName)).toBeInTheDocument();
+        expect(screen.queryByText(pod4WithoutNamespaceDisplay.displayName)).toBeInTheDocument();
+        expect(screen.queryByText(pod5WithoutNamespaceDisplay.displayName)).toBeInTheDocument();
+        expect(screen.queryByText(pod6WithoutNamespaceDisplay.displayName)).toBeInTheDocument();
         expect(screen.queryAllByLabelText('service')).toHaveLength(2);
         expect(screen.queryByText(service1.displayName)).not.toBeInTheDocument();
         expect(screen.queryByText(service1_2WithoutNamespaceDisplay.displayName)).toBeInTheDocument();
-        expect(screen.queryByText(service3WithoutNamespaceDisplay.displayName)).toBeInTheDocument();
+        expect(screen.queryByText(service4WithoutNamespaceDisplay.displayName)).toBeInTheDocument();
         expect(screen.queryAllByLabelText('service link')).toHaveLength(3);
         expect(screen.queryAllByLabelText('replicaset')).toHaveLength(2);
         expect(screen.queryByText(replicaSet1.displayName)).not.toBeInTheDocument();

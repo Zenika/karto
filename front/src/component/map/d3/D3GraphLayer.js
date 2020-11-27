@@ -1,3 +1,5 @@
+import { isFunction } from '../../utils/utils';
+
 export default class D3GraphLayer {
 
     constructor(layerConfig) {
@@ -6,7 +8,7 @@ export default class D3GraphLayer {
         this.dataExtractor = layerConfig.dataExtractor;
         this.d3IdFn = layerConfig.d3IdFn;
         this.d3DatumMapper = layerConfig.d3DatumMapper;
-        this.focusHandlerName = layerConfig.focusHandlerName;
+        this.focusHandler = layerConfig.focusHandler;
         this.svgElementAttributesApplier = layerConfig.svgElementAttributesApplier;
         this.data = [];
         this.indexedData = new Map();
@@ -35,7 +37,7 @@ export default class D3GraphLayer {
     }
 
     updateFocusHandlers(focusHandlers) {
-        this.focusHandler = focusHandlers[this.focusHandlerName];
+        this.focusHandlers = focusHandlers;
     }
 
     updateElements(dataChanged, newElementAttributesApplier) {
@@ -48,11 +50,24 @@ export default class D3GraphLayer {
 
     onElementFocused(id) {
         const datum = this.indexedData.get(id).sourceData;
-        this.focusHandler(datum);
+        const focusHandler = this.getFocusHandler(datum);
+        focusHandler(datum);
     }
 
-    onElementUnFocused() {
-        this.focusHandler(null);
+    onElementUnFocused(id) {
+        const datum = this.indexedData.get(id).sourceData;
+        const focusHandler = this.getFocusHandler(datum);
+        focusHandler(null);
+    }
+
+    getFocusHandler(datum) {
+        let focusHandler;
+        if (typeof this.focusHandler === 'string') {
+            focusHandler = this.focusHandlers[this.focusHandler];
+        } else if (isFunction(this.focusHandler)) {
+            focusHandler = this.focusHandler(this.focusHandlers, datum);
+        }
+        return focusHandler;
     }
 
     applyFocus(focusPolicy) {
