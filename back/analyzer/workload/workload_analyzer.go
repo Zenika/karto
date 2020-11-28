@@ -3,8 +3,10 @@ package workload
 import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	"karto/analyzer/workload/daemonset"
 	"karto/analyzer/workload/deployment"
+	"karto/analyzer/workload/ingress"
 	"karto/analyzer/workload/replicaset"
 	"karto/analyzer/workload/service"
 	"karto/analyzer/workload/statefulset"
@@ -14,6 +16,7 @@ import (
 type ClusterState struct {
 	Pods         []*corev1.Pod
 	Services     []*corev1.Service
+	Ingresses    []*networkingv1beta1.Ingress
 	ReplicaSets  []*appsv1.ReplicaSet
 	StatefulSets []*appsv1.StatefulSet
 	DaemonSets   []*appsv1.DaemonSet
@@ -22,6 +25,7 @@ type ClusterState struct {
 
 type AnalysisResult struct {
 	Services     []*types.Service
+	Ingresses    []*types.Ingress
 	ReplicaSets  []*types.ReplicaSet
 	StatefulSets []*types.StatefulSet
 	DaemonSets   []*types.DaemonSet
@@ -34,17 +38,19 @@ type Analyzer interface {
 
 type analyzerImpl struct {
 	serviceAnalyzer     service.Analyzer
+	ingressAnalyzer     ingress.Analyzer
 	replicaSetAnalyzer  replicaset.Analyzer
 	statefulSetAnalyzer statefulset.Analyzer
 	daemonSetAnalyzer   daemonset.Analyzer
 	deploymentAnalyzer  deployment.Analyzer
 }
 
-func NewAnalyzer(serviceAnalyzer service.Analyzer, replicaSetAnalyzer replicaset.Analyzer,
-	statefulSetAnalyzer statefulset.Analyzer, daemonSetAnalyzer daemonset.Analyzer,
-	deploymentAnalyzer deployment.Analyzer) Analyzer {
+func NewAnalyzer(serviceAnalyzer service.Analyzer, ingressAnalyzer ingress.Analyzer,
+	replicaSetAnalyzer replicaset.Analyzer, statefulSetAnalyzer statefulset.Analyzer,
+	daemonSetAnalyzer daemonset.Analyzer, deploymentAnalyzer deployment.Analyzer) Analyzer {
 	return analyzerImpl{
 		serviceAnalyzer:     serviceAnalyzer,
+		ingressAnalyzer:     ingressAnalyzer,
 		replicaSetAnalyzer:  replicaSetAnalyzer,
 		statefulSetAnalyzer: statefulSetAnalyzer,
 		daemonSetAnalyzer:   daemonSetAnalyzer,
@@ -54,6 +60,8 @@ func NewAnalyzer(serviceAnalyzer service.Analyzer, replicaSetAnalyzer replicaset
 
 func (analyzer analyzerImpl) Analyze(clusterState ClusterState) AnalysisResult {
 	servicesWithTargetPods := analyzer.allServicesWithTargetPods(clusterState.Services, clusterState.Pods)
+	ingressesWithTargetServices := analyzer.allIngressesWithTargetServices(clusterState.Ingresses,
+		clusterState.Services)
 	replicaSetsWithTargetPods := analyzer.allReplicaSetsWithTargetPods(clusterState.ReplicaSets, clusterState.Pods)
 	statefulSetsWithTargetPods := analyzer.allStatefulSetsWithTargetPods(clusterState.StatefulSets, clusterState.Pods)
 	daemonSetsWithTargetPods := analyzer.allDaemonSetsWithTargetPods(clusterState.DaemonSets, clusterState.Pods)
@@ -61,6 +69,7 @@ func (analyzer analyzerImpl) Analyze(clusterState ClusterState) AnalysisResult {
 		clusterState.ReplicaSets)
 	return AnalysisResult{
 		Services:     servicesWithTargetPods,
+		Ingresses:    ingressesWithTargetServices,
 		ReplicaSets:  replicaSetsWithTargetPods,
 		StatefulSets: statefulSetsWithTargetPods,
 		DaemonSets:   daemonSetsWithTargetPods,
@@ -76,6 +85,18 @@ func (analyzer analyzerImpl) allServicesWithTargetPods(services []*corev1.Servic
 		servicesWithTargetPods = append(servicesWithTargetPods, serviceWithTargetPods)
 	}
 	return servicesWithTargetPods
+}
+
+func (analyzer analyzerImpl) allIngressesWithTargetServices(ingresses []*networkingv1beta1.Ingress,
+	services []*corev1.Service) []*types.Ingress {
+	ingressesWithTargetServices := make([]*types.Ingress, 0)
+	for _, ing := range ingresses {
+		ingressWithTargetServices := analyzer.ingressAnalyzer.Analyze(ing, services)
+		if ingressWithTargetServices != nil {
+			ingressesWithTargetServices = append(ingressesWithTargetServices, ingressWithTargetServices)
+		}
+	}
+	return ingressesWithTargetServices
 }
 
 func (analyzer analyzerImpl) allReplicaSetsWithTargetPods(replicaSets []*appsv1.ReplicaSet,

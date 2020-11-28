@@ -21,6 +21,7 @@ func Listen(k8sConfigPath string, clusterStateChannel chan<- types.ClusterState)
 	namespacesInformer := informerFactory.Core().V1().Namespaces()
 	podInformer := informerFactory.Core().V1().Pods()
 	servicesInformer := informerFactory.Core().V1().Services()
+	ingressInformer := informerFactory.Networking().V1beta1().Ingresses()
 	replicaSetsInformer := informerFactory.Apps().V1().ReplicaSets()
 	statefulSetsInformer := informerFactory.Apps().V1().StatefulSets()
 	daemonSetsInformer := informerFactory.Apps().V1().DaemonSets()
@@ -34,6 +35,7 @@ func Listen(k8sConfigPath string, clusterStateChannel chan<- types.ClusterState)
 	namespacesInformer.Informer().AddEventHandler(eventHandler)
 	podInformer.Informer().AddEventHandler(eventHandler)
 	servicesInformer.Informer().AddEventHandler(eventHandler)
+	ingressInformer.Informer().AddEventHandler(eventHandler)
 	replicaSetsInformer.Informer().AddEventHandler(eventHandler)
 	statefulSetsInformer.Informer().AddEventHandler(eventHandler)
 	daemonSetsInformer.Informer().AddEventHandler(eventHandler)
@@ -52,6 +54,10 @@ func Listen(k8sConfigPath string, clusterStateChannel chan<- types.ClusterState)
 			panic(err.Error())
 		}
 		services, err := servicesInformer.Lister().List(labels.Everything())
+		if err != nil {
+			panic(err.Error())
+		}
+		ingresses, err := ingressInformer.Lister().List(labels.Everything())
 		if err != nil {
 			panic(err.Error())
 		}
@@ -79,6 +85,7 @@ func Listen(k8sConfigPath string, clusterStateChannel chan<- types.ClusterState)
 			Namespaces:      namespaces,
 			Pods:            pods,
 			Services:        services,
+			Ingresses:       ingresses,
 			ReplicaSets:     replicaSets,
 			StatefulSets:    statefulSets,
 			DaemonSets:      daemonSets,
@@ -101,9 +108,6 @@ func getK8sClient(k8sClientConfig string) *kubernetes.Clientset {
 			panic(errOutsideCluster.Error())
 		}
 	}
-	k8sClient, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
+	k8sClient := kubernetes.NewForConfigOrDie(config)
 	return k8sClient
 }
