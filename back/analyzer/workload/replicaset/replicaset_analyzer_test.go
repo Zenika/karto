@@ -32,20 +32,12 @@ func Test_Analyze(t *testing.T) {
 			},
 		},
 		{
-			name: "replicaSets with 0 desired replicas are ignored",
+			name: "only pods referencing replicaSet as owner are detected as target",
 			args: args{
-				replicaSet: testutils.NewReplicaSetBuilder().WithDesiredReplicas(0).Build(),
-				pods:       []*corev1.Pod{},
-			},
-			expectedReplicaSetWithTargetPods: nil,
-		},
-		{
-			name: "only pods with matching labels are detected as target",
-			args: args{
-				replicaSet: testutils.NewReplicaSetBuilder().WithSelectorLabel("app", "foo").Build(),
+				replicaSet: testutils.NewReplicaSetBuilder().WithUID("replicaset-uid").Build(),
 				pods: []*corev1.Pod{
-					testutils.NewPodBuilder().WithName("name1").WithLabel("app", "foo").Build(),
-					testutils.NewPodBuilder().WithName("name2").WithLabel("app", "bar").Build(),
+					testutils.NewPodBuilder().WithName("name1").WithOwnerUID("replicaset-uid").Build(),
+					testutils.NewPodBuilder().WithName("name2").WithOwnerUID("other-uid").Build(),
 				},
 			},
 			expectedReplicaSetWithTargetPods: &types.ReplicaSet{
@@ -56,20 +48,12 @@ func Test_Analyze(t *testing.T) {
 			},
 		},
 		{
-			name: "only pods within the same namespace are detected as target",
+			name: "replicaSets with 0 desired replicas are ignored",
 			args: args{
-				replicaSet: testutils.NewReplicaSetBuilder().WithNamespace("ns").WithSelectorLabel("app", "foo").Build(),
-				pods: []*corev1.Pod{
-					testutils.NewPodBuilder().WithName("name1").WithNamespace("ns").WithLabel("app", "foo").Build(),
-					testutils.NewPodBuilder().WithName("name2").WithNamespace("other").WithLabel("app", "foo").Build(),
-				},
+				replicaSet: testutils.NewReplicaSetBuilder().WithDesiredReplicas(0).Build(),
+				pods:       []*corev1.Pod{},
 			},
-			expectedReplicaSetWithTargetPods: &types.ReplicaSet{
-				Namespace: "ns",
-				TargetPods: []types.PodRef{
-					{Name: "name1", Namespace: "ns"},
-				},
-			},
+			expectedReplicaSetWithTargetPods: nil,
 		},
 	}
 	for _, tt := range tests {

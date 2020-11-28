@@ -16,9 +16,7 @@ import (
 
 func Test_Analyze(t *testing.T) {
 	type args struct {
-		pods            []*corev1.Pod
-		networkPolicies []*networkingv1.NetworkPolicy
-		namespaces      []*corev1.Namespace
+		clusterState ClusterState
 	}
 	type mocks struct {
 		podIsolation []mockPodIsolationAnalyzerCall
@@ -55,11 +53,10 @@ func Test_Analyze(t *testing.T) {
 		Ports: []int32{80, 443},
 	}
 	var tests = []struct {
-		name                  string
-		mocks                 mocks
-		args                  args
-		expectedPodIsolations []*types.PodIsolation
-		expectedAllowedRoutes []*types.AllowedRoute
+		name                   string
+		mocks                  mocks
+		args                   args
+		expectedAnalysisResult AnalysisResult
 	}{
 		{
 			name: "delegates to pod isolation and allowed route analyzers",
@@ -96,15 +93,19 @@ func Test_Analyze(t *testing.T) {
 				},
 			},
 			args: args{
-				pods:            []*corev1.Pod{k8sPod1, k8sPod2},
-				networkPolicies: []*networkingv1.NetworkPolicy{k8sNetworkPolicy1, k8sNetworkPolicy2},
-				namespaces:      []*corev1.Namespace{k8sNamespace},
+				clusterState: ClusterState{
+					Pods:            []*corev1.Pod{k8sPod1, k8sPod2},
+					NetworkPolicies: []*networkingv1.NetworkPolicy{k8sNetworkPolicy1, k8sNetworkPolicy2},
+					Namespaces:      []*corev1.Namespace{k8sNamespace},
+				},
 			},
-			expectedPodIsolations: []*types.PodIsolation{
-				{Pod: podRef1, IsIngressIsolated: false, IsEgressIsolated: false},
-				{Pod: podRef2, IsIngressIsolated: false, IsEgressIsolated: false},
+			expectedAnalysisResult: AnalysisResult{
+				Pods: []*types.PodIsolation{
+					{Pod: podRef1, IsIngressIsolated: false, IsEgressIsolated: false},
+					{Pod: podRef2, IsIngressIsolated: false, IsEgressIsolated: false},
+				},
+				AllowedRoutes: []*types.AllowedRoute{allowedRoute},
 			},
-			expectedAllowedRoutes: []*types.AllowedRoute{allowedRoute},
 		},
 	}
 	for _, tt := range tests {
@@ -112,12 +113,9 @@ func Test_Analyze(t *testing.T) {
 			podIsolationAnalyzer := createMockPodIsolationAnalyzer(t, tt.mocks.podIsolation)
 			allowedRouteAnalyzer := createMockAllowedRouteAnalyzer(t, tt.mocks.allowedRoute)
 			analyzer := NewAnalyzer(podIsolationAnalyzer, allowedRouteAnalyzer)
-			podIsolations, allowedRoutes := analyzer.Analyze(tt.args.pods, tt.args.namespaces, tt.args.networkPolicies)
-			if diff := cmp.Diff(tt.expectedPodIsolations, podIsolations); diff != "" {
-				t.Errorf("Analyze() pod isolations result mismatch (-want +got):\n%s", diff)
-			}
-			if diff := cmp.Diff(tt.expectedAllowedRoutes, allowedRoutes); diff != "" {
-				t.Errorf("Analyze() allowed routes result mismatch (-want +got):\n%s", diff)
+			analysisResult := analyzer.Analyze(tt.args.clusterState)
+			if diff := cmp.Diff(tt.expectedAnalysisResult, analysisResult); diff != "" {
+				t.Errorf("Analyze() result mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

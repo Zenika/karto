@@ -31,6 +31,10 @@ func Test_Expose(t *testing.T) {
 	service2 := &types.Service{Name: "svc2", Namespace: "ns", TargetPods: []types.PodRef{podRef2}}
 	replicaSet1 := &types.ReplicaSet{Name: "rs1", Namespace: "ns", TargetPods: []types.PodRef{podRef1}}
 	replicaSet2 := &types.ReplicaSet{Name: "rs2", Namespace: "ns", TargetPods: []types.PodRef{podRef2}}
+	statefulSet1 := &types.StatefulSet{Name: "ss1", Namespace: "ns", TargetPods: []types.PodRef{podRef1}}
+	statefulSet2 := &types.StatefulSet{Name: "ss2", Namespace: "ns", TargetPods: []types.PodRef{podRef2}}
+	daemonSet1 := &types.DaemonSet{Name: "ds1", Namespace: "ns", TargetPods: []types.PodRef{podRef1}}
+	daemonSet2 := &types.DaemonSet{Name: "ds2", Namespace: "ns", TargetPods: []types.PodRef{podRef2}}
 	replicaSetRef1 := types.ReplicaSetRef{Name: replicaSet1.Name, Namespace: replicaSet1.Namespace}
 	replicaSetRef2 := types.ReplicaSetRef{Name: replicaSet2.Name, Namespace: replicaSet2.Namespace}
 	deployment1 := &types.Deployment{Name: "deploy1", Namespace: "ns",
@@ -60,6 +64,8 @@ func Test_Expose(t *testing.T) {
 					AllowedRoutes: []*types.AllowedRoute{allowedRoute},
 					Services:      []*types.Service{service1, service2},
 					ReplicaSets:   []*types.ReplicaSet{replicaSet1, replicaSet2},
+					StatefulSets:  []*types.StatefulSet{statefulSet1, statefulSet2},
+					DaemonSets:    []*types.DaemonSet{daemonSet1, daemonSet2},
 					Deployments:   []*types.Deployment{deployment1, deployment2},
 				},
 			},
@@ -109,6 +115,30 @@ func Test_Expose(t *testing.T) {
 				"    }," +
 				"    {" +
 				"        \"name\":\"rs2\"," +
+				"        \"namespace\":\"ns\"," +
+				"        \"targetPods\":[{\"name\":\"pod2\",\"namespace\":\"ns\"}]" +
+				"    }" +
+				"]," +
+				"\"statefulSets\":[" +
+				"    {" +
+				"        \"name\":\"ss1\"," +
+				"        \"namespace\":\"ns\"," +
+				"        \"targetPods\":[{\"name\":\"pod1\",\"namespace\":\"ns\"}]" +
+				"    }," +
+				"    {" +
+				"        \"name\":\"ss2\"," +
+				"        \"namespace\":\"ns\"," +
+				"        \"targetPods\":[{\"name\":\"pod2\",\"namespace\":\"ns\"}]" +
+				"    }" +
+				"]," +
+				"\"daemonSets\":[" +
+				"    {" +
+				"        \"name\":\"ds1\"," +
+				"        \"namespace\":\"ns\"," +
+				"        \"targetPods\":[{\"name\":\"pod1\",\"namespace\":\"ns\"}]" +
+				"    }," +
+				"    {" +
+				"        \"name\":\"ds2\"," +
 				"        \"namespace\":\"ns\"," +
 				"        \"targetPods\":[{\"name\":\"pod2\",\"namespace\":\"ns\"}]" +
 				"    }" +

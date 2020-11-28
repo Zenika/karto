@@ -2,6 +2,7 @@ package service
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"karto/analyzer/utils"
 	"karto/types"
 )
@@ -20,7 +21,7 @@ func (analyzer analyzerImpl) Analyze(service *corev1.Service, pods []*corev1.Pod
 	targetPods := make([]types.PodRef, 0)
 	for _, pod := range pods {
 		namespaceMatches := analyzer.serviceNamespaceMatches(pod, service)
-		selectorMatches := utils.LabelsMatches(pod.Labels, service.Spec.Selector)
+		selectorMatches := analyzer.labelsMatches(pod.Labels, service.Spec.Selector)
 		if namespaceMatches && selectorMatches {
 			targetPods = append(targetPods, analyzer.toPodRef(pod))
 		}
@@ -34,6 +35,13 @@ func (analyzer analyzerImpl) Analyze(service *corev1.Service, pods []*corev1.Pod
 
 func (analyzer analyzerImpl) serviceNamespaceMatches(pod *corev1.Pod, service *corev1.Service) bool {
 	return pod.Namespace == service.Namespace
+}
+
+func (analyzer analyzerImpl) labelsMatches(objectLabels map[string]string, matchLabels map[string]string) bool {
+	if matchLabels == nil {
+		return false
+	}
+	return utils.SelectorMatches(objectLabels, *metav1.SetAsLabelSelector(matchLabels))
 }
 
 func (analyzer analyzerImpl) toPodRef(pod *corev1.Pod) types.PodRef {

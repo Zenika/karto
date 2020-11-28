@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Run Back" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <module name="karto" />
+    <working_directory value="$PROJECT_DIR$/back" />
+    <go_parameters value="-i" />
+    <kind value="PACKAGE" />
+    <filePath value="$PROJECT_DIR$/back" />
+    <package value="karto" />
+    <directory value="$PROJECT_DIR$" />
+    <method v="2" />
+  </configuration>
+</component>

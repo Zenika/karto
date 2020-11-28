@@ -23,6 +23,8 @@ func newHandler() *handler {
 			AllowedRoutes: make([]*types.AllowedRoute, 0),
 			Services:      make([]*types.Service, 0),
 			ReplicaSets:   make([]*types.ReplicaSet, 0),
+			StatefulSets:  make([]*types.StatefulSet, 0),
+			DaemonSets:    make([]*types.DaemonSet, 0),
 			Deployments:   make([]*types.Deployment, 0),
 		},
 	}

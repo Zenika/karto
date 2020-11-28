@@ -1,4 +1,4 @@
-package replicaset
+package daemonset
 
 import (
 	appsv1 "k8s.io/api/apps/v1"
@@ -7,7 +7,7 @@ import (
 )
 
 type Analyzer interface {
-	Analyze(replicaSet *appsv1.ReplicaSet, pods []*corev1.Pod) *types.ReplicaSet
+	Analyze(daemonSet *appsv1.DaemonSet, pods []*corev1.Pod) *types.DaemonSet
 }
 
 type analyzerImpl struct{}
@@ -16,22 +16,19 @@ func NewAnalyzer() Analyzer {
 	return analyzerImpl{}
 }
 
-func (analyzer analyzerImpl) Analyze(replicaSet *appsv1.ReplicaSet, pods []*corev1.Pod) *types.ReplicaSet {
-	if *replicaSet.Spec.Replicas == 0 {
-		return nil
-	}
+func (analyzer analyzerImpl) Analyze(daemonSet *appsv1.DaemonSet, pods []*corev1.Pod) *types.DaemonSet {
 	targetPods := make([]types.PodRef, 0)
 	for _, pod := range pods {
 		for _, ownerReference := range pod.OwnerReferences {
-			if ownerReference.UID == replicaSet.UID {
+			if ownerReference.UID == daemonSet.UID {
 				targetPods = append(targetPods, analyzer.toPodRef(pod))
 				break
 			}
 		}
 	}
-	return &types.ReplicaSet{
-		Name:       replicaSet.Name,
-		Namespace:  replicaSet.Namespace,
+	return &types.DaemonSet{
+		Name:       daemonSet.Name,
+		Namespace:  daemonSet.Namespace,
 		TargetPods: targetPods,
 	}
 }

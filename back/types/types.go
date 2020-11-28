@@ -11,6 +11,8 @@ type ClusterState struct {
 	Pods            []*corev1.Pod
 	Services        []*corev1.Service
 	ReplicaSets     []*appsv1.ReplicaSet
+	StatefulSets    []*appsv1.StatefulSet
+	DaemonSets      []*appsv1.DaemonSet
 	Deployments     []*appsv1.Deployment
 	NetworkPolicies []*networkingv1.NetworkPolicy
 }
@@ -58,6 +60,18 @@ type ReplicaSet struct {
 	TargetPods []PodRef `json:"targetPods"`
 }
 
+type StatefulSet struct {
+	Name       string   `json:"name"`
+	Namespace  string   `json:"namespace"`
+	TargetPods []PodRef `json:"targetPods"`
+}
+
+type DaemonSet struct {
+	Name       string   `json:"name"`
+	Namespace  string   `json:"namespace"`
+	TargetPods []PodRef `json:"targetPods"`
+}
+
 type ReplicaSetRef struct {
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
@@ -75,5 +89,7 @@ type AnalysisResult struct {
 	AllowedRoutes []*AllowedRoute `json:"allowedRoutes"`
 	Services      []*Service      `json:"services"`
 	ReplicaSets   []*ReplicaSet   `json:"replicaSets"`
+	StatefulSets  []*StatefulSet  `json:"statefulSets"`
+	DaemonSets    []*DaemonSet    `json:"daemonSets"`
 	Deployments   []*Deployment   `json:"deployments"`
 }

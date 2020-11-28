@@ -33,6 +33,8 @@ rules:
       - "apps"
     resources:
       - replicasets
+      - statefulsets
+      - daemonsets
       - deployments
     verbs:
       - get
