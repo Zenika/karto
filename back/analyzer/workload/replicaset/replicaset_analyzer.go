@@ -3,7 +3,6 @@ package replicaset
 import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"karto/analyzer/utils"
 	"karto/types"
 )
 
@@ -23,10 +22,11 @@ func (analyzer analyzerImpl) Analyze(replicaSet *appsv1.ReplicaSet, pods []*core
 	}
 	targetPods := make([]types.PodRef, 0)
 	for _, pod := range pods {
-		namespaceMatches := analyzer.replicaSetNamespaceMatches(pod, replicaSet)
-		selectorMatches := utils.SelectorMatches(pod.Labels, *replicaSet.Spec.Selector)
-		if namespaceMatches && selectorMatches {
-			targetPods = append(targetPods, analyzer.toPodRef(pod))
+		for _, ownerReference := range pod.OwnerReferences {
+			if ownerReference.UID == replicaSet.UID {
+				targetPods = append(targetPods, analyzer.toPodRef(pod))
+				break
+			}
 		}
 	}
 	return &types.ReplicaSet{
@@ -34,10 +34,6 @@ func (analyzer analyzerImpl) Analyze(replicaSet *appsv1.ReplicaSet, pods []*core
 		Namespace:  replicaSet.Namespace,
 		TargetPods: targetPods,
 	}
-}
-
-func (analyzer analyzerImpl) replicaSetNamespaceMatches(pod *corev1.Pod, replicaSet *appsv1.ReplicaSet) bool {
-	return pod.Namespace == replicaSet.Namespace
 }
 
 func (analyzer analyzerImpl) toPodRef(pod *corev1.Pod) types.PodRef {

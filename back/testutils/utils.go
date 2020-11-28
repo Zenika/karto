@@ -42,6 +42,7 @@ func (namespaceBuilder *NamespaceBuilder) Build() *corev1.Namespace {
 type PodBuilder struct {
 	Name      string
 	Namespace string
+	ownerUID  string
 	Labels    map[string]string
 }
 
@@ -67,12 +68,20 @@ func (podBuilder *PodBuilder) WithLabel(key string, value string) *PodBuilder {
 	return podBuilder
 }
 
+func (podBuilder *PodBuilder) WithOwnerUID(ownerUID string) *PodBuilder {
+	podBuilder.ownerUID = ownerUID
+	return podBuilder
+}
+
 func (podBuilder *PodBuilder) Build() *corev1.Pod {
 	return &corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      podBuilder.Name,
 			Namespace: podBuilder.Namespace,
 			Labels:    podBuilder.Labels,
+			OwnerReferences: []v1.OwnerReference{
+				{UID: types.UID(podBuilder.ownerUID)},
+			},
 		},
 	}
 }
@@ -213,7 +222,8 @@ func (serviceBuilder *ServiceBuilder) Build() *corev1.Service {
 type ReplicaSetBuilder struct {
 	Name            string
 	Namespace       string
-	deploymentUID   string
+	UID             string
+	ownerUid        string
 	DesiredReplicas int32
 	Selector        map[string]string
 }
@@ -236,18 +246,18 @@ func (replicaSetBuilder *ReplicaSetBuilder) WithNamespace(namespace string) *Rep
 	return replicaSetBuilder
 }
 
+func (replicaSetBuilder *ReplicaSetBuilder) WithUID(UID string) *ReplicaSetBuilder {
+	replicaSetBuilder.UID = UID
+	return replicaSetBuilder
+}
+
 func (replicaSetBuilder *ReplicaSetBuilder) WithDesiredReplicas(replicas int32) *ReplicaSetBuilder {
 	replicaSetBuilder.DesiredReplicas = replicas
 	return replicaSetBuilder
 }
 
-func (replicaSetBuilder *ReplicaSetBuilder) WithSelectorLabel(key string, value string) *ReplicaSetBuilder {
-	replicaSetBuilder.Selector[key] = value
-	return replicaSetBuilder
-}
-
-func (replicaSetBuilder *ReplicaSetBuilder) WithOwnerDeployment(deploymentUID string) *ReplicaSetBuilder {
-	replicaSetBuilder.deploymentUID = deploymentUID
+func (replicaSetBuilder *ReplicaSetBuilder) WithOwnerUID(ownerUID string) *ReplicaSetBuilder {
+	replicaSetBuilder.ownerUid = ownerUID
 	return replicaSetBuilder
 }
 
@@ -256,8 +266,9 @@ func (replicaSetBuilder *ReplicaSetBuilder) Build() *appsv1.ReplicaSet {
 		ObjectMeta: v1.ObjectMeta{
 			Name:      replicaSetBuilder.Name,
 			Namespace: replicaSetBuilder.Namespace,
+			UID:       types.UID(replicaSetBuilder.UID),
 			OwnerReferences: []v1.OwnerReference{
-				{UID: types.UID(replicaSetBuilder.deploymentUID)},
+				{UID: types.UID(replicaSetBuilder.ownerUid)},
 			},
 		},
 		Spec: appsv1.ReplicaSetSpec{
@@ -272,6 +283,7 @@ func (replicaSetBuilder *ReplicaSetBuilder) Build() *appsv1.ReplicaSet {
 type StatefulSetBuilder struct {
 	Name            string
 	Namespace       string
+	UID             string
 	DesiredReplicas int32
 	Selector        map[string]string
 }
@@ -294,13 +306,13 @@ func (statefulSetBuilder *StatefulSetBuilder) WithNamespace(namespace string) *S
 	return statefulSetBuilder
 }
 
-func (statefulSetBuilder *StatefulSetBuilder) WithDesiredReplicas(replicas int32) *StatefulSetBuilder {
-	statefulSetBuilder.DesiredReplicas = replicas
+func (statefulSetBuilder *StatefulSetBuilder) WithUID(UID string) *StatefulSetBuilder {
+	statefulSetBuilder.UID = UID
 	return statefulSetBuilder
 }
 
-func (statefulSetBuilder *StatefulSetBuilder) WithSelectorLabel(key string, value string) *StatefulSetBuilder {
-	statefulSetBuilder.Selector[key] = value
+func (statefulSetBuilder *StatefulSetBuilder) WithDesiredReplicas(replicas int32) *StatefulSetBuilder {
+	statefulSetBuilder.DesiredReplicas = replicas
 	return statefulSetBuilder
 }
 
@@ -309,6 +321,7 @@ func (statefulSetBuilder *StatefulSetBuilder) Build() *appsv1.StatefulSet {
 		ObjectMeta: v1.ObjectMeta{
 			Name:      statefulSetBuilder.Name,
 			Namespace: statefulSetBuilder.Namespace,
+			UID:       types.UID(statefulSetBuilder.UID),
 		},
 		Spec: appsv1.StatefulSetSpec{
 			Replicas: &statefulSetBuilder.DesiredReplicas,
@@ -322,6 +335,7 @@ func (statefulSetBuilder *StatefulSetBuilder) Build() *appsv1.StatefulSet {
 type DaemonSetBuilder struct {
 	Name      string
 	Namespace string
+	UID       string
 	Selector  map[string]string
 }
 
@@ -332,30 +346,31 @@ func NewDaemonSetBuilder() *DaemonSetBuilder {
 	}
 }
 
-func (statefulSetBuilder *DaemonSetBuilder) WithName(name string) *DaemonSetBuilder {
-	statefulSetBuilder.Name = name
-	return statefulSetBuilder
+func (daemonSetBuilder *DaemonSetBuilder) WithName(name string) *DaemonSetBuilder {
+	daemonSetBuilder.Name = name
+	return daemonSetBuilder
 }
 
-func (statefulSetBuilder *DaemonSetBuilder) WithNamespace(namespace string) *DaemonSetBuilder {
-	statefulSetBuilder.Namespace = namespace
-	return statefulSetBuilder
+func (daemonSetBuilder *DaemonSetBuilder) WithNamespace(namespace string) *DaemonSetBuilder {
+	daemonSetBuilder.Namespace = namespace
+	return daemonSetBuilder
 }
 
-func (statefulSetBuilder *DaemonSetBuilder) WithSelectorLabel(key string, value string) *DaemonSetBuilder {
-	statefulSetBuilder.Selector[key] = value
-	return statefulSetBuilder
+func (daemonSetBuilder *DaemonSetBuilder) WithUID(UID string) *DaemonSetBuilder {
+	daemonSetBuilder.UID = UID
+	return daemonSetBuilder
 }
 
-func (statefulSetBuilder *DaemonSetBuilder) Build() *appsv1.DaemonSet {
+func (daemonSetBuilder *DaemonSetBuilder) Build() *appsv1.DaemonSet {
 	return &appsv1.DaemonSet{
 		ObjectMeta: v1.ObjectMeta{
-			Name:      statefulSetBuilder.Name,
-			Namespace: statefulSetBuilder.Namespace,
+			Name:      daemonSetBuilder.Name,
+			Namespace: daemonSetBuilder.Namespace,
+			UID:       types.UID(daemonSetBuilder.UID),
 		},
 		Spec: appsv1.DaemonSetSpec{
 			Selector: &metav1.LabelSelector{
-				MatchLabels: statefulSetBuilder.Selector,
+				MatchLabels: daemonSetBuilder.Selector,
 			},
 		},
 	}

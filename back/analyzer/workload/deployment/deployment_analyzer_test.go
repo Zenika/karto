@@ -36,9 +36,9 @@ func Test_Analyze(t *testing.T) {
 				deployment: testutils.NewDeploymentBuilder().WithUID("deploy-uid").Build(),
 				replicaSets: []*appsv1.ReplicaSet{
 					testutils.NewReplicaSetBuilder().WithName("name1").
-						WithOwnerDeployment("deploy-uid").WithDesiredReplicas(2).Build(),
+						WithOwnerUID("deploy-uid").WithDesiredReplicas(2).Build(),
 					testutils.NewReplicaSetBuilder().WithName("name2").
-						WithOwnerDeployment("other-uid").WithDesiredReplicas(2).Build(),
+						WithOwnerUID("other-uid").WithDesiredReplicas(2).Build(),
 					testutils.NewReplicaSetBuilder().WithName("name3").Build(),
 				},
 			},
@@ -55,9 +55,9 @@ func Test_Analyze(t *testing.T) {
 				deployment: testutils.NewDeploymentBuilder().WithUID("deploy-uid").Build(),
 				replicaSets: []*appsv1.ReplicaSet{
 					testutils.NewReplicaSetBuilder().WithName("name1").
-						WithOwnerDeployment("deploy-uid").WithDesiredReplicas(2).Build(),
+						WithOwnerUID("deploy-uid").WithDesiredReplicas(2).Build(),
 					testutils.NewReplicaSetBuilder().WithName("name2").
-						WithOwnerDeployment("deploy-uid").WithDesiredReplicas(0).Build(),
+						WithOwnerUID("deploy-uid").WithDesiredReplicas(0).Build(),
 				},
 			},
 			expectedDeploymentWithTargetReplicaSets: &types.Deployment{

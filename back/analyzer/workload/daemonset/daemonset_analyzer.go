@@ -3,7 +3,6 @@ package daemonset
 import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"karto/analyzer/utils"
 	"karto/types"
 )
 
@@ -20,10 +19,11 @@ func NewAnalyzer() Analyzer {
 func (analyzer analyzerImpl) Analyze(daemonSet *appsv1.DaemonSet, pods []*corev1.Pod) *types.DaemonSet {
 	targetPods := make([]types.PodRef, 0)
 	for _, pod := range pods {
-		namespaceMatches := analyzer.daemonSetNamespaceMatches(pod, daemonSet)
-		selectorMatches := utils.SelectorMatches(pod.Labels, *daemonSet.Spec.Selector)
-		if namespaceMatches && selectorMatches {
-			targetPods = append(targetPods, analyzer.toPodRef(pod))
+		for _, ownerReference := range pod.OwnerReferences {
+			if ownerReference.UID == daemonSet.UID {
+				targetPods = append(targetPods, analyzer.toPodRef(pod))
+				break
+			}
 		}
 	}
 	return &types.DaemonSet{
@@ -31,10 +31,6 @@ func (analyzer analyzerImpl) Analyze(daemonSet *appsv1.DaemonSet, pods []*corev1
 		Namespace:  daemonSet.Namespace,
 		TargetPods: targetPods,
 	}
-}
-
-func (analyzer analyzerImpl) daemonSetNamespaceMatches(pod *corev1.Pod, daemonSet *appsv1.DaemonSet) bool {
-	return pod.Namespace == daemonSet.Namespace
 }
 
 func (analyzer analyzerImpl) toPodRef(pod *corev1.Pod) types.PodRef {

@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Test Back" type="GoTestRunConfiguration" factoryName="Go Test">
+    <module name="karto" />
+    <working_directory value="$PROJECT_DIR$/back" />
+    <framework value="gotest" />
+    <kind value="DIRECTORY" />
+    <package value="karto" />
+    <directory value="$PROJECT_DIR$/back" />
+    <filePath value="$PROJECT_DIR$" />
+    <method v="2" />
+  </configuration>
+</component>

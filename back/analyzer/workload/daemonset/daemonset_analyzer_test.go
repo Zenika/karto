@@ -32,37 +32,18 @@ func Test_Analyze(t *testing.T) {
 			},
 		},
 		{
-			name: "only pods with matching labels are detected as target",
+			name: "only pods referencing daemonSet as owner are detected as target",
 			args: args{
-				daemonSet: testutils.NewDaemonSetBuilder().WithSelectorLabel("app", "foo").Build(),
+				daemonSet: testutils.NewDaemonSetBuilder().WithUID("daemonset-uid").Build(),
 				pods: []*corev1.Pod{
-					testutils.NewPodBuilder().WithName("name1").WithLabel("app", "foo").Build(),
-					testutils.NewPodBuilder().WithName("name2").WithLabel("app", "bar").Build(),
+					testutils.NewPodBuilder().WithName("name1").WithOwnerUID("daemonset-uid").Build(),
+					testutils.NewPodBuilder().WithName("name2").WithOwnerUID("other-uid").Build(),
 				},
 			},
 			expectedDaemonSetWithTargetPods: &types.DaemonSet{
 				Namespace: "default",
 				TargetPods: []types.PodRef{
 					{Name: "name1", Namespace: "default"},
-				},
-			},
-		},
-		{
-			name: "only pods within the same namespace are detected as target",
-			args: args{
-				daemonSet: testutils.NewDaemonSetBuilder().WithNamespace("ns").
-					WithSelectorLabel("app", "foo").Build(),
-				pods: []*corev1.Pod{
-					testutils.NewPodBuilder().WithName("name1").WithNamespace("ns").
-						WithLabel("app", "foo").Build(),
-					testutils.NewPodBuilder().WithName("name2").WithNamespace("other").
-						WithLabel("app", "foo").Build(),
-				},
-			},
-			expectedDaemonSetWithTargetPods: &types.DaemonSet{
-				Namespace: "ns",
-				TargetPods: []types.PodRef{
-					{Name: "name1", Namespace: "ns"},
 				},
 			},
 		},

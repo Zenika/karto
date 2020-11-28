@@ -3,7 +3,6 @@ package statefulset
 import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"karto/analyzer/utils"
 	"karto/types"
 )
 
@@ -23,10 +22,11 @@ func (analyzer analyzerImpl) Analyze(statefulSet *appsv1.StatefulSet, pods []*co
 	}
 	targetPods := make([]types.PodRef, 0)
 	for _, pod := range pods {
-		namespaceMatches := analyzer.statefulSetNamespaceMatches(pod, statefulSet)
-		selectorMatches := utils.SelectorMatches(pod.Labels, *statefulSet.Spec.Selector)
-		if namespaceMatches && selectorMatches {
-			targetPods = append(targetPods, analyzer.toPodRef(pod))
+		for _, ownerReference := range pod.OwnerReferences {
+			if ownerReference.UID == statefulSet.UID {
+				targetPods = append(targetPods, analyzer.toPodRef(pod))
+				break
+			}
 		}
 	}
 	return &types.StatefulSet{
@@ -34,10 +34,6 @@ func (analyzer analyzerImpl) Analyze(statefulSet *appsv1.StatefulSet, pods []*co
 		Namespace:  statefulSet.Namespace,
 		TargetPods: targetPods,
 	}
-}
-
-func (analyzer analyzerImpl) statefulSetNamespaceMatches(pod *corev1.Pod, statefulSet *appsv1.StatefulSet) bool {
-	return pod.Namespace == statefulSet.Namespace
 }
 
 func (analyzer analyzerImpl) toPodRef(pod *corev1.Pod) types.PodRef {

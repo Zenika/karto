@@ -32,20 +32,12 @@ func Test_Analyze(t *testing.T) {
 			},
 		},
 		{
-			name: "statefulSets with 0 desired replicas are ignored",
+			name: "only pods referencing statefulSet as owner are detected as target",
 			args: args{
-				statefulSet: testutils.NewStatefulSetBuilder().WithDesiredReplicas(0).Build(),
-				pods:        []*corev1.Pod{},
-			},
-			expectedStatefulSetWithTargetPods: nil,
-		},
-		{
-			name: "only pods with matching labels are detected as target",
-			args: args{
-				statefulSet: testutils.NewStatefulSetBuilder().WithSelectorLabel("app", "foo").Build(),
+				statefulSet: testutils.NewStatefulSetBuilder().WithUID("statefulset-uid").Build(),
 				pods: []*corev1.Pod{
-					testutils.NewPodBuilder().WithName("name1").WithLabel("app", "foo").Build(),
-					testutils.NewPodBuilder().WithName("name2").WithLabel("app", "bar").Build(),
+					testutils.NewPodBuilder().WithName("name1").WithOwnerUID("statefulset-uid").Build(),
+					testutils.NewPodBuilder().WithName("name2").WithOwnerUID("other-uid").Build(),
 				},
 			},
 			expectedStatefulSetWithTargetPods: &types.StatefulSet{
@@ -56,23 +48,12 @@ func Test_Analyze(t *testing.T) {
 			},
 		},
 		{
-			name: "only pods within the same namespace are detected as target",
+			name: "statefulSets with 0 desired replicas are ignored",
 			args: args{
-				statefulSet: testutils.NewStatefulSetBuilder().WithNamespace("ns").
-					WithSelectorLabel("app", "foo").Build(),
-				pods: []*corev1.Pod{
-					testutils.NewPodBuilder().WithName("name1").WithNamespace("ns").
-						WithLabel("app", "foo").Build(),
-					testutils.NewPodBuilder().WithName("name2").WithNamespace("other").
-						WithLabel("app", "foo").Build(),
-				},
+				statefulSet: testutils.NewStatefulSetBuilder().WithDesiredReplicas(0).Build(),
+				pods:        []*corev1.Pod{},
 			},
-			expectedStatefulSetWithTargetPods: &types.StatefulSet{
-				Namespace: "ns",
-				TargetPods: []types.PodRef{
-					{Name: "name1", Namespace: "ns"},
-				},
-			},
+			expectedStatefulSetWithTargetPods: nil,
 		},
 	}
 	for _, tt := range tests {
