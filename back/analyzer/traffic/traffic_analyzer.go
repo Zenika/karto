@@ -9,9 +9,19 @@ import (
 	"karto/types"
 )
 
+type ClusterState struct {
+	Pods            []*corev1.Pod
+	Namespaces      []*corev1.Namespace
+	NetworkPolicies []*networkingv1.NetworkPolicy
+}
+
+type AnalysisResult struct {
+	Pods          []*types.PodIsolation
+	AllowedRoutes []*types.AllowedRoute
+}
+
 type Analyzer interface {
-	Analyze(pods []*corev1.Pod, namespaces []*corev1.Namespace,
-		networkPolicies []*networkingv1.NetworkPolicy) ([]*types.PodIsolation, []*types.AllowedRoute)
+	Analyze(state ClusterState) AnalysisResult
 }
 
 type analyzerImpl struct {
@@ -26,11 +36,13 @@ func NewAnalyzer(podIsolationAnalyzer podisolation.Analyzer, allowedRouteAnalyze
 	}
 }
 
-func (analyzer analyzerImpl) Analyze(pods []*corev1.Pod, namespaces []*corev1.Namespace,
-	networkPolicies []*networkingv1.NetworkPolicy) ([]*types.PodIsolation, []*types.AllowedRoute) {
-	podIsolations := analyzer.podIsolationsOfAllPods(pods, networkPolicies)
-	allowedRoutes := analyzer.allowedRoutesOfAllPods(podIsolations, namespaces)
-	return analyzer.toPodIsolations(podIsolations), allowedRoutes
+func (analyzer analyzerImpl) Analyze(clusterState ClusterState) AnalysisResult {
+	podIsolations := analyzer.podIsolationsOfAllPods(clusterState.Pods, clusterState.NetworkPolicies)
+	allowedRoutes := analyzer.allowedRoutesOfAllPods(podIsolations, clusterState.Namespaces)
+	return AnalysisResult{
+		Pods:          analyzer.toPodIsolations(podIsolations),
+		AllowedRoutes: allowedRoutes,
+	}
 }
 
 func (analyzer analyzerImpl) podIsolationsOfAllPods(pods []*corev1.Pod,

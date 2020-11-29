@@ -4,6 +4,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -42,6 +43,7 @@ func (namespaceBuilder *NamespaceBuilder) Build() *corev1.Namespace {
 type PodBuilder struct {
 	Name      string
 	Namespace string
+	ownerUID  string
 	Labels    map[string]string
 }
 
@@ -67,12 +69,20 @@ func (podBuilder *PodBuilder) WithLabel(key string, value string) *PodBuilder {
 	return podBuilder
 }
 
+func (podBuilder *PodBuilder) WithOwnerUID(ownerUID string) *PodBuilder {
+	podBuilder.ownerUID = ownerUID
+	return podBuilder
+}
+
 func (podBuilder *PodBuilder) Build() *corev1.Pod {
 	return &corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      podBuilder.Name,
 			Namespace: podBuilder.Namespace,
 			Labels:    podBuilder.Labels,
+			OwnerReferences: []v1.OwnerReference{
+				{UID: types.UID(podBuilder.ownerUID)},
+			},
 		},
 	}
 }
@@ -213,16 +223,15 @@ func (serviceBuilder *ServiceBuilder) Build() *corev1.Service {
 type ReplicaSetBuilder struct {
 	Name            string
 	Namespace       string
-	deploymentUID   string
+	UID             string
+	ownerUid        string
 	DesiredReplicas int32
-	Selector        map[string]string
 }
 
 func NewReplicaSetBuilder() *ReplicaSetBuilder {
 	return &ReplicaSetBuilder{
 		Namespace:       "default",
 		DesiredReplicas: 1,
-		Selector:        map[string]string{},
 	}
 }
 
@@ -236,18 +245,18 @@ func (replicaSetBuilder *ReplicaSetBuilder) WithNamespace(namespace string) *Rep
 	return replicaSetBuilder
 }
 
+func (replicaSetBuilder *ReplicaSetBuilder) WithUID(UID string) *ReplicaSetBuilder {
+	replicaSetBuilder.UID = UID
+	return replicaSetBuilder
+}
+
 func (replicaSetBuilder *ReplicaSetBuilder) WithDesiredReplicas(replicas int32) *ReplicaSetBuilder {
 	replicaSetBuilder.DesiredReplicas = replicas
 	return replicaSetBuilder
 }
 
-func (replicaSetBuilder *ReplicaSetBuilder) WithSelectorLabel(key string, value string) *ReplicaSetBuilder {
-	replicaSetBuilder.Selector[key] = value
-	return replicaSetBuilder
-}
-
-func (replicaSetBuilder *ReplicaSetBuilder) WithOwnerDeployment(deploymentUID string) *ReplicaSetBuilder {
-	replicaSetBuilder.deploymentUID = deploymentUID
+func (replicaSetBuilder *ReplicaSetBuilder) WithOwnerUID(ownerUID string) *ReplicaSetBuilder {
+	replicaSetBuilder.ownerUid = ownerUID
 	return replicaSetBuilder
 }
 
@@ -256,14 +265,153 @@ func (replicaSetBuilder *ReplicaSetBuilder) Build() *appsv1.ReplicaSet {
 		ObjectMeta: v1.ObjectMeta{
 			Name:      replicaSetBuilder.Name,
 			Namespace: replicaSetBuilder.Namespace,
+			UID:       types.UID(replicaSetBuilder.UID),
 			OwnerReferences: []v1.OwnerReference{
-				{UID: types.UID(replicaSetBuilder.deploymentUID)},
+				{UID: types.UID(replicaSetBuilder.ownerUid)},
 			},
 		},
 		Spec: appsv1.ReplicaSetSpec{
 			Replicas: &replicaSetBuilder.DesiredReplicas,
-			Selector: &metav1.LabelSelector{
-				MatchLabels: replicaSetBuilder.Selector,
+		},
+	}
+}
+
+type StatefulSetBuilder struct {
+	Name            string
+	Namespace       string
+	UID             string
+	DesiredReplicas int32
+}
+
+func NewStatefulSetBuilder() *StatefulSetBuilder {
+	return &StatefulSetBuilder{
+		Namespace:       "default",
+		DesiredReplicas: 1,
+	}
+}
+
+func (statefulSetBuilder *StatefulSetBuilder) WithName(name string) *StatefulSetBuilder {
+	statefulSetBuilder.Name = name
+	return statefulSetBuilder
+}
+
+func (statefulSetBuilder *StatefulSetBuilder) WithNamespace(namespace string) *StatefulSetBuilder {
+	statefulSetBuilder.Namespace = namespace
+	return statefulSetBuilder
+}
+
+func (statefulSetBuilder *StatefulSetBuilder) WithUID(UID string) *StatefulSetBuilder {
+	statefulSetBuilder.UID = UID
+	return statefulSetBuilder
+}
+
+func (statefulSetBuilder *StatefulSetBuilder) WithDesiredReplicas(replicas int32) *StatefulSetBuilder {
+	statefulSetBuilder.DesiredReplicas = replicas
+	return statefulSetBuilder
+}
+
+func (statefulSetBuilder *StatefulSetBuilder) Build() *appsv1.StatefulSet {
+	return &appsv1.StatefulSet{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      statefulSetBuilder.Name,
+			Namespace: statefulSetBuilder.Namespace,
+			UID:       types.UID(statefulSetBuilder.UID),
+		},
+		Spec: appsv1.StatefulSetSpec{
+			Replicas: &statefulSetBuilder.DesiredReplicas,
+		},
+	}
+}
+
+type DaemonSetBuilder struct {
+	Name      string
+	Namespace string
+	UID       string
+}
+
+func NewDaemonSetBuilder() *DaemonSetBuilder {
+	return &DaemonSetBuilder{
+		Namespace: "default",
+	}
+}
+
+func (daemonSetBuilder *DaemonSetBuilder) WithName(name string) *DaemonSetBuilder {
+	daemonSetBuilder.Name = name
+	return daemonSetBuilder
+}
+
+func (daemonSetBuilder *DaemonSetBuilder) WithNamespace(namespace string) *DaemonSetBuilder {
+	daemonSetBuilder.Namespace = namespace
+	return daemonSetBuilder
+}
+
+func (daemonSetBuilder *DaemonSetBuilder) WithUID(UID string) *DaemonSetBuilder {
+	daemonSetBuilder.UID = UID
+	return daemonSetBuilder
+}
+
+func (daemonSetBuilder *DaemonSetBuilder) Build() *appsv1.DaemonSet {
+	return &appsv1.DaemonSet{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      daemonSetBuilder.Name,
+			Namespace: daemonSetBuilder.Namespace,
+			UID:       types.UID(daemonSetBuilder.UID),
+		},
+	}
+}
+
+type IngressBuilder struct {
+	Name            string
+	Namespace       string
+	ServiceBackends []string
+}
+
+func NewIngressBuilder() *IngressBuilder {
+	return &IngressBuilder{
+		Namespace:       "default",
+		ServiceBackends: make([]string, 0),
+	}
+}
+
+func (ingressBuilder *IngressBuilder) WithName(name string) *IngressBuilder {
+	ingressBuilder.Name = name
+	return ingressBuilder
+}
+
+func (ingressBuilder *IngressBuilder) WithNamespace(namespace string) *IngressBuilder {
+	ingressBuilder.Namespace = namespace
+	return ingressBuilder
+}
+
+func (ingressBuilder *IngressBuilder) WithServiceBackend(serviceName string) *IngressBuilder {
+	ingressBuilder.ServiceBackends = append(ingressBuilder.ServiceBackends, serviceName)
+	return ingressBuilder
+}
+
+func (ingressBuilder *IngressBuilder) Build() *networkingv1beta1.Ingress {
+	ingressPaths := make([]networkingv1beta1.HTTPIngressPath, 0)
+	for _, serviceBackend := range ingressBuilder.ServiceBackends {
+		ingressPath := networkingv1beta1.HTTPIngressPath{
+			Backend: networkingv1beta1.IngressBackend{
+				ServiceName: serviceBackend,
+			},
+		}
+		ingressPaths = append(ingressPaths, ingressPath)
+	}
+	return &networkingv1beta1.Ingress{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      ingressBuilder.Name,
+			Namespace: ingressBuilder.Namespace,
+		},
+		Spec: networkingv1beta1.IngressSpec{
+			Rules: []networkingv1beta1.IngressRule{
+				{
+					IngressRuleValue: networkingv1beta1.IngressRuleValue{
+						HTTP: &networkingv1beta1.HTTPIngressRuleValue{
+							Paths: ingressPaths,
+						},
+					},
+				},
 			},
 		},
 	}

@@ -2,7 +2,62 @@ import D3Graph from './D3Graph';
 import D3GraphLinkLayer from './D3GraphLinkLayer';
 import D3GraphItemLayer from './D3GraphItemLayer';
 import { SPACING } from './D3Constants';
-import flatten from '../../utils/utils';
+import { flatten } from '../../utils/utils';
+
+const CONTROLLER_TYPE = {
+    REPLICASET: 'replicaSet',
+    STATEFULSET: 'statefulSet',
+    DAEMONSET: 'daemonSet'
+};
+
+function withControllerType(type, obj) {
+    return { type, ...obj };
+}
+
+function withoutControllerType(obj) {
+    if (obj == null) {
+        return null;
+    }
+    const { type, ...remaining } = obj;
+    return remaining;
+}
+
+function extractControllers(dataSet) {
+    return [
+        ...dataSet.replicaSets.map(rs => withControllerType(CONTROLLER_TYPE.REPLICASET, rs)),
+        ...dataSet.statefulSets.map(ss => withControllerType(CONTROLLER_TYPE.STATEFULSET, ss)),
+        ...dataSet.daemonSets.map(ds => withControllerType(CONTROLLER_TYPE.DAEMONSET, ds))
+    ];
+}
+
+function controllerFocusHandler(focusHandlers, datum) {
+    switch (datum.type) {
+        case CONTROLLER_TYPE.REPLICASET:
+            return datum => focusHandlers['onReplicaSetFocus'](withoutControllerType(datum));
+        case CONTROLLER_TYPE.STATEFULSET:
+            return datum => focusHandlers['onStatefulSetFocus'](withoutControllerType(datum));
+        case CONTROLLER_TYPE.DAEMONSET:
+            return datum => focusHandlers['onDaemonSetFocus'](withoutControllerType(datum));
+        default:
+            throw new Error('Invalid datum type: ' + datum.type);
+    }
+}
+
+function controllerSvgPath(datum) {
+    switch (datum.type) {
+        case CONTROLLER_TYPE.REPLICASET:
+            return 'M-2,-2 L2,-2 L2,2 L-2,2 M2.5,-1 L3,-1 L3,3 L-1,3 L-1,2.5 L2.5,2.5 L2.5,-1';
+        case CONTROLLER_TYPE.STATEFULSET:
+            return 'M-2,-1.75 A2.5,0.75,0,1,1,3,-1.75 A2.5,0.75,0,1,1,-2,-1.75 ' +
+                'M-2,-1.25 A2.5,0.75,0,0,0,3,-1.25 L3,0 A2.5,0.75,0,1,1,-2,0 ' +
+                'M-2,0.5 A2.5,0.75,0,0,0,3,0.5 L3,1.75 A2.5,0.75,0,1,1,-2,1.75';
+        case CONTROLLER_TYPE.DAEMONSET:
+            return 'M0,-2.31 L2,-1.155 L2,1.155 L0,2.31 L-2,1.155 L-2,-1.155 ' +
+                'M2.5,-0.865 L2.5,1.445 L0.5,2.6 L1,2.89 L3,1.735 L3,-0.575';
+        default:
+            throw new Error('Invalid datum type: ' + datum.type);
+    }
+}
 
 function d3PodId(pod) {
     return `pod/${pod.namespace}/${pod.name}`;
@@ -34,25 +89,47 @@ function d3ServiceLink({ service, targetPod }) {
     return { id, source, target, sourceData: service };
 }
 
-function d3ReplicaSetId(replicaSet) {
-    return `replicaSet/${replicaSet.namespace}/${replicaSet.name}`;
+function d3IngressId(ingress) {
+    return `ingress/${ingress.namespace}/${ingress.name}`;
 }
 
-function d3ReplicaSet(replicaSet) {
-    const id = d3ReplicaSetId(replicaSet);
-    const targetPods = replicaSet.targetPods.map(targetPod => d3PodId(targetPod));
-    return { id, displayName: replicaSet.displayName, targetPods, sourceData: replicaSet };
+function d3Ingress(ingress) {
+    const id = d3IngressId(ingress);
+    const targetServices = ingress.targetServices
+        .map(targetService => d3ServiceId(targetService));
+    return { id, displayName: ingress.displayName, targetServices, sourceData: ingress };
 }
 
-function d3ReplicaSetLinkId({ replicaSet, targetPod }) {
-    return `replicaSetLink/${d3ReplicaSetId(replicaSet)}->${d3PodId(targetPod)}`;
+function d3IngressLinkId({ ingress, targetService }) {
+    return `ingressLink/${d3IngressId(ingress)}->${d3ServiceId(targetService)}`;
 }
 
-function d3ReplicaSetLink({ replicaSet, targetPod }) {
-    const id = d3ReplicaSetLinkId({ replicaSet, targetPod });
-    const source = d3ReplicaSetId(replicaSet);
+function d3IngressLink({ ingress, targetService }) {
+    const id = d3IngressLinkId({ ingress, targetService });
+    const source = d3IngressId(ingress);
+    const target = d3ServiceId(targetService);
+    return { id, source, target, sourceData: ingress };
+}
+
+function d3ControllerId(controller) {
+    return `${controller.type}/${controller.namespace}/${controller.name}`;
+}
+
+function d3Controller(controller) {
+    const id = d3ControllerId(controller);
+    const targetPods = controller.targetPods.map(targetPod => d3PodId(targetPod));
+    return { id, type: controller.type, displayName: controller.displayName, targetPods, sourceData: controller };
+}
+
+function d3ControllerLinkId({ controller, targetPod }) {
+    return `${controller.type}Link/${d3ControllerId(controller)}->${d3PodId(targetPod)}`;
+}
+
+function d3ControllerLink({ controller, targetPod }) {
+    const id = d3ControllerLinkId({ controller, targetPod });
+    const source = d3ControllerId(controller);
     const target = d3PodId(targetPod);
-    return { id, source, target, sourceData: replicaSet };
+    return { id, type: controller.type, source, target, sourceData: controller };
 }
 
 function d3DeploymentId(deployment) {
@@ -61,18 +138,19 @@ function d3DeploymentId(deployment) {
 
 function d3Deployment(deployment) {
     const id = d3DeploymentId(deployment);
-    const targetReplicaSets = deployment.targetReplicaSets.map(targetReplicaSet => d3ReplicaSetId(targetReplicaSet));
+    const targetReplicaSets = deployment.targetReplicaSets
+        .map(targetReplicaSet => d3ControllerId(withControllerType(CONTROLLER_TYPE.REPLICASET, targetReplicaSet)));
     return { id, displayName: deployment.displayName, targetReplicaSets, sourceData: deployment };
 }
 
 function d3DeploymentLinkId({ deployment, targetReplicaSet }) {
-    return `deploymentLink/${d3DeploymentId(deployment)}->${d3ReplicaSetId(targetReplicaSet)}`;
+    return `deploymentLink/${d3DeploymentId(deployment)}->${d3ControllerId(targetReplicaSet)}`;
 }
 
 function d3DeploymentLink({ deployment, targetReplicaSet }) {
     const id = d3DeploymentLinkId({ deployment, targetReplicaSet });
     const source = d3DeploymentId(deployment);
-    const target = d3ReplicaSetId(targetReplicaSet);
+    const target = d3ControllerId(withControllerType(CONTROLLER_TYPE.REPLICASET, targetReplicaSet));
     return { id, source, target, sourceData: deployment };
 }
 
@@ -86,7 +164,7 @@ export default class ClusterD3Graph extends D3Graph {
             dataExtractor: dataSet => dataSet.pods,
             d3IdFn: d3PodId,
             d3DatumMapper: d3Pod,
-            focusHandlerName: 'onPodFocus',
+            focusHandler: 'onPodFocus',
             svgElementAttributesApplier: (selection, dataChanged) => {
                 selection
                     .attr('aria-label', 'pod')
@@ -105,7 +183,7 @@ export default class ClusterD3Graph extends D3Graph {
             dataExtractor: dataSet => dataSet.services,
             d3IdFn: d3ServiceId,
             d3DatumMapper: d3Service,
-            focusHandlerName: 'onServiceFocus',
+            focusHandler: 'onServiceFocus',
             svgElementAttributesApplier: (selection, dataChanged) => {
                 selection
                     .attr('aria-label', 'service')
@@ -125,33 +203,70 @@ export default class ClusterD3Graph extends D3Graph {
             name: 'serviceLinks',
             svgElement: 'line',
             dataExtractor: dataSet => {
-                const podIds = new Set();
-                dataSet.pods.forEach(pod => podIds.add(d3PodId(pod)));
                 return flatten(dataSet.services.map(service => {
-                    return service.targetPods
-                        .filter(pod => podIds.has(d3PodId(pod)))
-                        .map(targetPod => ({ service, targetPod }));
+                    return service.targetPods.map(targetPod => ({ service, targetPod }));
                 }));
             },
             d3IdFn: d3ServiceLinkId,
             d3DatumMapper: d3ServiceLink,
-            focusHandlerName: 'onServiceFocus',
+            focusHandler: 'onServiceFocus',
             svgElementAttributesApplier: selection => {
                 selection
                     .attr('aria-label', 'service link');
             }
         });
-        this.replicaSetsLayer = new D3GraphItemLayer({
-            name: 'replicaSets',
+        this.ingressesLayer = new D3GraphItemLayer({
+            name: 'ingresses',
             svgElement: 'path',
-            dataExtractor: dataSet => dataSet.replicaSets,
-            d3IdFn: d3ReplicaSetId,
-            d3DatumMapper: d3ReplicaSet,
-            focusHandlerName: 'onReplicaSetFocus',
+            dataExtractor: dataSet => dataSet.ingresses,
+            d3IdFn: d3IngressId,
+            d3DatumMapper: d3Ingress,
+            focusHandler: 'onIngressFocus',
             svgElementAttributesApplier: (selection, dataChanged) => {
                 selection
-                    .attr('aria-label', 'replicaset')
-                    .attr('d', 'M-2,-2 L2,-2 L2,2 L-2,2 M2.5,-1 L3,-1 L3,3 L-1,3 L-1,2.5 L2.5,2.5 L2.5,-1')
+                    .attr('aria-label', 'ingress')
+                    .attr('d', 'M-2.5,0.5 L-2,0.5 L0.5,-2 L1.75,-2 L1.75,-2.5 L3,-1.25 L1.75,0 L1.75,-0.5 L1,-0.5 ' +
+                        'L-1.5,2 L-2.5,2 M-2.5,-2 L-1.5,-2 L-0.75,-1.25 L-1.75,-0.25 L-2,-0.5 L-2.5,-0.5 M0.75,0.25 ' +
+                        'L1,0.5 L1.75,0.5 L1.75,0 L3,1.25 L1.75,2.5 L1.75,2 L0.5,2 L-0.25,1.25')
+                    .each(d => {
+                        if (d.fx == null || (dataChanged & !d.pinned)) {
+                            const targetServices = d.targetServices.map(targetServiceId =>
+                                this.servicesLayer.indexedData.get(targetServiceId));
+                            const targetServicesAvgY = targetServices.reduce((acc, p) => acc + p.y, 0) /
+                                targetServices.length;
+                            d.fx = d.x = -6 * SPACING;
+                            d.y = targetServicesAvgY;
+                        }
+                    });
+            }
+        });
+        this.ingressLinksLayer = new D3GraphLinkLayer({
+            name: 'ingressLinks',
+            svgElement: 'line',
+            dataExtractor: dataSet => {
+                return flatten(dataSet.ingresses.map(ingress => {
+                    return ingress.targetServices.map(targetService => ({ ingress, targetService }));
+                }));
+            },
+            d3IdFn: d3IngressLinkId,
+            d3DatumMapper: d3IngressLink,
+            focusHandler: 'onIngressFocus',
+            svgElementAttributesApplier: selection => {
+                selection
+                    .attr('aria-label', 'ingress link');
+            }
+        });
+        this.controllersLayer = new D3GraphItemLayer({
+            name: 'controllers',
+            svgElement: 'path',
+            dataExtractor: extractControllers,
+            d3IdFn: d3ControllerId,
+            d3DatumMapper: d3Controller,
+            focusHandler: controllerFocusHandler,
+            svgElementAttributesApplier: (selection, dataChanged) => {
+                selection
+                    .attr('aria-label', d => d.type.toLowerCase())
+                    .attr('d', controllerSvgPath)
                     .each(d => {
                         if (d.fx == null || (dataChanged & !d.pinned)) {
                             const targetPods = d.targetPods.map(targetPodId =>
@@ -163,24 +278,21 @@ export default class ClusterD3Graph extends D3Graph {
                     });
             }
         });
-        this.replicaSetLinksLayer = new D3GraphLinkLayer({
-            name: 'replicaSetLinks',
+        this.controllerLinksLayer = new D3GraphLinkLayer({
+            name: 'controllerLinks',
             svgElement: 'line',
             dataExtractor: dataSet => {
-                const podIds = new Set();
-                dataSet.pods.forEach(pod => podIds.add(d3PodId(pod)));
-                return flatten(dataSet.replicaSets.map(replicaSet => {
-                    return replicaSet.targetPods
-                        .filter(pod => podIds.has(d3PodId(pod)))
-                        .map(targetPod => ({ replicaSet, targetPod }));
+                const controllers = extractControllers(dataSet);
+                return flatten(controllers.map(controller => {
+                    return controller.targetPods.map(targetPod => ({ controller, targetPod }));
                 }));
             },
-            d3IdFn: d3ReplicaSetLinkId,
-            d3DatumMapper: d3ReplicaSetLink,
-            focusHandlerName: 'onReplicaSetFocus',
+            d3IdFn: d3ControllerLinkId,
+            d3DatumMapper: d3ControllerLink,
+            focusHandler: controllerFocusHandler,
             svgElementAttributesApplier: selection => {
                 selection
-                    .attr('aria-label', 'replicaset link');
+                    .attr('aria-label', d => `${d.type.toLowerCase()} link`);
             }
         });
         this.deploymentsLayer = new D3GraphItemLayer({
@@ -189,7 +301,7 @@ export default class ClusterD3Graph extends D3Graph {
             dataExtractor: dataSet => dataSet.deployments,
             d3IdFn: d3DeploymentId,
             d3DatumMapper: d3Deployment,
-            focusHandlerName: 'onDeploymentFocus',
+            focusHandler: 'onDeploymentFocus',
             svgElementAttributesApplier: (selection, dataChanged) => {
                 selection
                     .attr('aria-label', 'deployment')
@@ -197,7 +309,7 @@ export default class ClusterD3Graph extends D3Graph {
                     .each(d => {
                         if (d.fx == null || (dataChanged & !d.pinned)) {
                             const targetReplicaSets = d.targetReplicaSets.map(targetReplicaSetId =>
-                                this.replicaSetsLayer.indexedData.get(targetReplicaSetId));
+                                this.controllersLayer.indexedData.get(targetReplicaSetId));
                             const targetReplicaSetsAvgY = targetReplicaSets.reduce((acc, p) => acc + p.y, 0) /
                                 targetReplicaSets.length;
                             d.fx = d.x = 6 * SPACING;
@@ -210,17 +322,13 @@ export default class ClusterD3Graph extends D3Graph {
             name: 'deploymentLinks',
             svgElement: 'line',
             dataExtractor: dataSet => {
-                const replicaSetIds = new Set();
-                dataSet.replicaSets.forEach(replicaSet => replicaSetIds.add(d3ReplicaSetId(replicaSet)));
                 return flatten(dataSet.deployments.map(deployment => {
-                    return deployment.targetReplicaSets
-                        .filter(replicaSet => replicaSetIds.has(d3ReplicaSetId(replicaSet)))
-                        .map(targetReplicaSet => ({ deployment, targetReplicaSet }));
+                    return deployment.targetReplicaSets.map(targetReplicaSet => ({ deployment, targetReplicaSet }));
                 }));
             },
             d3IdFn: d3DeploymentLinkId,
             d3DatumMapper: d3DeploymentLink,
-            focusHandlerName: 'onDeploymentFocus',
+            focusHandler: 'onDeploymentFocus',
             svgElementAttributesApplier: selection => {
                 selection
                     .attr('aria-label', 'deployment link');
@@ -232,7 +340,8 @@ export default class ClusterD3Graph extends D3Graph {
         return [
             this.podsLayer,
             this.servicesLayer,
-            this.replicaSetsLayer,
+            this.ingressesLayer,
+            this.controllersLayer,
             this.deploymentsLayer
         ];
     }
@@ -240,7 +349,8 @@ export default class ClusterD3Graph extends D3Graph {
     getLinkLayers() {
         return [
             this.serviceLinksLayer,
-            this.replicaSetLinksLayer,
+            this.ingressLinksLayer,
+            this.controllerLinksLayer,
             this.deploymentLinksLayer
         ];
     }
@@ -248,10 +358,15 @@ export default class ClusterD3Graph extends D3Graph {
     sortLayersDataForNiceDisplay() {
         this.sortServicesByName();
         const indexedPodsToService = this.buildPodsToServiceIndex();
-        const indexedPodsToReplicaSet = this.buildPodsToReplicaSetIndex();
-        this.sortPodsByServiceAndReplicaSet(indexedPodsToService, indexedPodsToReplicaSet);
+        const indexedPodsToReplicaSet = this.buildPodsToControllerIndex(CONTROLLER_TYPE.REPLICASET);
+        const indexedPodsToStatefulSet = this.buildPodsToControllerIndex(CONTROLLER_TYPE.STATEFULSET);
+        const indexedPodsToDaemonSet = this.buildPodsToControllerIndex(CONTROLLER_TYPE.DAEMONSET);
+        this.sortPodsByServiceAndController(indexedPodsToService, indexedPodsToReplicaSet, indexedPodsToStatefulSet,
+            indexedPodsToDaemonSet);
         const indexedPods = this.buildPodsIndex();
-        this.sortReplicaSetsByPodIndex(indexedPods);
+        this.sortControllersByPodIndex(indexedPods);
+        const indexedServices = this.buildServicesIndex();
+        this.sortIngressesByService(indexedServices);
         const indexedReplicaSets = this.buildReplicaSetsIndex();
         this.sortDeploymentsByReplicaSet(indexedReplicaSets);
     }
@@ -259,23 +374,23 @@ export default class ClusterD3Graph extends D3Graph {
     buildPodsToServiceIndex() {
         const indexedPodsToService = new Map();
         this.servicesLayer.data.forEach((service, i) => {
-            service.index = i;
             service.targetPods.forEach(podId => {
-                indexedPodsToService.set(podId, service);
+                indexedPodsToService.set(podId, i);
             });
         });
         return indexedPodsToService;
     }
 
-    buildPodsToReplicaSetIndex() {
-        const indexedPodsToReplicaSet = new Map();
-        this.replicaSetsLayer.data.forEach((replicaSet, i) => {
-            replicaSet.index = i;
-            replicaSet.targetPods.forEach(podId => {
-                indexedPodsToReplicaSet.set(podId, replicaSet);
+    buildPodsToControllerIndex(controllerType) {
+        const indexedPodsToController = new Map();
+        this.controllersLayer.data
+            .filter(controller => controller.type === controllerType)
+            .forEach((controller, i) => {
+                controller.targetPods.forEach(podId => {
+                    indexedPodsToController.set(podId, i);
+                });
             });
-        });
-        return indexedPodsToReplicaSet;
+        return indexedPodsToController;
     }
 
     sortServicesByName() {
@@ -284,60 +399,77 @@ export default class ClusterD3Graph extends D3Graph {
         });
     }
 
-    sortPodsByServiceAndReplicaSet(indexedPodsToService, indexedPodsToReplicaSet) {
-        this.podsLayer.data.sort((pod1, pod2) => {
-            const service1 = indexedPodsToService.get(pod1.id);
-            const service2 = indexedPodsToService.get(pod2.id);
-            const service1Index = service1 ? service1.index : Number.MAX_VALUE;
-            const service2Index = service2 ? service2.index : Number.MAX_VALUE;
-            const replicaSet1 = indexedPodsToReplicaSet.get(pod1.id);
-            const replicaSet2 = indexedPodsToReplicaSet.get(pod2.id);
-            const replicaSet1Index = replicaSet1 ? replicaSet1.index : Number.MAX_VALUE;
-            const replicaSet2Index = replicaSet2 ? replicaSet2.index : Number.MAX_VALUE;
-            if (service1Index < service2Index) {
-                return -1;
-            } else if (service1Index > service2Index) {
-                return 1;
-            } else if (replicaSet1Index < replicaSet2Index) {
-                return -1;
-            } else if (replicaSet1Index > replicaSet2Index) {
-                return 1;
-            } else {
-                return pod1.id.localeCompare(pod2.id);
-            }
-        });
+    sortPodsByServiceAndController(indexedPodsToService, indexedPodsToReplicaSet, indexedPodsToStatefulSet,
+                                   indexedPodsToDaemonSet) {
+        this.podsLayer.data.sort((pod1, pod2) => this.comparePodsByIndices(pod1, pod2,
+            [indexedPodsToService, indexedPodsToReplicaSet, indexedPodsToStatefulSet, indexedPodsToDaemonSet]));
+
+    }
+
+    comparePodsByIndices(pod1, pod2, indices) {
+        const [currentIndex, ...nextIndices] = indices;
+        const lookup1 = currentIndex.get(pod1.id);
+        const lookup2 = currentIndex.get(pod2.id);
+        const index1 = lookup1 != null ? lookup1 : Number.MAX_VALUE;
+        const index2 = lookup2 != null ? lookup2 : Number.MAX_VALUE;
+        if (index1 < index2) {
+            return -1;
+        } else if (index1 > index2) {
+            return 1;
+        } else if (nextIndices.length === 0) {
+            return pod1.id.localeCompare(pod2.id);
+        } else {
+            return this.comparePodsByIndices(pod1, pod2, nextIndices);
+        }
     }
 
     buildPodsIndex() {
         const indexedPods = new Map();
         this.podsLayer.data.forEach((pod, i) => {
-            pod.index = i;
-            indexedPods.set(pod.id, pod);
+            indexedPods.set(pod.id, i);
         });
         return indexedPods;
     }
 
-    sortReplicaSetsByPodIndex(indexedPods) {
-        this.replicaSetsLayer.data.sort((replicaSet1, replicaSet2) => {
-            const podIndex1 = indexedPods.get(replicaSet1.targetPods[0]).index;
-            const podIndex2 = indexedPods.get(replicaSet2.targetPods[0]).index;
+    sortControllersByPodIndex(indexedPods) {
+        this.controllersLayer.data.sort((controller1, controller2) => {
+            const podIndex1 = indexedPods.get(controller1.targetPods[0]);
+            const podIndex2 = indexedPods.get(controller2.targetPods[0]);
             return podIndex1 - podIndex2;
         });
     }
 
+    buildServicesIndex() {
+        const indexedServices = new Map();
+        this.servicesLayer.data
+            .forEach((service, i) => {
+                indexedServices.set(service.id, i);
+            });
+        return indexedServices;
+    }
+
     buildReplicaSetsIndex() {
         const indexedReplicaSets = new Map();
-        this.replicaSetsLayer.data.forEach((replicaSet, i) => {
-            replicaSet.index = i;
-            indexedReplicaSets.set(replicaSet.id, replicaSet);
-        });
+        this.controllersLayer.data
+            .filter(controller => controller.type === CONTROLLER_TYPE.REPLICASET)
+            .forEach((replicaSet, i) => {
+                indexedReplicaSets.set(replicaSet.id, i);
+            });
         return indexedReplicaSets;
+    }
+
+    sortIngressesByService(indexedServices) {
+        this.ingressesLayer.data.sort((ingress1, ingress2) => {
+            const serviceIndex1 = indexedServices.get(ingress1.targetServices[0]);
+            const serviceIndex2 = indexedServices.get(ingress2.targetServices[0]);
+            return serviceIndex1 - serviceIndex2;
+        });
     }
 
     sortDeploymentsByReplicaSet(indexedReplicaSets) {
         this.deploymentsLayer.data.sort((deployment1, deployment2) => {
-            const replicaSetIndex1 = indexedReplicaSets.get(deployment1.targetReplicaSets[0]).index;
-            const replicaSetIndex2 = indexedReplicaSets.get(deployment2.targetReplicaSets[0]).index;
+            const replicaSetIndex1 = indexedReplicaSets.get(deployment1.targetReplicaSets[0]);
+            const replicaSetIndex2 = indexedReplicaSets.get(deployment2.targetReplicaSets[0]);
             return replicaSetIndex1 - replicaSetIndex2;
         });
     }
@@ -355,8 +487,10 @@ export default class ClusterD3Graph extends D3Graph {
             return this.isFocusedWhenTargetIsPod(currentTargetId, candidateLayerName, candidateDatumId);
         } else if (currentTargetLayerName === this.servicesLayer.name) {
             return this.isFocusedWhenTargetIsService(currentTargetId, candidateLayerName, candidateDatumId);
-        } else if (currentTargetLayerName === this.replicaSetsLayer.name) {
-            return this.isFocusedWhenTargetIsReplicaSet(currentTargetId, candidateLayerName, candidateDatumId);
+        } else if (currentTargetLayerName === this.ingressesLayer.name) {
+            return this.isFocusedWhenTargetIsIngress(currentTargetId, candidateLayerName, candidateDatumId);
+        } else if (currentTargetLayerName === this.controllersLayer.name) {
+            return this.isFocusedWhenTargetIsController(currentTargetId, candidateLayerName, candidateDatumId);
         } else if (currentTargetLayerName === this.deploymentsLayer.name) {
             return this.isFocusedWhenTargetIsDeployment(currentTargetId, candidateLayerName, candidateDatumId);
         }
@@ -376,14 +510,18 @@ export default class ClusterD3Graph extends D3Graph {
     isFocusedWhenTargetIsPod(podId, candidateLayerName, candidateDatumId) {
         if (candidateLayerName === this.servicesLayer.name) {
             return this.isPodOfService(podId, candidateDatumId);
-        } else if (candidateLayerName === this.replicaSetsLayer.name) {
-            return this.isPodOfReplicaSet(podId, candidateDatumId);
+        } else if (candidateLayerName === this.ingressesLayer.name) {
+            return this.isPodOfIngress(podId, candidateDatumId);
+        } else if (candidateLayerName === this.controllersLayer.name) {
+            return this.isPodOfController(podId, candidateDatumId);
         } else if (candidateLayerName === this.deploymentsLayer.name) {
             return this.isPodOfDeployment(podId, candidateDatumId);
         } else if (candidateLayerName === this.serviceLinksLayer.name) {
             return this.isServiceLinkOfPod(candidateDatumId, podId);
-        } else if (candidateLayerName === this.replicaSetLinksLayer.name) {
-            return this.isReplicaSetLinkOfPod(candidateDatumId, podId);
+        } else if (candidateLayerName === this.ingressLinksLayer.name) {
+            return this.isIngressLinkOfPod(candidateDatumId, podId);
+        } else if (candidateLayerName === this.controllerLinksLayer.name) {
+            return this.isControllerLinkOfPod(candidateDatumId, podId);
         } else if (candidateLayerName === this.deploymentLinksLayer.name) {
             return this.isDeploymentLinkOfPod(candidateDatumId, podId);
         }
@@ -393,33 +531,50 @@ export default class ClusterD3Graph extends D3Graph {
     isFocusedWhenTargetIsService(serviceId, candidateLayerName, candidateDatumId) {
         if (candidateLayerName === this.podsLayer.name) {
             return this.isPodOfService(candidateDatumId, serviceId);
+        } else if (candidateLayerName === this.ingressesLayer.name) {
+            return this.isServiceOfIngress(serviceId, candidateDatumId);
         } else if (candidateLayerName === this.serviceLinksLayer.name) {
             return this.isLinkOfService(candidateDatumId, serviceId);
+        } else if (candidateLayerName === this.ingressLinksLayer.name) {
+            return this.isIngressLinkOfService(candidateDatumId, serviceId);
         }
         return false;
     }
 
-    isFocusedWhenTargetIsReplicaSet(replicaSetId, candidateLayerName, candidateDatumId) {
+    isFocusedWhenTargetIsIngress(ingressId, candidateLayerName, candidateDatumId) {
+        if (candidateLayerName === this.servicesLayer.name) {
+            return this.isServiceOfIngress(candidateDatumId, ingressId);
+        } else if (candidateLayerName === this.podsLayer.name) {
+            return this.isPodOfIngress(candidateDatumId, ingressId);
+        } else if (candidateLayerName === this.ingressLinksLayer.name) {
+            return this.isLinkOfIngress(candidateDatumId, ingressId);
+        } else if (candidateLayerName === this.serviceLinksLayer.name) {
+            return this.isServiceLinkOfIngress(candidateDatumId, ingressId);
+        }
+        return false;
+    }
+
+    isFocusedWhenTargetIsController(controllerId, candidateLayerName, candidateDatumId) {
         if (candidateLayerName === this.podsLayer.name) {
-            return this.isPodOfReplicaSet(candidateDatumId, replicaSetId);
+            return this.isPodOfController(candidateDatumId, controllerId);
         } else if (candidateLayerName === this.deploymentsLayer.name) {
-            return this.isReplicaSetOfDeployment(replicaSetId, candidateDatumId);
-        } else if (candidateLayerName === this.replicaSetLinksLayer.name) {
-            return this.isLinkOfReplicaSet(candidateDatumId, replicaSetId);
+            return this.isReplicaSetOfDeployment(controllerId, candidateDatumId);
+        } else if (candidateLayerName === this.controllerLinksLayer.name) {
+            return this.isLinkOfController(candidateDatumId, controllerId);
         } else if (candidateLayerName === this.deploymentLinksLayer.name) {
-            return this.isDeploymentLinkOfReplicaSet(candidateDatumId, replicaSetId);
+            return this.isDeploymentLinkOfReplicaSet(candidateDatumId, controllerId);
         }
         return false;
     }
 
     isFocusedWhenTargetIsDeployment(deploymentId, candidateLayerName, candidateDatumId) {
-        if (candidateLayerName === this.replicaSetsLayer.name) {
+        if (candidateLayerName === this.controllersLayer.name) {
             return this.isReplicaSetOfDeployment(candidateDatumId, deploymentId);
         } else if (candidateLayerName === this.podsLayer.name) {
             return this.isPodOfDeployment(candidateDatumId, deploymentId);
         } else if (candidateLayerName === this.deploymentLinksLayer.name) {
             return this.isLinkOfDeployment(candidateDatumId, deploymentId);
-        } else if (candidateLayerName === this.replicaSetLinksLayer.name) {
+        } else if (candidateLayerName === this.controllerLinksLayer.name) {
             return this.isReplicaSetLinkOfDeployment(candidateDatumId, deploymentId);
         }
         return false;
@@ -440,19 +595,53 @@ export default class ClusterD3Graph extends D3Graph {
         return serviceLink.source.id === serviceId;
     }
 
-    isPodOfReplicaSet(podId, replicaSetId) {
-        const replicaSet = this.replicaSetsLayer.indexedData.get(replicaSetId);
-        return replicaSet.targetPods.includes(podId);
+    isServiceOfIngress(serviceId, ingressId) {
+        const ingress = this.ingressesLayer.indexedData.get(ingressId);
+        return ingress.targetServices.includes(serviceId);
     }
 
-    isReplicaSetLinkOfPod(replicaSetLinkId, podId) {
-        const replicaSetLink = this.replicaSetLinksLayer.indexedData.get(replicaSetLinkId);
-        return replicaSetLink.target.id === podId;
+    isIngressLinkOfService(ingressLinkId, serviceId) {
+        const ingressLink = this.ingressLinksLayer.indexedData.get(ingressLinkId);
+        return ingressLink.target.id === serviceId;
     }
 
-    isLinkOfReplicaSet(replicaSetLinkId, replicaSetId) {
-        const replicaSetLink = this.replicaSetLinksLayer.indexedData.get(replicaSetLinkId);
-        return replicaSetLink.source.id === replicaSetId;
+    isLinkOfIngress(ingressLinkId, ingressId) {
+        const ingressLink = this.ingressLinksLayer.indexedData.get(ingressLinkId);
+        return ingressLink.source.id === ingressId;
+    }
+
+    isPodOfIngress(podId, ingressId) {
+        const ingress = this.ingressesLayer.indexedData.get(ingressId);
+        return ingress.targetServices.some(targetServiceId => {
+            const service = this.servicesLayer.indexedData.get(targetServiceId);
+            return service.targetPods.includes(podId);
+        });
+    }
+
+    isIngressLinkOfPod(candidateDatumId, podId) {
+        const ingressLink = this.ingressLinksLayer.indexedData.get(candidateDatumId);
+        return ingressLink.target.targetPods.includes(podId);
+    }
+
+    isServiceLinkOfIngress(serviceLinkId, ingressId) {
+        const ingress = this.ingressesLayer.indexedData.get(ingressId);
+        const serviceLink = this.serviceLinksLayer.indexedData.get(serviceLinkId);
+        return ingress.targetServices.includes(serviceLink.source.id);
+    }
+
+    isPodOfController(podId, controllerId) {
+        const controller = this.controllersLayer.indexedData.get(controllerId);
+        return controller.targetPods.includes(podId);
+    }
+
+    isControllerLinkOfPod(controllerLinkId, podId) {
+        const controllerLink = this.controllerLinksLayer.indexedData.get(controllerLinkId);
+        return controllerLink.target.id === podId;
+    }
+
+    isLinkOfController(controllerLinkId, controller) {
+        const controllerLink = this.controllerLinksLayer.indexedData.get(controllerLinkId);
+        return controllerLink.source.id === controller;
     }
 
     isReplicaSetOfDeployment(replicaSetId, deploymentId) {
@@ -473,7 +662,7 @@ export default class ClusterD3Graph extends D3Graph {
     isPodOfDeployment(podId, deploymentId) {
         const deployment = this.deploymentsLayer.indexedData.get(deploymentId);
         return deployment.targetReplicaSets.some(targetReplicaSetId => {
-            const replicaSet = this.replicaSetsLayer.indexedData.get(targetReplicaSetId);
+            const replicaSet = this.controllersLayer.indexedData.get(targetReplicaSetId);
             return replicaSet.targetPods.includes(podId);
         });
     }
@@ -485,7 +674,7 @@ export default class ClusterD3Graph extends D3Graph {
 
     isReplicaSetLinkOfDeployment(replicaSetLinkId, deploymentId) {
         const deployment = this.deploymentsLayer.indexedData.get(deploymentId);
-        const replicaSetLink = this.replicaSetLinksLayer.indexedData.get(replicaSetLinkId);
+        const replicaSetLink = this.controllerLinksLayer.indexedData.get(replicaSetLinkId);
         return deployment.targetReplicaSets.includes(replicaSetLink.source.id);
     }
 }

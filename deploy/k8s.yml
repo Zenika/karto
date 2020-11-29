@@ -24,6 +24,7 @@ rules:
       - "networking.k8s.io"
     resources:
       - networkpolicies
+      - ingresses
     verbs:
       - get
       - list
@@ -33,6 +34,8 @@ rules:
       - "apps"
     resources:
       - replicasets
+      - statefulsets
+      - daemonsets
       - deployments
     verbs:
       - get

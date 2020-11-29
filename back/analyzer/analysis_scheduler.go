@@ -10,7 +10,8 @@ import (
 )
 
 type AnalysisScheduler interface {
-	AnalyzeOnClusterStateChange(clusterStateChannel <-chan types.ClusterState, resultsChannel chan<- types.AnalysisResult)
+	AnalyzeOnClusterStateChange(clusterStateChannel <-chan types.ClusterState,
+		resultsChannel chan<- types.AnalysisResult)
 }
 
 type analysisSchedulerImpl struct {
@@ -39,20 +40,45 @@ func (analysisScheduler analysisSchedulerImpl) AnalyzeOnClusterStateChange(
 
 func (analysisScheduler analysisSchedulerImpl) analyze(clusterState types.ClusterState) types.AnalysisResult {
 	start := time.Now()
-	pods := analysisScheduler.podAnalyzer.Analyze(clusterState.Pods)
-	podIsolations, allowedRoutes := analysisScheduler.trafficAnalyzer.Analyze(clusterState.Pods,
-		clusterState.Namespaces, clusterState.NetworkPolicies)
-	services, replicaSets, deployments := analysisScheduler.workloadAnalyzer.Analyze(clusterState.Pods,
-		clusterState.Services, clusterState.ReplicaSets, clusterState.Deployments)
+	podsResult := analysisScheduler.podAnalyzer.Analyze(pod.ClusterState{
+		Pods: clusterState.Pods,
+	})
+	trafficResult := analysisScheduler.trafficAnalyzer.Analyze(traffic.ClusterState{
+		Pods:            clusterState.Pods,
+		Namespaces:      clusterState.Namespaces,
+		NetworkPolicies: clusterState.NetworkPolicies,
+	})
+	workloadResult := analysisScheduler.workloadAnalyzer.Analyze(workload.ClusterState{
+		Pods:         clusterState.Pods,
+		Services:     clusterState.Services,
+		Ingresses:    clusterState.Ingresses,
+		ReplicaSets:  clusterState.ReplicaSets,
+		StatefulSets: clusterState.StatefulSets,
+		DaemonSets:   clusterState.DaemonSets,
+		Deployments:  clusterState.Deployments,
+	})
+	pods := podsResult.Pods
+	podIsolations := trafficResult.Pods
+	allowedRoutes := trafficResult.AllowedRoutes
+	services := workloadResult.Services
+	ingresses := workloadResult.Ingresses
+	replicaSets := workloadResult.ReplicaSets
+	statefulSets := workloadResult.StatefulSets
+	daemonSets := workloadResult.DaemonSets
+	deployments := workloadResult.Deployments
 	elapsed := time.Since(start)
-	log.Printf("Finished analysis in %s, found: %d pods, %d allowed routes, %d services, %d replicaSets and "+
-		"%d deployments\n", elapsed, len(pods), len(allowedRoutes), len(services), len(replicaSets), len(deployments))
+	log.Printf("Finished analysis in %s, found: %d pods, %d allowed routes, %d services, %d ingresses, "+
+		"%d replicaSets, %d statefulSets, %d daemonSets and %d deployments\n", elapsed, len(pods), len(allowedRoutes),
+		len(services), len(ingresses), len(replicaSets), len(statefulSets), len(daemonSets), len(deployments))
 	return types.AnalysisResult{
 		Pods:          pods,
 		PodIsolations: podIsolations,
 		AllowedRoutes: allowedRoutes,
 		Services:      services,
+		Ingresses:     ingresses,
 		ReplicaSets:   replicaSets,
+		StatefulSets:  statefulSets,
+		DaemonSets:    daemonSets,
 		Deployments:   deployments,
 	}
 }

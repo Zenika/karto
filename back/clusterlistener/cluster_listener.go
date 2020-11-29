@@ -21,7 +21,10 @@ func Listen(k8sConfigPath string, clusterStateChannel chan<- types.ClusterState)
 	namespacesInformer := informerFactory.Core().V1().Namespaces()
 	podInformer := informerFactory.Core().V1().Pods()
 	servicesInformer := informerFactory.Core().V1().Services()
+	ingressInformer := informerFactory.Networking().V1beta1().Ingresses()
 	replicaSetsInformer := informerFactory.Apps().V1().ReplicaSets()
+	statefulSetsInformer := informerFactory.Apps().V1().StatefulSets()
+	daemonSetsInformer := informerFactory.Apps().V1().DaemonSets()
 	deploymentsInformer := informerFactory.Apps().V1().Deployments()
 	policiesInformer := informerFactory.Networking().V1().NetworkPolicies()
 	eventHandler := cache.ResourceEventHandlerFuncs{
@@ -32,7 +35,10 @@ func Listen(k8sConfigPath string, clusterStateChannel chan<- types.ClusterState)
 	namespacesInformer.Informer().AddEventHandler(eventHandler)
 	podInformer.Informer().AddEventHandler(eventHandler)
 	servicesInformer.Informer().AddEventHandler(eventHandler)
+	ingressInformer.Informer().AddEventHandler(eventHandler)
 	replicaSetsInformer.Informer().AddEventHandler(eventHandler)
+	statefulSetsInformer.Informer().AddEventHandler(eventHandler)
+	daemonSetsInformer.Informer().AddEventHandler(eventHandler)
 	deploymentsInformer.Informer().AddEventHandler(eventHandler)
 	policiesInformer.Informer().AddEventHandler(eventHandler)
 	informerFactory.Start(wait.NeverStop)
@@ -51,7 +57,19 @@ func Listen(k8sConfigPath string, clusterStateChannel chan<- types.ClusterState)
 		if err != nil {
 			panic(err.Error())
 		}
+		ingresses, err := ingressInformer.Lister().List(labels.Everything())
+		if err != nil {
+			panic(err.Error())
+		}
 		replicaSets, err := replicaSetsInformer.Lister().List(labels.Everything())
+		if err != nil {
+			panic(err.Error())
+		}
+		statefulSets, err := statefulSetsInformer.Lister().List(labels.Everything())
+		if err != nil {
+			panic(err.Error())
+		}
+		daemonSets, err := daemonSetsInformer.Lister().List(labels.Everything())
 		if err != nil {
 			panic(err.Error())
 		}
@@ -67,7 +85,10 @@ func Listen(k8sConfigPath string, clusterStateChannel chan<- types.ClusterState)
 			Namespaces:      namespaces,
 			Pods:            pods,
 			Services:        services,
+			Ingresses:       ingresses,
 			ReplicaSets:     replicaSets,
+			StatefulSets:    statefulSets,
+			DaemonSets:      daemonSets,
 			Deployments:     deployments,
 			NetworkPolicies: policies,
 		}
@@ -87,9 +108,6 @@ func getK8sClient(k8sClientConfig string) *kubernetes.Clientset {
 			panic(errOutsideCluster.Error())
 		}
 	}
-	k8sClient, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
+	k8sClient := kubernetes.NewForConfigOrDie(config)
 	return k8sClient
 }
