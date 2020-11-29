@@ -21,6 +21,7 @@ import DeploymentDetails from './detail/DeploymentDetails';
 import { labelSelectorOperators, maxRecommendedAllowedRoutes, maxRecommendedPods } from '../constants';
 import StatefulSetDetails from './detail/StatefulSetDetails';
 import DaemonSetDetails from './detail/DaemonSetDetails';
+import IngressDetails from './detail/IngressDetails';
 
 const VIEWS = {
     WORKLOADS: 'Workloads',
@@ -150,6 +151,12 @@ const Content = ({ className }) => {
             serviceDetails: service
         }));
     }, []);
+    const onIngressFocus = useCallback(ingress => {
+        setState(oldState => ({
+            ...oldState,
+            ingressDetails: ingress
+        }));
+    }, []);
     const onReplicaSetFocus = useCallback(replicaSet => {
         setState(oldState => ({
             ...oldState,
@@ -260,12 +267,13 @@ const Content = ({ className }) => {
                 && isSafeToDisplay(state.dataSet, state.controls.displayLargeDatasets)
                 && state.controls.displayedView === VIEWS.WORKLOADS && <>
                     <ClusterMap dataSet={state.dataSet} onPodFocus={onPodFocus}
-                                onServiceFocus={onServiceFocus} onReplicaSetFocus={onReplicaSetFocus}
-                                onStatefulSetFocus={onStatefulSetFocus} onDaemonSetFocus={onDaemonSetFocus}
-                                onDeploymentFocus={onDeploymentFocus}/>
+                                onServiceFocus={onServiceFocus} onIngressFocus={onIngressFocus}
+                                onReplicaSetFocus={onReplicaSetFocus} onStatefulSetFocus={onStatefulSetFocus}
+                                onDaemonSetFocus={onDaemonSetFocus} onDeploymentFocus={onDeploymentFocus}/>
                     <Typography className={classes.graphCaption} variant="caption">
                         {`Displaying ${state.dataSet.pods.length}/${state.analysisResult.pods.length} pods, `
                         + `${state.dataSet.services.length}/${state.analysisResult.services.length} services, `
+                        + `${state.dataSet.ingresses.length}/${state.analysisResult.ingresses.length} ingresses, `
                         + `${state.dataSet.replicaSets.length}/${state.analysisResult.replicaSets.length} replicaSets, `
                         + `${state.dataSet.statefulSets.length}/${state.analysisResult.statefulSets.length} 
                         statefulSets, ${state.dataSet.daemonSets.length}/${state.analysisResult.daemonSets.length} 
@@ -363,6 +371,11 @@ const Content = ({ className }) => {
             {state.serviceDetails && (
                 <aside className={classes.details}>
                     <ServiceDetails data={state.serviceDetails}/>
+                </aside>
+            )}
+            {state.ingressDetails && (
+                <aside className={classes.details}>
+                    <IngressDetails data={state.ingressDetails}/>
                 </aside>
             )}
             {state.replicaSetDetails && (

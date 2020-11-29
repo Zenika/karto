@@ -4,8 +4,8 @@ import '@testing-library/jest-dom/extend-expect';
 
 describe('DeploymentDetails component', () => {
 
-    it('displays details about replicaSet and its target replicaSets', () => {
-        const replicaSetData = {
+    it('displays details about deployment and its target replicaSets', () => {
+        const deploymentData = {
             namespace: 'ns',
             name: 'deploy',
             targetReplicaSets: [
@@ -13,7 +13,7 @@ describe('DeploymentDetails component', () => {
                 { namespace: 'ns2', name: 'rs2' }
             ]
         };
-        render(<DeploymentDetails data={replicaSetData}/>);
+        render(<DeploymentDetails data={deploymentData}/>);
 
         expect(screen.queryByText('Deployment details')).toBeInTheDocument();
         expect(screen.queryByText('Namespace:')).toBeInTheDocument();

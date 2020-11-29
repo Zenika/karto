@@ -36,7 +36,10 @@ const useStyles = makeStyles(theme => ({
 }));
 
 const ClusterMap = (
-    { dataSet, onPodFocus, onServiceFocus, onReplicaSetFocus, onStatefulSetFocus, onDaemonSetFocus, onDeploymentFocus }
+    {
+        dataSet, onPodFocus, onServiceFocus, onIngressFocus, onReplicaSetFocus, onStatefulSetFocus, onDaemonSetFocus,
+        onDeploymentFocus
+    }
 ) => {
     const classes = useStyles();
     const d3Graph = useRef(new ClusterD3Graph());
@@ -47,7 +50,8 @@ const ClusterMap = (
     }, []);
 
     useEffect(() => d3Graph.current.update(dataSet, {
-        onPodFocus, onServiceFocus, onReplicaSetFocus, onStatefulSetFocus, onDaemonSetFocus, onDeploymentFocus
+        onPodFocus, onServiceFocus, onIngressFocus, onReplicaSetFocus, onStatefulSetFocus, onDaemonSetFocus,
+        onDeploymentFocus
     }));
 
     return <div id="graph" className={classes.root}/>;
@@ -64,6 +68,14 @@ ClusterMap.propTypes = {
             name: PropTypes.string.isRequired,
             namespace: PropTypes.string.isRequired,
             targetPods: PropTypes.arrayOf(PropTypes.shape({
+                name: PropTypes.string.isRequired,
+                namespace: PropTypes.string.isRequired
+            })).isRequired
+        })),
+        ingresses: PropTypes.arrayOf(PropTypes.shape({
+            name: PropTypes.string.isRequired,
+            namespace: PropTypes.string.isRequired,
+            targetServices: PropTypes.arrayOf(PropTypes.shape({
                 name: PropTypes.string.isRequired,
                 namespace: PropTypes.string.isRequired
             })).isRequired
@@ -103,6 +115,7 @@ ClusterMap.propTypes = {
     }).isRequired,
     onPodFocus: PropTypes.func.isRequired,
     onServiceFocus: PropTypes.func.isRequired,
+    onIngressFocus: PropTypes.func.isRequired,
     onReplicaSetFocus: PropTypes.func.isRequired,
     onStatefulSetFocus: PropTypes.func.isRequired,
     onDaemonSetFocus: PropTypes.func.isRequired,
