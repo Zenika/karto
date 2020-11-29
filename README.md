@@ -4,7 +4,11 @@
 
 A simple static analysis tool to explore a Kubernetes cluster.
 
-## Observe your cluster state, in real time!
+## Explore you cluster interactively!
+
+![deployment-demo](docs/assets/exploring-demo.gif)
+
+## Observe your cluster change in real time!
 
 ![deployment-demo](docs/assets/deployment-demo.gif)
 
@@ -26,9 +30,9 @@ The left part of the screen contains the controls for the main view:
 
 The main view shows the graph of pods and allowed routes in your selection:
 - Zoom in and out by scrolling
-- Drag and drop pods to draw the perfect map of your cluster
+- Drag and drop graph elements to draw the perfect map of your cluster
 
-Hover over an item to display details: name, namespace, labels, isolation (ingress/egress)... and more!
+Hover over any graph element to display details: name, namespace, labels, isolation (ingress/egress)... and more!
 
 ## Installation
 
