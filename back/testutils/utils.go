@@ -4,6 +4,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -225,14 +226,12 @@ type ReplicaSetBuilder struct {
 	UID             string
 	ownerUid        string
 	DesiredReplicas int32
-	Selector        map[string]string
 }
 
 func NewReplicaSetBuilder() *ReplicaSetBuilder {
 	return &ReplicaSetBuilder{
 		Namespace:       "default",
 		DesiredReplicas: 1,
-		Selector:        map[string]string{},
 	}
 }
 
@@ -273,9 +272,6 @@ func (replicaSetBuilder *ReplicaSetBuilder) Build() *appsv1.ReplicaSet {
 		},
 		Spec: appsv1.ReplicaSetSpec{
 			Replicas: &replicaSetBuilder.DesiredReplicas,
-			Selector: &metav1.LabelSelector{
-				MatchLabels: replicaSetBuilder.Selector,
-			},
 		},
 	}
 }
@@ -285,14 +281,12 @@ type StatefulSetBuilder struct {
 	Namespace       string
 	UID             string
 	DesiredReplicas int32
-	Selector        map[string]string
 }
 
 func NewStatefulSetBuilder() *StatefulSetBuilder {
 	return &StatefulSetBuilder{
 		Namespace:       "default",
 		DesiredReplicas: 1,
-		Selector:        map[string]string{},
 	}
 }
 
@@ -325,9 +319,6 @@ func (statefulSetBuilder *StatefulSetBuilder) Build() *appsv1.StatefulSet {
 		},
 		Spec: appsv1.StatefulSetSpec{
 			Replicas: &statefulSetBuilder.DesiredReplicas,
-			Selector: &metav1.LabelSelector{
-				MatchLabels: statefulSetBuilder.Selector,
-			},
 		},
 	}
 }
@@ -336,13 +327,11 @@ type DaemonSetBuilder struct {
 	Name      string
 	Namespace string
 	UID       string
-	Selector  map[string]string
 }
 
 func NewDaemonSetBuilder() *DaemonSetBuilder {
 	return &DaemonSetBuilder{
 		Namespace: "default",
-		Selector:  map[string]string{},
 	}
 }
 
@@ -368,9 +357,61 @@ func (daemonSetBuilder *DaemonSetBuilder) Build() *appsv1.DaemonSet {
 			Namespace: daemonSetBuilder.Namespace,
 			UID:       types.UID(daemonSetBuilder.UID),
 		},
-		Spec: appsv1.DaemonSetSpec{
-			Selector: &metav1.LabelSelector{
-				MatchLabels: daemonSetBuilder.Selector,
+	}
+}
+
+type IngressBuilder struct {
+	Name            string
+	Namespace       string
+	ServiceBackends []string
+}
+
+func NewIngressBuilder() *IngressBuilder {
+	return &IngressBuilder{
+		Namespace:       "default",
+		ServiceBackends: make([]string, 0),
+	}
+}
+
+func (ingressBuilder *IngressBuilder) WithName(name string) *IngressBuilder {
+	ingressBuilder.Name = name
+	return ingressBuilder
+}
+
+func (ingressBuilder *IngressBuilder) WithNamespace(namespace string) *IngressBuilder {
+	ingressBuilder.Namespace = namespace
+	return ingressBuilder
+}
+
+func (ingressBuilder *IngressBuilder) WithServiceBackend(serviceName string) *IngressBuilder {
+	ingressBuilder.ServiceBackends = append(ingressBuilder.ServiceBackends, serviceName)
+	return ingressBuilder
+}
+
+func (ingressBuilder *IngressBuilder) Build() *networkingv1beta1.Ingress {
+	ingressPaths := make([]networkingv1beta1.HTTPIngressPath, 0)
+	for _, serviceBackend := range ingressBuilder.ServiceBackends {
+		ingressPath := networkingv1beta1.HTTPIngressPath{
+			Backend: networkingv1beta1.IngressBackend{
+				ServiceName: serviceBackend,
+			},
+		}
+		ingressPaths = append(ingressPaths, ingressPath)
+	}
+	return &networkingv1beta1.Ingress{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      ingressBuilder.Name,
+			Namespace: ingressBuilder.Namespace,
+		},
+		Spec: networkingv1beta1.IngressSpec{
+			Rules: []networkingv1beta1.IngressRule{
+				{
+					IngressRuleValue: networkingv1beta1.IngressRuleValue{
+						HTTP: &networkingv1beta1.HTTPIngressRuleValue{
+							Paths: ingressPaths,
+						},
+					},
+				},
 			},
 		},
 	}

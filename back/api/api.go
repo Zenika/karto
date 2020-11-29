@@ -22,6 +22,7 @@ func newHandler() *handler {
 			PodIsolations: make([]*types.PodIsolation, 0),
 			AllowedRoutes: make([]*types.AllowedRoute, 0),
 			Services:      make([]*types.Service, 0),
+			Ingresses:     make([]*types.Ingress, 0),
 			ReplicaSets:   make([]*types.ReplicaSet, 0),
 			StatefulSets:  make([]*types.StatefulSet, 0),
 			DaemonSets:    make([]*types.DaemonSet, 0),

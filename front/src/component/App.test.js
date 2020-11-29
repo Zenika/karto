@@ -19,6 +19,7 @@ describe('App component', () => {
     let podDetailsHandler;
     let allowedRouteDetailsHandler;
     let serviceDetailsHandler;
+    let ingressDetailsHandler;
     let replicaSetDetailsHandler;
     let statefulSetDetailsHandler;
     let daemonSetDetailsHandler;
@@ -30,6 +31,7 @@ describe('App component', () => {
             podIsolations: [],
             allowedRoutes: [],
             services: [],
+            ingresses: [],
             replicaSets: [],
             statefulSets: [],
             daemonSets: [],
@@ -49,6 +51,7 @@ describe('App component', () => {
             podIsolations: [],
             allowedRoutes: [],
             services: [],
+            ingresses: [],
             replicaSets: [],
             statefulSets: [],
             daemonSets: [],
@@ -76,6 +79,7 @@ describe('App component', () => {
         ClusterMap.mockImplementation(props => {
             podDetailsHandler = props.onPodFocus;
             serviceDetailsHandler = props.onServiceFocus;
+            ingressDetailsHandler = props.onIngressFocus;
             replicaSetDetailsHandler = props.onReplicaSetFocus;
             statefulSetDetailsHandler = props.onStatefulSetFocus;
             daemonSetDetailsHandler = props.onDaemonSetFocus;
@@ -178,6 +182,7 @@ describe('App component', () => {
             podIsolations: [{}, {}],
             allowedRoutes: [{}],
             services: [{}],
+            ingresses: [{}],
             replicaSets: [{}],
             statefulSets: [{}],
             daemonSets: [{}],
@@ -199,6 +204,7 @@ describe('App component', () => {
             podIsolations: [{}, {}],
             allowedRoutes: [{}],
             services: [{}],
+            ingresses: [{}],
             replicaSets: [{}],
             statefulSets: [{}],
             daemonSets: [{}],
@@ -232,26 +238,28 @@ describe('App component', () => {
         const analysisResult = {
             pods: [{}, {}],
             services: [{}, {}, {}],
-            replicaSets: [{}, {}, {}, {}],
-            statefulSets: [{}, {}, {}, {}, {}],
-            daemonSets: [{}, {}, {}, {}, {}, {}],
-            deployments: [{}, {}, {}, {}, {}, {}, {}]
+            ingresses: [{}, {}, {}, {}],
+            replicaSets: [{}, {}, {}, {}, {}],
+            statefulSets: [{}, {}, {}, {}, {}, {}],
+            daemonSets: [{}, {}, {}, {}, {}, {}, {}],
+            deployments: [{}, {}, {}, {}, {}, {}, {}, {}]
         };
         mockAnalysisResult(analysisResult);
         const dataSet = {
             pods: [{}],
             services: [{}, {}],
-            replicaSets: [{}, {}, {}],
-            statefulSets: [{}, {}, {}, {}],
-            daemonSets: [{}, {}, {}, {}, {}],
-            deployments: [{}, {}, {}, {}, {}, {}]
+            ingresses: [{}, {}, {}],
+            replicaSets: [{}, {}, {}, {}],
+            statefulSets: [{}, {}, {}, {}, {}],
+            daemonSets: [{}, {}, {}, {}, {}, {}],
+            deployments: [{}, {}, {}, {}, {}, {}, {}]
         };
         mockDataSet(dataSet);
         render(<App/>);
         await waitForComponentUpdate();
 
-        expect(screen.queryByText('Displaying 1/2 pods, 2/3 services, 3/4 replicaSets, 4/5 statefulSets, ' +
-            '5/6 daemonSets and 6/7 deployments')).toBeInTheDocument();
+        expect(screen.queryByText('Displaying 1/2 pods, 2/3 services, 3/4 ingresses, 4/5 replicaSets, ' +
+            '5/6 statefulSets, 6/7 daemonSets and 7/8 deployments')).toBeInTheDocument();
     });
 
     it('displays a caption for NetworkPolicyMap', async () => {
@@ -279,6 +287,7 @@ describe('App component', () => {
             podIsolations: [],
             allowedRoutes: [],
             services: [],
+            ingresses: [{}],
             replicaSets: [],
             statefulSets: [],
             daemonSets: [],
@@ -529,6 +538,20 @@ describe('App component', () => {
         await waitForComponentUpdate();
 
         expect(screen.queryByText('Service details')).toBeInTheDocument();
+    });
+
+    it('displays ingress details from cluster map', async () => {
+        render(<App/>);
+        await waitForComponentUpdate();
+
+        act(() => ingressDetailsHandler({
+            namespace: 'ns',
+            name: 'ing',
+            targetServices: [{ namespace: 'ns', name: 'svc' }]
+        }));
+        await waitForComponentUpdate();
+
+        expect(screen.queryByText('Ingress details')).toBeInTheDocument();
     });
 
     it('displays replicaSet details from cluster map', async () => {

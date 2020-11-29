@@ -51,6 +51,7 @@ func (analysisScheduler analysisSchedulerImpl) analyze(clusterState types.Cluste
 	workloadResult := analysisScheduler.workloadAnalyzer.Analyze(workload.ClusterState{
 		Pods:         clusterState.Pods,
 		Services:     clusterState.Services,
+		Ingresses:    clusterState.Ingresses,
 		ReplicaSets:  clusterState.ReplicaSets,
 		StatefulSets: clusterState.StatefulSets,
 		DaemonSets:   clusterState.DaemonSets,
@@ -60,19 +61,21 @@ func (analysisScheduler analysisSchedulerImpl) analyze(clusterState types.Cluste
 	podIsolations := trafficResult.Pods
 	allowedRoutes := trafficResult.AllowedRoutes
 	services := workloadResult.Services
+	ingresses := workloadResult.Ingresses
 	replicaSets := workloadResult.ReplicaSets
 	statefulSets := workloadResult.StatefulSets
 	daemonSets := workloadResult.DaemonSets
 	deployments := workloadResult.Deployments
 	elapsed := time.Since(start)
-	log.Printf("Finished analysis in %s, found: %d pods, %d allowed routes, %d services, %d replicaSets, "+
-		"%d statefulSets, %d daemonSets and %d deployments\n", elapsed, len(pods), len(allowedRoutes), len(services),
-		len(replicaSets), len(statefulSets), len(daemonSets), len(deployments))
+	log.Printf("Finished analysis in %s, found: %d pods, %d allowed routes, %d services, %d ingresses, "+
+		"%d replicaSets, %d statefulSets, %d daemonSets and %d deployments\n", elapsed, len(pods), len(allowedRoutes),
+		len(services), len(ingresses), len(replicaSets), len(statefulSets), len(daemonSets), len(deployments))
 	return types.AnalysisResult{
 		Pods:          pods,
 		PodIsolations: podIsolations,
 		AllowedRoutes: allowedRoutes,
 		Services:      services,
+		Ingresses:     ingresses,
 		ReplicaSets:   replicaSets,
 		StatefulSets:  statefulSets,
 		DaemonSets:    daemonSets,

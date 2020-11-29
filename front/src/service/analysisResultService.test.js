@@ -17,6 +17,7 @@ describe('fetchAnalysisResult', () => {
             podIsolations: [{ pod: { name: 'pod1' } }],
             allowedRoutes: [{ sourcePod: { name: 'pod1' }, targetPod: { name: 'pod2' } }],
             services: [{ name: 'service1' }],
+            ingresses: [{ name: 'ingress1' }],
             replicaSets: [{ name: 'replicaSet1' }],
             statefulSets: [{ name: 'statefulSet1' }],
             daemonSets: [{ name: 'daemonSet1' }],
@@ -30,6 +31,7 @@ describe('fetchAnalysisResult', () => {
         expect(actual.podIsolations).toEqual(analysisResult.podIsolations);
         expect(actual.allowedRoutes).toEqual(analysisResult.allowedRoutes);
         expect(actual.services).toEqual(analysisResult.services);
+        expect(actual.ingresses).toEqual(analysisResult.ingresses);
         expect(actual.replicaSets).toEqual(analysisResult.replicaSets);
         expect(actual.statefulSets).toEqual(analysisResult.statefulSets);
         expect(actual.daemonSets).toEqual(analysisResult.daemonSets);
@@ -73,6 +75,7 @@ describe('computeDataSet', () => {
         podIsolations: [],
         allowedRoutes: [],
         services: [],
+        ingresses: [],
         replicaSets: [],
         statefulSets: [],
         daemonSets: [],
@@ -299,6 +302,77 @@ describe('computeDataSet', () => {
             {
                 name: 'svc2', displayName: 'svc2', targetPods: [
                     { namespace: defaultNamespace, name: 'pod1' }
+                ]
+            }
+        ]);
+    });
+
+    it('filters ingresses using their services', () => {
+        const analysisResult = {
+            ...emptyAnalysisResult,
+            pods: [
+                { namespace: defaultNamespace, name: 'pod1' },
+                { namespace: defaultNamespace, name: 'pod2' },
+                { namespace: defaultNamespace, name: 'pod3' },
+                { namespace: defaultNamespace, name: 'pod4' }
+            ],
+            services: [
+                {
+                    namespace: defaultNamespace, name: 'service1', targetPods: [
+                        { namespace: defaultNamespace, name: 'pod1' }
+                    ]
+                },
+                {
+                    namespace: defaultNamespace, name: 'service2', targetPods: [
+                        { namespace: defaultNamespace, name: 'pod2' }
+                    ]
+                },
+                {
+                    namespace: defaultNamespace, name: 'service3', targetPods: [
+                        { namespace: defaultNamespace, name: 'pod3' }
+                    ]
+                },
+                {
+                    namespace: defaultNamespace, name: 'service4', targetPods: [
+                        { namespace: defaultNamespace, name: 'pod4' }
+                    ]
+                }
+            ],
+            ingresses: [
+                {
+                    namespace: defaultNamespace, name: 'ingress1', targetServices: [
+                        { namespace: defaultNamespace, name: 'service1' },
+                        { namespace: defaultNamespace, name: 'service3' }
+                    ]
+                },
+                {
+                    namespace: defaultNamespace, name: 'ingress2', targetServices: [
+                        { namespace: defaultNamespace, name: 'service2' }
+                    ]
+                },
+                {
+                    namespace: defaultNamespace, name: 'ingress2', targetServices: [
+                        { namespace: defaultNamespace, name: 'service4' }
+                    ]
+                }
+            ]
+        };
+        const controls = {
+            ...defaultControls,
+            nameFilter: 'pod[12]'
+        };
+
+        const actual = computeDataSet(analysisResult, controls);
+
+        expect(actual.ingresses).toEqual([
+            {
+                namespace: defaultNamespace, name: 'ingress1', displayName: 'ingress1', targetServices: [
+                    { namespace: defaultNamespace, name: 'service1' }
+                ]
+            },
+            {
+                namespace: defaultNamespace, name: 'ingress2', displayName: 'ingress2', targetServices: [
+                    { namespace: defaultNamespace, name: 'service2' }
                 ]
             }
         ]);
@@ -758,6 +832,13 @@ describe('computeDataSet', () => {
                     ]
                 }
             ],
+            ingresses: [
+                {
+                    namespace: namespace, name: 'ing1', targetServices: [
+                        { namespace: namespace, name: 'svc1' }
+                    ]
+                }
+            ],
             replicaSets: [
                 {
                     namespace: namespace, name: 'replicaSet1', targetPods: [
@@ -798,15 +879,11 @@ describe('computeDataSet', () => {
         expect(actual.pods.map(pod => pod.displayName)).toEqual([`${namespace}/pod1`, `${namespace}/pod2`]);
         expect(actual.podIsolations.map(podIsolation => podIsolation.displayName))
             .toEqual([`${namespace}/pod1`, `${namespace}/pod2`]);
-        expect(actual.services.map(service => service.displayName))
-            .toEqual([`${namespace}/svc1`]);
-        expect(actual.replicaSets.map(replicaSet => replicaSet.displayName))
-            .toEqual([`${namespace}/replicaSet1`]);
-        expect(actual.statefulSets.map(statefulSet => statefulSet.displayName))
-            .toEqual([`${namespace}/statefulSet1`]);
-        expect(actual.daemonSets.map(daemonSet => daemonSet.displayName))
-            .toEqual([`${namespace}/daemonSet1`]);
-        expect(actual.deployments.map(deployment => deployment.displayName))
-            .toEqual([`${namespace}/deployment1`]);
+        expect(actual.services.map(service => service.displayName)).toEqual([`${namespace}/svc1`]);
+        expect(actual.ingresses.map(ingress => ingress.displayName)).toEqual([`${namespace}/ing1`]);
+        expect(actual.replicaSets.map(replicaSet => replicaSet.displayName)).toEqual([`${namespace}/replicaSet1`]);
+        expect(actual.statefulSets.map(statefulSet => statefulSet.displayName)).toEqual([`${namespace}/statefulSet1`]);
+        expect(actual.daemonSets.map(daemonSet => daemonSet.displayName)).toEqual([`${namespace}/daemonSet1`]);
+        expect(actual.deployments.map(deployment => deployment.displayName)).toEqual([`${namespace}/deployment1`]);
     });
 });

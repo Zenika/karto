@@ -58,12 +58,14 @@ function indexPodIsolationsById(podIsolations) {
 
 function filterAnalysisResult(analysisResult, podIsolationsIndex, controls) {
     const filteredPodIds = new Set();
+    const filteredServiceIds = new Set();
     const filteredReplicaSetIds = new Set();
 
     const podFilter = makePodFilter(controls);
     const podIsolationFilter = makePodIsolationFilter(filteredPodIds);
     const allowedRouteFilter = makeAllowedRouteFilter(filteredPodIds);
     const serviceFilter = makeServiceFilter(filteredPodIds);
+    const ingressFilter = makeIngressFilter(filteredServiceIds);
     const replicaSetFilter = makeReplicaSetFilter(filteredPodIds);
     const statefulSetFilter = makeStatefulSetFilter(filteredPodIds);
     const daemonSetFilter = makeDaemonSetFilter(filteredPodIds);
@@ -74,6 +76,8 @@ function filterAnalysisResult(analysisResult, podIsolationsIndex, controls) {
     const filteredPodIsolations = analysisResult.podIsolations.filter(podIsolationFilter);
     const filteredAllowedRoutes = analysisResult.allowedRoutes.filter(allowedRouteFilter);
     const filteredServices = analysisResult.services.filter(serviceFilter);
+    filteredServices.forEach(service => filteredServiceIds.add(serviceId(service)));
+    const filteredIngresses = analysisResult.ingresses.filter(ingressFilter);
     const filteredReplicaSets = analysisResult.replicaSets.filter(replicaSetFilter);
     filteredReplicaSets.forEach(replicaSet => filteredReplicaSetIds.add(replicaSetId(replicaSet)));
     const filteredStatefulSets = analysisResult.statefulSets.filter(statefulSetFilter);
@@ -87,6 +91,7 @@ function filterAnalysisResult(analysisResult, podIsolationsIndex, controls) {
         podIsolations: [...filteredPodIsolations, ...neighborPodIsolations],
         allowedRoutes: [...filteredAllowedRoutes, ...neighborAllowedRoutes],
         services: filteredServices,
+        ingresses: filteredIngresses,
         replicaSets: filteredReplicaSets,
         statefulSets: filteredStatefulSets,
         daemonSets: filteredDaemonSets,
@@ -123,6 +128,8 @@ function computeNeighbors(analysisResult, filteredPodIds, podIsolationsIndex, co
 function mapAnalysisResult(filteredAnalysisResult, podsIndex, podIsolationsIndex, controls) {
     const filteredPodIds = new Set();
     filteredAnalysisResult.pods.forEach(pod => filteredPodIds.add(podId(pod)));
+    const filteredServiceIds = new Set();
+    filteredAnalysisResult.services.forEach(service => filteredServiceIds.add(serviceId(service)));
     const filteredReplicaSetIds = new Set();
     filteredAnalysisResult.replicaSets.forEach(replicaSet => filteredReplicaSetIds.add(replicaSetId(replicaSet)));
 
@@ -130,6 +137,7 @@ function mapAnalysisResult(filteredAnalysisResult, podsIndex, podIsolationsIndex
     const podIsolationMapper = makePodIsolationMapper(controls, podMapper, podsIndex);
     const allowedRouteMapper = makeAllowedRouteMapper(controls, podIsolationMapper, podIsolationsIndex);
     const serviceMapper = makeServiceMapper(controls, filteredPodIds);
+    const ingressMapper = makeIngressMapper(controls, filteredServiceIds);
     const replicaSetMapper = makeReplicaSetMapper(controls, filteredPodIds);
     const statefulSetMapper = makeStatefulSetMapper(controls, filteredPodIds);
     const daemonSetMapper = makeDaemonSetMapper(controls, filteredPodIds);
@@ -140,6 +148,7 @@ function mapAnalysisResult(filteredAnalysisResult, podsIndex, podIsolationsIndex
         podIsolations: filteredAnalysisResult.podIsolations.map(podIsolationMapper),
         allowedRoutes: filteredAnalysisResult.allowedRoutes.map(allowedRouteMapper),
         services: filteredAnalysisResult.services.map(serviceMapper),
+        ingresses: filteredAnalysisResult.ingresses.map(ingressMapper),
         replicaSets: filteredAnalysisResult.replicaSets.map(replicaSetMapper),
         statefulSets: filteredAnalysisResult.statefulSets.map(statefulSetMapper),
         daemonSets: filteredAnalysisResult.daemonSets.map(daemonSetMapper),
@@ -206,6 +215,11 @@ function makeServiceFilter(filteredPodIds) {
     return service => service.targetPods.some(pod => filteredPodIds.has(podId(pod)));
 }
 
+function makeIngressFilter(filteredServiceIds) {
+    return ingress => ingress.targetServices.some(service =>
+        filteredServiceIds.has(serviceId(service)));
+}
+
 function makeReplicaSetFilter(filteredPodIds) {
     return replicaSet => replicaSet.targetPods.some(pod => filteredPodIds.has(podId(pod)));
 }
@@ -259,6 +273,15 @@ function makeServiceMapper(controls, filteredPodIds) {
     });
 }
 
+function makeIngressMapper(controls, filteredServiceIds) {
+    const { showNamespacePrefix } = controls;
+    return ingress => ({
+        ...ingress,
+        targetServices: ingress.targetServices.filter(svc => filteredServiceIds.has(serviceId(svc))),
+        displayName: showNamespacePrefix ? `${ingress.namespace}/${ingress.name}` : ingress.name
+    });
+}
+
 function makeReplicaSetMapper(controls, filteredPodIds) {
     const { showNamespacePrefix } = controls;
     return replicaSet => ({
@@ -297,6 +320,10 @@ function makeDeploymentMapper(controls, filteredReplicaSetIds) {
 
 function podId(pod) {
     return `${pod.namespace}/${pod.name}`;
+}
+
+function serviceId(service) {
+    return `${service.namespace}/${service.name}`;
 }
 
 function replicaSetId(replicaSet) {

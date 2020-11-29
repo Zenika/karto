@@ -4,12 +4,14 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 )
 
 type ClusterState struct {
 	Namespaces      []*corev1.Namespace
 	Pods            []*corev1.Pod
 	Services        []*corev1.Service
+	Ingresses       []*networkingv1beta1.Ingress
 	ReplicaSets     []*appsv1.ReplicaSet
 	StatefulSets    []*appsv1.StatefulSet
 	DaemonSets      []*appsv1.DaemonSet
@@ -54,6 +56,17 @@ type Service struct {
 	TargetPods []PodRef `json:"targetPods"`
 }
 
+type ServiceRef struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+}
+
+type Ingress struct {
+	Name           string       `json:"name"`
+	Namespace      string       `json:"namespace"`
+	TargetServices []ServiceRef `json:"targetServices"`
+}
+
 type ReplicaSet struct {
 	Name       string   `json:"name"`
 	Namespace  string   `json:"namespace"`
@@ -88,6 +101,7 @@ type AnalysisResult struct {
 	PodIsolations []*PodIsolation `json:"podIsolations"`
 	AllowedRoutes []*AllowedRoute `json:"allowedRoutes"`
 	Services      []*Service      `json:"services"`
+	Ingresses     []*Ingress      `json:"ingresses"`
 	ReplicaSets   []*ReplicaSet   `json:"replicaSets"`
 	StatefulSets  []*StatefulSet  `json:"statefulSets"`
 	DaemonSets    []*DaemonSet    `json:"daemonSets"`

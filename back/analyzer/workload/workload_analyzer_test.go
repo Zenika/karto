@@ -5,8 +5,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	"karto/analyzer/workload/daemonset"
 	"karto/analyzer/workload/deployment"
+	"karto/analyzer/workload/ingress"
 	"karto/analyzer/workload/replicaset"
 	"karto/analyzer/workload/service"
 	"karto/analyzer/workload/statefulset"
@@ -22,6 +24,7 @@ func Test_Analyze(t *testing.T) {
 	}
 	type mocks struct {
 		service     []mockServiceAnalyzerCall
+		ingress     []mockIngressAnalyzerCall
 		replicaSet  []mockReplicaSetAnalyzerCall
 		statefulSet []mockStatefulSetAnalyzerCall
 		daemonSet   []mockDaemonSetAnalyzerCall
@@ -32,6 +35,8 @@ func Test_Analyze(t *testing.T) {
 	k8sPod3 := testutils.NewPodBuilder().WithName("pod3").WithNamespace("ns").Build()
 	k8sService1 := testutils.NewServiceBuilder().WithName("svc1").WithNamespace("ns").Build()
 	k8sService2 := testutils.NewServiceBuilder().WithName("svc2").WithNamespace("ns").Build()
+	k8sIngress1 := testutils.NewIngressBuilder().WithName("ing1").WithNamespace("ns").Build()
+	k8sIngress2 := testutils.NewIngressBuilder().WithName("ing2").WithNamespace("ns").Build()
 	k8sReplicaSet1 := testutils.NewReplicaSetBuilder().WithName("rs1").WithNamespace("ns").Build()
 	k8sReplicaSet2 := testutils.NewReplicaSetBuilder().WithName("rs2").WithNamespace("ns").Build()
 	k8sStatefulSet1 := testutils.NewStatefulSetBuilder().WithName("rs1").WithNamespace("ns").Build()
@@ -47,6 +52,12 @@ func Test_Analyze(t *testing.T) {
 		TargetPods: []types.PodRef{podRef1}}
 	service2 := &types.Service{Name: k8sService2.Name, Namespace: k8sService2.Namespace,
 		TargetPods: []types.PodRef{podRef2, podRef3}}
+	serviceRef1 := types.ServiceRef{Name: k8sService1.Name, Namespace: k8sService1.Namespace}
+	serviceRef2 := types.ServiceRef{Name: k8sService2.Name, Namespace: k8sService2.Namespace}
+	ingress1 := &types.Ingress{Name: k8sIngress1.Name, Namespace: k8sIngress1.Namespace,
+		TargetServices: []types.ServiceRef{serviceRef1}}
+	ingress2 := &types.Ingress{Name: k8sIngress2.Name, Namespace: k8sIngress2.Namespace,
+		TargetServices: []types.ServiceRef{serviceRef2}}
 	replicaSet1 := &types.ReplicaSet{Name: k8sReplicaSet1.Name, Namespace: k8sReplicaSet1.Namespace,
 		TargetPods: []types.PodRef{podRef1, podRef2}}
 	replicaSet2 := &types.ReplicaSet{Name: k8sReplicaSet2.Name, Namespace: k8sReplicaSet2.Namespace,
@@ -72,7 +83,7 @@ func Test_Analyze(t *testing.T) {
 		expectedAnalysisResult AnalysisResult
 	}{
 		{
-			name: "delegates to service and replicaSet and statefulSet and daemonSet and deployment analyzers",
+			name: "delegates to sub-analyzers and merges results",
 			mocks: mocks{
 				service: []mockServiceAnalyzerCall{
 					{
@@ -88,6 +99,22 @@ func Test_Analyze(t *testing.T) {
 							pods:    []*corev1.Pod{k8sPod1, k8sPod2, k8sPod3},
 						},
 						returnValue: service2,
+					},
+				},
+				ingress: []mockIngressAnalyzerCall{
+					{
+						args: mockIngressAnalyzerCallArgs{
+							ingress:  k8sIngress1,
+							services: []*corev1.Service{k8sService1, k8sService2},
+						},
+						returnValue: ingress1,
+					},
+					{
+						args: mockIngressAnalyzerCallArgs{
+							ingress:  k8sIngress2,
+							services: []*corev1.Service{k8sService1, k8sService2},
+						},
+						returnValue: ingress2,
 					},
 				},
 				replicaSet: []mockReplicaSetAnalyzerCall{
@@ -159,6 +186,7 @@ func Test_Analyze(t *testing.T) {
 				clusterState: ClusterState{
 					Pods:         []*corev1.Pod{k8sPod1, k8sPod2, k8sPod3},
 					Services:     []*corev1.Service{k8sService1, k8sService2},
+					Ingresses:    []*networkingv1beta1.Ingress{k8sIngress1, k8sIngress2},
 					ReplicaSets:  []*appsv1.ReplicaSet{k8sReplicaSet1, k8sReplicaSet2},
 					StatefulSets: []*appsv1.StatefulSet{k8sStatefulSet1, k8sStatefulSet2},
 					DaemonSets:   []*appsv1.DaemonSet{k8sDaemonSet1, k8sDaemonSet2},
@@ -167,6 +195,7 @@ func Test_Analyze(t *testing.T) {
 			},
 			expectedAnalysisResult: AnalysisResult{
 				Services:     []*types.Service{service1, service2},
+				Ingresses:    []*types.Ingress{ingress1, ingress2},
 				ReplicaSets:  []*types.ReplicaSet{replicaSet1, replicaSet2},
 				StatefulSets: []*types.StatefulSet{statefulSet1, statefulSet2},
 				DaemonSets:   []*types.DaemonSet{daemonSet1, daemonSet2},
@@ -177,12 +206,13 @@ func Test_Analyze(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			serviceAnalyzer := createMockServiceAnalyzer(t, tt.mocks.service)
+			ingressAnalyzer := createMockIngressAnalyzer(t, tt.mocks.ingress)
 			replicaSetAnalyzer := createMockReplicaSetAnalyzer(t, tt.mocks.replicaSet)
 			statefulSetAnalyzer := createMockStatefulSetAnalyzer(t, tt.mocks.statefulSet)
 			daemonSetAnalyzer := createMockDaemonSetAnalyzer(t, tt.mocks.daemonSet)
 			deploymentAnalyzer := createMockDeploymentAnalyzer(t, tt.mocks.deployment)
-			analyzer := NewAnalyzer(serviceAnalyzer, replicaSetAnalyzer, statefulSetAnalyzer, daemonSetAnalyzer,
-				deploymentAnalyzer)
+			analyzer := NewAnalyzer(serviceAnalyzer, ingressAnalyzer, replicaSetAnalyzer, statefulSetAnalyzer,
+				daemonSetAnalyzer, deploymentAnalyzer)
 			analysisResult := analyzer.Analyze(tt.args.clusterState)
 			if diff := cmp.Diff(tt.expectedAnalysisResult, analysisResult); diff != "" {
 				t.Errorf("Analyze() result mismatch (-want +got):\n%s", diff)
@@ -222,6 +252,42 @@ func (mock mockServiceAnalyzer) Analyze(service *corev1.Service, pods []*corev1.
 
 func createMockServiceAnalyzer(t *testing.T, calls []mockServiceAnalyzerCall) service.Analyzer {
 	return mockServiceAnalyzer{
+		t:     t,
+		calls: calls,
+	}
+}
+
+type mockIngressAnalyzerCallArgs struct {
+	ingress  *networkingv1beta1.Ingress
+	services []*corev1.Service
+}
+
+type mockIngressAnalyzerCall struct {
+	args        mockIngressAnalyzerCallArgs
+	returnValue *types.Ingress
+}
+
+type mockIngressAnalyzer struct {
+	t     *testing.T
+	calls []mockIngressAnalyzerCall
+}
+
+func (mock mockIngressAnalyzer) Analyze(ingress *networkingv1beta1.Ingress, services []*corev1.Service) *types.Ingress {
+	for _, call := range mock.calls {
+		if reflect.DeepEqual(call.args.ingress, ingress) &&
+			reflect.DeepEqual(call.args.services, services) {
+			return call.returnValue
+		}
+	}
+	fmt.Printf("mockIngressAnalyzer was called with unexpected arguments: \n")
+	fmt.Printf("\tingress:%s\n", ingress)
+	fmt.Printf("\tservices=%s\n", services)
+	mock.t.FailNow()
+	panic("unreachable but required to compile")
+}
+
+func createMockIngressAnalyzer(t *testing.T, calls []mockIngressAnalyzerCall) ingress.Analyzer {
+	return mockIngressAnalyzer{
 		t:     t,
 		calls: calls,
 	}

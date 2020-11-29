@@ -6,6 +6,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	"karto/analyzer/pod"
 	"karto/analyzer/traffic"
 	"karto/analyzer/workload"
@@ -35,6 +36,8 @@ func Test_Analyze(t *testing.T) {
 		WithNamespace("ns").Build()
 	k8sService1 := testutils.NewServiceBuilder().WithName("svc1").WithNamespace("ns").Build()
 	k8sService2 := testutils.NewServiceBuilder().WithName("svc2").WithNamespace("ns").Build()
+	k8sIngress1 := testutils.NewIngressBuilder().WithName("svc1").WithNamespace("ns").Build()
+	k8sIngress2 := testutils.NewIngressBuilder().WithName("svc2").WithNamespace("ns").Build()
 	k8sReplicaSet1 := testutils.NewReplicaSetBuilder().WithName("rs1").WithNamespace("ns").Build()
 	k8sReplicaSet2 := testutils.NewReplicaSetBuilder().WithName("rs2").WithNamespace("ns").Build()
 	k8sStatefulSet1 := testutils.NewStatefulSetBuilder().WithName("rs1").WithNamespace("ns").Build()
@@ -59,6 +62,12 @@ func Test_Analyze(t *testing.T) {
 		TargetPods: []types.PodRef{podRef1}}
 	service2 := &types.Service{Name: k8sService2.Name, Namespace: k8sService2.Namespace,
 		TargetPods: []types.PodRef{podRef2}}
+	serviceRef1 := types.ServiceRef{Name: k8sService1.Name, Namespace: k8sService1.Namespace}
+	serviceRef2 := types.ServiceRef{Name: k8sService2.Name, Namespace: k8sService2.Namespace}
+	ingress1 := &types.Ingress{Name: k8sIngress1.Name, Namespace: k8sIngress1.Namespace,
+		TargetServices: []types.ServiceRef{serviceRef1}}
+	ingress2 := &types.Ingress{Name: k8sService2.Name, Namespace: k8sService2.Namespace,
+		TargetServices: []types.ServiceRef{serviceRef2}}
 	replicaSet1 := &types.ReplicaSet{Name: k8sReplicaSet1.Name, Namespace: k8sReplicaSet1.Namespace,
 		TargetPods: []types.PodRef{podRef1}}
 	replicaSet2 := &types.ReplicaSet{Name: k8sReplicaSet2.Name, Namespace: k8sReplicaSet2.Namespace,
@@ -114,6 +123,7 @@ func Test_Analyze(t *testing.T) {
 						clusterState: workload.ClusterState{
 							Pods:         []*corev1.Pod{k8sPod1, k8sPod2},
 							Services:     []*corev1.Service{k8sService1, k8sService2},
+							Ingresses:    []*networkingv1beta1.Ingress{k8sIngress1, k8sIngress2},
 							ReplicaSets:  []*appsv1.ReplicaSet{k8sReplicaSet1, k8sReplicaSet2},
 							StatefulSets: []*appsv1.StatefulSet{k8sStatefulSet1, k8sStatefulSet2},
 							DaemonSets:   []*appsv1.DaemonSet{k8sDaemonSet1, k8sDaemonSet2},
@@ -121,6 +131,7 @@ func Test_Analyze(t *testing.T) {
 						},
 						returnValue: workload.AnalysisResult{
 							Services:     []*types.Service{service1, service2},
+							Ingresses:    []*types.Ingress{ingress1, ingress2},
 							ReplicaSets:  []*types.ReplicaSet{replicaSet1, replicaSet2},
 							StatefulSets: []*types.StatefulSet{statefulSet1, statefulSet2},
 							DaemonSets:   []*types.DaemonSet{daemonSet1, daemonSet2},
@@ -134,6 +145,7 @@ func Test_Analyze(t *testing.T) {
 					Namespaces:      []*corev1.Namespace{k8sNamespace},
 					Pods:            []*corev1.Pod{k8sPod1, k8sPod2},
 					Services:        []*corev1.Service{k8sService1, k8sService2},
+					Ingresses:       []*networkingv1beta1.Ingress{k8sIngress1, k8sIngress2},
 					ReplicaSets:     []*appsv1.ReplicaSet{k8sReplicaSet1, k8sReplicaSet2},
 					StatefulSets:    []*appsv1.StatefulSet{k8sStatefulSet1, k8sStatefulSet2},
 					DaemonSets:      []*appsv1.DaemonSet{k8sDaemonSet1, k8sDaemonSet2},
@@ -146,6 +158,7 @@ func Test_Analyze(t *testing.T) {
 				PodIsolations: []*types.PodIsolation{podIsolation1, podIsolation2},
 				AllowedRoutes: []*types.AllowedRoute{allowedRoute},
 				Services:      []*types.Service{service1, service2},
+				Ingresses:     []*types.Ingress{ingress1, ingress2},
 				ReplicaSets:   []*types.ReplicaSet{replicaSet1, replicaSet2},
 				StatefulSets:  []*types.StatefulSet{statefulSet1, statefulSet2},
 				DaemonSets:    []*types.DaemonSet{daemonSet1, daemonSet2},
