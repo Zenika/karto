@@ -41,14 +41,20 @@ func (handler *handler) keepUpdated(resultsChannel <-chan types.AnalysisResult) 
 	}
 }
 
-func (handler *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (handler *handler) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
 	handler.mutex.RLock()
 	defer handler.mutex.RUnlock()
-	json.NewEncoder(w).Encode(handler.lastAnalysisResult)
+	err := json.NewEncoder(w).Encode(handler.lastAnalysisResult)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func healthCheck(w http.ResponseWriter, _ *http.Request) {
-	fmt.Fprintln(w, "OK")
+	_, err := fmt.Fprintln(w, "OK")
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func Expose(address string, resultsChannel <-chan types.AnalysisResult) {

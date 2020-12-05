@@ -10,19 +10,18 @@ import (
 	"sort"
 )
 
+const portWildcard = -1
+
 type Analyzer interface {
 	Analyze(sourcePodIsolation *shared.PodIsolation, targetPodIsolation *shared.PodIsolation,
 		namespaces []*corev1.Namespace) *types.AllowedRoute
 }
 
 type analyzerImpl struct {
-	portWildcard int32
 }
 
 func NewAnalyzer() Analyzer {
-	return analyzerImpl{
-		portWildcard: -1,
-	}
+	return analyzerImpl{}
 }
 
 func (analyzer analyzerImpl) Analyze(sourcePodIsolation *shared.PodIsolation, targetPodIsolation *shared.PodIsolation,
@@ -47,18 +46,18 @@ func (analyzer analyzerImpl) ingressPoliciesByPort(sourcePod *corev1.Pod, target
 	namespaces []*corev1.Namespace) map[int32][]*networkingv1.NetworkPolicy {
 	policiesByPort := make(map[int32][]*networkingv1.NetworkPolicy)
 	if !targetPodIsolation.IsIngressIsolated() {
-		policiesByPort[analyzer.portWildcard] = make([]*networkingv1.NetworkPolicy, 0)
+		policiesByPort[portWildcard] = make([]*networkingv1.NetworkPolicy, 0)
 	} else {
 		for i, ingressPolicy := range targetPodIsolation.IngressPolicies {
 			for _, ingressRule := range ingressPolicy.Spec.Ingress {
 				if analyzer.ingressRuleAllows(sourcePod, ingressRule, namespaces) {
 					if len(ingressRule.Ports) == 0 {
-						policies := policiesByPort[analyzer.portWildcard]
+						policies := policiesByPort[portWildcard]
 						if policies == nil {
 							policies = make([]*networkingv1.NetworkPolicy, 0)
 						}
 						policies = append(policies, targetPodIsolation.IngressPolicies[i])
-						policiesByPort[analyzer.portWildcard] = policies
+						policiesByPort[portWildcard] = policies
 					} else {
 						for _, port := range ingressRule.Ports {
 							policies := policiesByPort[port.Port.IntVal]
@@ -90,18 +89,18 @@ func (analyzer analyzerImpl) egressPoliciesByPort(targetPod *corev1.Pod, sourceP
 	namespaces []*corev1.Namespace) map[int32][]*networkingv1.NetworkPolicy {
 	policiesByPort := make(map[int32][]*networkingv1.NetworkPolicy)
 	if !sourcePodIsolation.IsEgressIsolated() {
-		policiesByPort[analyzer.portWildcard] = make([]*networkingv1.NetworkPolicy, 0)
+		policiesByPort[portWildcard] = make([]*networkingv1.NetworkPolicy, 0)
 	} else {
 		for i, egressPolicy := range sourcePodIsolation.EgressPolicies {
 			for _, egressRule := range egressPolicy.Spec.Egress {
 				if analyzer.egressRuleAllows(targetPod, egressRule, namespaces) {
 					if len(egressRule.Ports) == 0 {
-						policies := policiesByPort[analyzer.portWildcard]
+						policies := policiesByPort[portWildcard]
 						if policies == nil {
 							policies = make([]*networkingv1.NetworkPolicy, 0)
 						}
 						policies = append(policies, sourcePodIsolation.EgressPolicies[i])
-						policiesByPort[analyzer.portWildcard] = policies
+						policiesByPort[portWildcard] = policies
 					} else {
 						for _, port := range egressRule.Ports {
 							policies := policiesByPort[port.Port.IntVal]
@@ -137,8 +136,8 @@ func (analyzer analyzerImpl) matchPoliciesByPort(ingressPoliciesByPort map[int32
 	egressPoliciesSet := make(map[*networkingv1.NetworkPolicy]bool)
 	for ingressPort, ingressPolicies := range ingressPoliciesByPort {
 		for egressPort, egressPolicies := range egressPoliciesByPort {
-			if ingressPort == analyzer.portWildcard || egressPort == analyzer.portWildcard || ingressPort == egressPort {
-				if ingressPort == analyzer.portWildcard {
+			if ingressPort == portWildcard || egressPort == portWildcard || ingressPort == egressPort {
+				if ingressPort == portWildcard {
 					portsSet[egressPort] = true
 				} else {
 					portsSet[ingressPort] = true
@@ -152,7 +151,7 @@ func (analyzer analyzerImpl) matchPoliciesByPort(ingressPoliciesByPort map[int32
 			}
 		}
 	}
-	if portsSet[analyzer.portWildcard] {
+	if portsSet[portWildcard] {
 		portsSet = nil
 	}
 	var ports []int32
