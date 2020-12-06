@@ -1,7 +1,6 @@
 package analyzer
 
 import (
-	"fmt"
 	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -14,9 +13,10 @@ import (
 	"karto/types"
 	"reflect"
 	"testing"
+	"time"
 )
 
-func Test_Analyze(t *testing.T) {
+func TestAnalyze(t *testing.T) {
 	type args struct {
 		clusterState types.ClusterState
 	}
@@ -86,7 +86,7 @@ func Test_Analyze(t *testing.T) {
 		TargetReplicaSets: []types.ReplicaSetRef{replicaSetRef1}}
 	deployment2 := &types.Deployment{Name: k8sDeployment2.Name, Namespace: k8sDeployment2.Namespace,
 		TargetReplicaSets: []types.ReplicaSetRef{replicaSetRef2}}
-	var tests = []struct {
+	tests := []struct {
 		name                   string
 		mocks                  mocks
 		args                   args
@@ -176,9 +176,13 @@ func Test_Analyze(t *testing.T) {
 			resultsChannel := make(chan types.AnalysisResult)
 			go analyzer.AnalyzeOnClusterStateChange(clusterStateChannel, resultsChannel)
 			clusterStateChannel <- tt.args.clusterState
-			analysisResult := <-resultsChannel
-			if diff := cmp.Diff(tt.expectedAnalysisResult, analysisResult); diff != "" {
-				t.Errorf("Analyze() result mismatch (-want +got):\n%s", diff)
+			select {
+			case analysisResult := <-resultsChannel:
+				if diff := cmp.Diff(tt.expectedAnalysisResult, analysisResult); diff != "" {
+					t.Errorf("Analyze() result mismatch (-want +got):\n%s", diff)
+				}
+			case <-time.After(3 * time.Second):
+				t.Errorf("Test timed out (nothing was received on the channel)")
 			}
 		})
 	}
@@ -200,10 +204,8 @@ func (mock mockPodAnalyzer) Analyze(clusterState pod.ClusterState) pod.AnalysisR
 			return call.returnValue
 		}
 	}
-	fmt.Printf("mockPodAnalyzer was called with unexpected arguments: \n")
-	fmt.Printf("\tclusterState=%s\n", clusterState)
-	mock.t.FailNow()
-	panic("unreachable but required to compile")
+	mock.t.Fatalf("mockPodAnalyzer was called with unexpected arguments: \n\tclusterState: %s\n", clusterState)
+	return pod.AnalysisResult{}
 }
 
 func createMockPodAnalyzer(t *testing.T, calls []mockPodAnalyzerCall) pod.Analyzer {
@@ -229,10 +231,9 @@ func (mock mockTrafficAnalyzer) Analyze(clusterState traffic.ClusterState) traff
 			return call.returnValue
 		}
 	}
-	fmt.Printf("mockTrafficAnalyzer was called with unexpected arguments: \n")
-	fmt.Printf("\tclusterState:%s\n", clusterState)
-	mock.t.FailNow()
-	panic("unreachable but required to compile")
+	mock.t.Fatalf("mockTrafficAnalyzer was called with unexpected arguments: \n\tclusterState: %s\n",
+		clusterState)
+	return traffic.AnalysisResult{}
 }
 
 func createMockTrafficAnalyzer(t *testing.T, calls []mockTrafficAnalyzerCall) traffic.Analyzer {
@@ -258,10 +259,9 @@ func (mock mockWorkloadAnalyzer) Analyze(clusterState workload.ClusterState) wor
 			return call.returnValue
 		}
 	}
-	fmt.Printf("mockWorkloadAnalyzer was called with unexpected arguments: \n")
-	fmt.Printf("\tclusterState:%s\n", clusterState)
-	mock.t.FailNow()
-	panic("unreachable but required to compile")
+	mock.t.Fatalf("mockWorkloadAnalyzer was called with unexpected arguments: \n\tclusterState: %s\n",
+		clusterState)
+	return workload.AnalysisResult{}
 }
 
 func createMockWorkloadAnalyzer(t *testing.T, calls []mockWorkloadAnalyzerCall) workload.Analyzer {

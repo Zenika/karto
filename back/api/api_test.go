@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func Test_Expose(t *testing.T) {
+func TestExpose(t *testing.T) {
 	type args struct {
 		endPoint       string
 		analysisResult types.AnalysisResult
@@ -185,7 +185,9 @@ func Test_Expose(t *testing.T) {
 			resultsChannel <- tt.args.analysisResult
 			time.Sleep(10 * time.Millisecond)
 			response, _ := http.Get("http://" + address + tt.args.endPoint)
-			defer response.Body.Close()
+			defer func() {
+				_ = response.Body.Close()
+			}()
 			body, _ := ioutil.ReadAll(response.Body)
 			bodyStr := string(body)
 			expectedBodyStr := strings.Replace(tt.expectedBody, " ", "", -1)
@@ -202,6 +204,8 @@ func Test_Expose(t *testing.T) {
 func findAvailablePort() int {
 	address, _ := net.ResolveTCPAddr("tcp", "localhost:0")
 	listener, _ := net.ListenTCP("tcp", address)
-	defer listener.Close()
+	defer func() {
+		_ = listener.Close()
+	}()
 	return listener.Addr().(*net.TCPAddr).Port
 }

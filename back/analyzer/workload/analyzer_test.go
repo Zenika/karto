@@ -1,7 +1,6 @@
 package workload
 
 import (
-	"fmt"
 	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -18,7 +17,7 @@ import (
 	"testing"
 )
 
-func Test_Analyze(t *testing.T) {
+func TestAnalyze(t *testing.T) {
 	type args struct {
 		clusterState ClusterState
 	}
@@ -76,7 +75,7 @@ func Test_Analyze(t *testing.T) {
 		TargetReplicaSets: []types.ReplicaSetRef{replicaSetRef1}}
 	deployment2 := &types.Deployment{Name: k8sDeployment2.Name, Namespace: k8sDeployment2.Namespace,
 		TargetReplicaSets: []types.ReplicaSetRef{replicaSetRef2}}
-	var tests = []struct {
+	tests := []struct {
 		name                   string
 		mocks                  mocks
 		args                   args
@@ -243,11 +242,9 @@ func (mock mockServiceAnalyzer) Analyze(service *corev1.Service, pods []*corev1.
 			return call.returnValue
 		}
 	}
-	fmt.Printf("mockServiceAnalyzer was called with unexpected arguments: \n")
-	fmt.Printf("\tservice:%s\n", service)
-	fmt.Printf("\tpods=%s\n", pods)
-	mock.t.FailNow()
-	panic("unreachable but required to compile")
+	mock.t.Fatalf("mockServiceAnalyzer was called with unexpected arguments:\n\tservice: %s\n\tpods: %s\n",
+		service, pods)
+	return nil
 }
 
 func createMockServiceAnalyzer(t *testing.T, calls []mockServiceAnalyzerCall) service.Analyzer {
@@ -279,11 +276,9 @@ func (mock mockIngressAnalyzer) Analyze(ingress *networkingv1beta1.Ingress, serv
 			return call.returnValue
 		}
 	}
-	fmt.Printf("mockIngressAnalyzer was called with unexpected arguments: \n")
-	fmt.Printf("\tingress:%s\n", ingress)
-	fmt.Printf("\tservices=%s\n", services)
-	mock.t.FailNow()
-	panic("unreachable but required to compile")
+	mock.t.Fatalf("mockIngressAnalyzer was called with unexpected arguments:\n\tingress: %s\n\tservices: %s\n",
+		ingress, services)
+	return nil
 }
 
 func createMockIngressAnalyzer(t *testing.T, calls []mockIngressAnalyzerCall) ingress.Analyzer {
@@ -315,11 +310,9 @@ func (mock mockReplicaSetAnalyzer) Analyze(replicaSet *appsv1.ReplicaSet, pods [
 			return call.returnValue
 		}
 	}
-	fmt.Printf("mockReplicaSetAnalyzer was called with unexpected arguments: \n")
-	fmt.Printf("\treplicaSet:%s\n", replicaSet)
-	fmt.Printf("\tpods=%s\n", pods)
-	mock.t.FailNow()
-	panic("unreachable but required to compile")
+	mock.t.Fatalf("mockReplicaSetAnalyzer was called with unexpected arguments:\n\treplicaSet: %s\n\tpods: %s\n",
+		replicaSet, pods)
+	return nil
 }
 
 func createMockReplicaSetAnalyzer(t *testing.T, calls []mockReplicaSetAnalyzerCall) replicaset.Analyzer {
@@ -351,11 +344,9 @@ func (mock mockStatefulSetAnalyzer) Analyze(statefulSet *appsv1.StatefulSet, pod
 			return call.returnValue
 		}
 	}
-	fmt.Printf("mockStatefulSetAnalyzer was called with unexpected arguments: \n")
-	fmt.Printf("\tstatefulSet:%s\n", statefulSet)
-	fmt.Printf("\tpods=%s\n", pods)
-	mock.t.FailNow()
-	panic("unreachable but required to compile")
+	mock.t.Fatalf("mockStatefulSetAnalyzer was called with unexpected arguments:\n\tstatefulSet: %s\n"+
+		"\tpods: %s\n", statefulSet, pods)
+	return nil
 }
 
 func createMockStatefulSetAnalyzer(t *testing.T, calls []mockStatefulSetAnalyzerCall) statefulset.Analyzer {
@@ -387,11 +378,9 @@ func (mock mockDaemonSetAnalyzer) Analyze(daemonSet *appsv1.DaemonSet, pods []*c
 			return call.returnValue
 		}
 	}
-	fmt.Printf("mockDaemonSetAnalyzer was called with unexpected arguments: \n")
-	fmt.Printf("\tdaemonSet:%s\n", daemonSet)
-	fmt.Printf("\tpods=%s\n", pods)
-	mock.t.FailNow()
-	panic("unreachable but required to compile")
+	mock.t.Fatalf("mockDaemonSetAnalyzer was called with unexpected arguments:\n\tdaemonSet: %s\n\tpods: %s\n",
+		daemonSet, pods)
+	return nil
 }
 
 func createMockDaemonSetAnalyzer(t *testing.T, calls []mockDaemonSetAnalyzerCall) daemonset.Analyzer {
@@ -424,11 +413,9 @@ func (mock mockDeploymentAnalyzer) Analyze(deployment *appsv1.Deployment,
 			return call.returnValue
 		}
 	}
-	fmt.Printf("mockDeploymentAnalyzer was called with unexpected arguments: \n")
-	fmt.Printf("\tdeployment:%s\n", deployment)
-	fmt.Printf("\treplicaSets=%s\n", replicaSets)
-	mock.t.FailNow()
-	panic("unreachable but required to compile")
+	mock.t.Fatalf("mockDeploymentAnalyzer was called with unexpected arguments:\n\tdeployment: %s\n"+
+		"\treplicaSets: %s\n", deployment, replicaSets)
+	return nil
 }
 
 func createMockDeploymentAnalyzer(t *testing.T, calls []mockDeploymentAnalyzerCall) deployment.Analyzer {

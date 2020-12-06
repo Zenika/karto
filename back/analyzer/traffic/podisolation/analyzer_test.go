@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func Test_Analyze(t *testing.T) {
+func TestAnalyze(t *testing.T) {
 	type args struct {
 		pod             *corev1.Pod
 		networkPolicies []*networkingv1.NetworkPolicy

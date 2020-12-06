@@ -11,61 +11,61 @@ import (
 )
 
 type NamespaceBuilder struct {
-	Name   string
-	Labels map[string]string
+	name   string
+	labels map[string]string
 }
 
 func NewNamespaceBuilder() *NamespaceBuilder {
 	return &NamespaceBuilder{
-		Labels: map[string]string{},
+		labels: map[string]string{},
 	}
 }
 
 func (namespaceBuilder *NamespaceBuilder) WithName(name string) *NamespaceBuilder {
-	namespaceBuilder.Name = name
+	namespaceBuilder.name = name
 	return namespaceBuilder
 }
 
 func (namespaceBuilder *NamespaceBuilder) WithLabel(key string, value string) *NamespaceBuilder {
-	namespaceBuilder.Labels[key] = value
+	namespaceBuilder.labels[key] = value
 	return namespaceBuilder
 }
 
 func (namespaceBuilder *NamespaceBuilder) Build() *corev1.Namespace {
 	return &corev1.Namespace{
 		ObjectMeta: v1.ObjectMeta{
-			Name:   namespaceBuilder.Name,
-			Labels: namespaceBuilder.Labels,
+			Name:   namespaceBuilder.name,
+			Labels: namespaceBuilder.labels,
 		},
 	}
 }
 
 type PodBuilder struct {
-	Name      string
-	Namespace string
+	name      string
+	namespace string
 	ownerUID  string
-	Labels    map[string]string
+	labels    map[string]string
 }
 
 func NewPodBuilder() *PodBuilder {
 	return &PodBuilder{
-		Namespace: "default",
-		Labels:    map[string]string{},
+		namespace: "default",
+		labels:    map[string]string{},
 	}
 }
 
 func (podBuilder *PodBuilder) WithName(name string) *PodBuilder {
-	podBuilder.Name = name
+	podBuilder.name = name
 	return podBuilder
 }
 
 func (podBuilder *PodBuilder) WithNamespace(namespace string) *PodBuilder {
-	podBuilder.Namespace = namespace
+	podBuilder.namespace = namespace
 	return podBuilder
 }
 
 func (podBuilder *PodBuilder) WithLabel(key string, value string) *PodBuilder {
-	podBuilder.Labels[key] = value
+	podBuilder.labels[key] = value
 	return podBuilder
 }
 
@@ -77,9 +77,9 @@ func (podBuilder *PodBuilder) WithOwnerUID(ownerUID string) *PodBuilder {
 func (podBuilder *PodBuilder) Build() *corev1.Pod {
 	return &corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
-			Name:      podBuilder.Name,
-			Namespace: podBuilder.Namespace,
-			Labels:    podBuilder.Labels,
+			Name:      podBuilder.name,
+			Namespace: podBuilder.namespace,
+			Labels:    podBuilder.labels,
 			OwnerReferences: []v1.OwnerReference{
 				{UID: types.UID(podBuilder.ownerUID)},
 			},
@@ -88,170 +88,170 @@ func (podBuilder *PodBuilder) Build() *corev1.Pod {
 }
 
 type NetworkPolicyBuilder struct {
-	Name        string
-	Namespace   string
-	Labels      map[string]string
-	PodSelector metav1.LabelSelector
-	Types       []networkingv1.PolicyType
-	Ingress     []networkingv1.NetworkPolicyIngressRule
-	Egress      []networkingv1.NetworkPolicyEgressRule
+	name        string
+	namespace   string
+	labels      map[string]string
+	podSelector metav1.LabelSelector
+	types       []networkingv1.PolicyType
+	ingress     []networkingv1.NetworkPolicyIngressRule
+	egress      []networkingv1.NetworkPolicyEgressRule
 }
 
 func NewNetworkPolicyBuilder() *NetworkPolicyBuilder {
 	return &NetworkPolicyBuilder{
-		Namespace: "default",
-		Labels:    map[string]string{},
-		Ingress:   []networkingv1.NetworkPolicyIngressRule{},
+		namespace: "default",
+		labels:    map[string]string{},
+		ingress:   []networkingv1.NetworkPolicyIngressRule{},
 	}
 }
 
 func (networkPolicyBuilder *NetworkPolicyBuilder) WithName(name string) *NetworkPolicyBuilder {
-	networkPolicyBuilder.Name = name
+	networkPolicyBuilder.name = name
 	return networkPolicyBuilder
 }
 
 func (networkPolicyBuilder *NetworkPolicyBuilder) WithNamespace(namespace string) *NetworkPolicyBuilder {
-	networkPolicyBuilder.Namespace = namespace
+	networkPolicyBuilder.namespace = namespace
 	return networkPolicyBuilder
 }
 
 func (networkPolicyBuilder *NetworkPolicyBuilder) WithLabel(key string, value string) *NetworkPolicyBuilder {
-	networkPolicyBuilder.Labels[key] = value
+	networkPolicyBuilder.labels[key] = value
 	return networkPolicyBuilder
 }
 
 func (networkPolicyBuilder *NetworkPolicyBuilder) WithPodSelector(
 	podSelector *metav1.LabelSelector) *NetworkPolicyBuilder {
-	networkPolicyBuilder.PodSelector = *podSelector
+	networkPolicyBuilder.podSelector = *podSelector
 	return networkPolicyBuilder
 }
 
 func (networkPolicyBuilder *NetworkPolicyBuilder) WithTypes(types ...networkingv1.PolicyType) *NetworkPolicyBuilder {
-	networkPolicyBuilder.Types = types
+	networkPolicyBuilder.types = types
 	return networkPolicyBuilder
 }
 
 func (networkPolicyBuilder *NetworkPolicyBuilder) WithIngressRule(
 	ingressRule networkingv1.NetworkPolicyIngressRule) *NetworkPolicyBuilder {
-	networkPolicyBuilder.Ingress = append(networkPolicyBuilder.Ingress, ingressRule)
+	networkPolicyBuilder.ingress = append(networkPolicyBuilder.ingress, ingressRule)
 	return networkPolicyBuilder
 }
 
 func (networkPolicyBuilder *NetworkPolicyBuilder) WithEgressRule(
 	egressRule networkingv1.NetworkPolicyEgressRule) *NetworkPolicyBuilder {
-	networkPolicyBuilder.Egress = append(networkPolicyBuilder.Egress, egressRule)
+	networkPolicyBuilder.egress = append(networkPolicyBuilder.egress, egressRule)
 	return networkPolicyBuilder
 }
 
 func (networkPolicyBuilder *NetworkPolicyBuilder) Build() *networkingv1.NetworkPolicy {
 	return &networkingv1.NetworkPolicy{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      networkPolicyBuilder.Name,
-			Namespace: networkPolicyBuilder.Namespace,
-			Labels:    networkPolicyBuilder.Labels,
+			Name:      networkPolicyBuilder.name,
+			Namespace: networkPolicyBuilder.namespace,
+			Labels:    networkPolicyBuilder.labels,
 		},
 		Spec: networkingv1.NetworkPolicySpec{
-			PodSelector: networkPolicyBuilder.PodSelector,
-			PolicyTypes: networkPolicyBuilder.Types,
-			Ingress:     networkPolicyBuilder.Ingress,
-			Egress:      networkPolicyBuilder.Egress,
+			PodSelector: networkPolicyBuilder.podSelector,
+			PolicyTypes: networkPolicyBuilder.types,
+			Ingress:     networkPolicyBuilder.ingress,
+			Egress:      networkPolicyBuilder.egress,
 		},
 	}
 }
 
 type LabelSelectorBuilder struct {
-	MatchLabels map[string]string
+	matchLabels map[string]string
 }
 
 func NewLabelSelectorBuilder() *LabelSelectorBuilder {
 	return &LabelSelectorBuilder{
-		MatchLabels: map[string]string{},
+		matchLabels: map[string]string{},
 	}
 }
 
 func (labelSelectorBuilder *LabelSelectorBuilder) WithMatchLabel(key string, value string) *LabelSelectorBuilder {
-	labelSelectorBuilder.MatchLabels[key] = value
+	labelSelectorBuilder.matchLabels[key] = value
 	return labelSelectorBuilder
 }
 
 func (labelSelectorBuilder *LabelSelectorBuilder) Build() *metav1.LabelSelector {
 	return &metav1.LabelSelector{
-		MatchLabels: labelSelectorBuilder.MatchLabels,
+		MatchLabels: labelSelectorBuilder.matchLabels,
 	}
 }
 
 type ServiceBuilder struct {
-	Name      string
-	Namespace string
-	Selector  map[string]string
+	name      string
+	namespace string
+	selector  map[string]string
 }
 
 func NewServiceBuilder() *ServiceBuilder {
 	return &ServiceBuilder{
-		Namespace: "default",
-		Selector:  map[string]string{},
+		namespace: "default",
+		selector:  map[string]string{},
 	}
 }
 
 func (serviceBuilder *ServiceBuilder) WithName(name string) *ServiceBuilder {
-	serviceBuilder.Name = name
+	serviceBuilder.name = name
 	return serviceBuilder
 }
 
 func (serviceBuilder *ServiceBuilder) WithNamespace(namespace string) *ServiceBuilder {
-	serviceBuilder.Namespace = namespace
+	serviceBuilder.namespace = namespace
 	return serviceBuilder
 }
 
 func (serviceBuilder *ServiceBuilder) WithSelectorLabel(key string, value string) *ServiceBuilder {
-	serviceBuilder.Selector[key] = value
+	serviceBuilder.selector[key] = value
 	return serviceBuilder
 }
 
 func (serviceBuilder *ServiceBuilder) Build() *corev1.Service {
 	return &corev1.Service{
 		ObjectMeta: v1.ObjectMeta{
-			Name:      serviceBuilder.Name,
-			Namespace: serviceBuilder.Namespace,
+			Name:      serviceBuilder.name,
+			Namespace: serviceBuilder.namespace,
 		},
 		Spec: corev1.ServiceSpec{
-			Selector: serviceBuilder.Selector,
+			Selector: serviceBuilder.selector,
 		},
 	}
 }
 
 type ReplicaSetBuilder struct {
-	Name            string
-	Namespace       string
-	UID             string
+	name            string
+	namespace       string
+	uid             string
 	ownerUid        string
-	DesiredReplicas int32
+	desiredReplicas int32
 }
 
 func NewReplicaSetBuilder() *ReplicaSetBuilder {
 	return &ReplicaSetBuilder{
-		Namespace:       "default",
-		DesiredReplicas: 1,
+		namespace:       "default",
+		desiredReplicas: 1,
 	}
 }
 
 func (replicaSetBuilder *ReplicaSetBuilder) WithName(name string) *ReplicaSetBuilder {
-	replicaSetBuilder.Name = name
+	replicaSetBuilder.name = name
 	return replicaSetBuilder
 }
 
 func (replicaSetBuilder *ReplicaSetBuilder) WithNamespace(namespace string) *ReplicaSetBuilder {
-	replicaSetBuilder.Namespace = namespace
+	replicaSetBuilder.namespace = namespace
 	return replicaSetBuilder
 }
 
 func (replicaSetBuilder *ReplicaSetBuilder) WithUID(UID string) *ReplicaSetBuilder {
-	replicaSetBuilder.UID = UID
+	replicaSetBuilder.uid = UID
 	return replicaSetBuilder
 }
 
 func (replicaSetBuilder *ReplicaSetBuilder) WithDesiredReplicas(replicas int32) *ReplicaSetBuilder {
-	replicaSetBuilder.DesiredReplicas = replicas
+	replicaSetBuilder.desiredReplicas = replicas
 	return replicaSetBuilder
 }
 
@@ -263,134 +263,134 @@ func (replicaSetBuilder *ReplicaSetBuilder) WithOwnerUID(ownerUID string) *Repli
 func (replicaSetBuilder *ReplicaSetBuilder) Build() *appsv1.ReplicaSet {
 	return &appsv1.ReplicaSet{
 		ObjectMeta: v1.ObjectMeta{
-			Name:      replicaSetBuilder.Name,
-			Namespace: replicaSetBuilder.Namespace,
-			UID:       types.UID(replicaSetBuilder.UID),
+			Name:      replicaSetBuilder.name,
+			Namespace: replicaSetBuilder.namespace,
+			UID:       types.UID(replicaSetBuilder.uid),
 			OwnerReferences: []v1.OwnerReference{
 				{UID: types.UID(replicaSetBuilder.ownerUid)},
 			},
 		},
 		Spec: appsv1.ReplicaSetSpec{
-			Replicas: &replicaSetBuilder.DesiredReplicas,
+			Replicas: &replicaSetBuilder.desiredReplicas,
 		},
 	}
 }
 
 type StatefulSetBuilder struct {
-	Name            string
-	Namespace       string
-	UID             string
-	DesiredReplicas int32
+	name            string
+	namespace       string
+	uid             string
+	desiredReplicas int32
 }
 
 func NewStatefulSetBuilder() *StatefulSetBuilder {
 	return &StatefulSetBuilder{
-		Namespace:       "default",
-		DesiredReplicas: 1,
+		namespace:       "default",
+		desiredReplicas: 1,
 	}
 }
 
 func (statefulSetBuilder *StatefulSetBuilder) WithName(name string) *StatefulSetBuilder {
-	statefulSetBuilder.Name = name
+	statefulSetBuilder.name = name
 	return statefulSetBuilder
 }
 
 func (statefulSetBuilder *StatefulSetBuilder) WithNamespace(namespace string) *StatefulSetBuilder {
-	statefulSetBuilder.Namespace = namespace
+	statefulSetBuilder.namespace = namespace
 	return statefulSetBuilder
 }
 
 func (statefulSetBuilder *StatefulSetBuilder) WithUID(UID string) *StatefulSetBuilder {
-	statefulSetBuilder.UID = UID
+	statefulSetBuilder.uid = UID
 	return statefulSetBuilder
 }
 
 func (statefulSetBuilder *StatefulSetBuilder) WithDesiredReplicas(replicas int32) *StatefulSetBuilder {
-	statefulSetBuilder.DesiredReplicas = replicas
+	statefulSetBuilder.desiredReplicas = replicas
 	return statefulSetBuilder
 }
 
 func (statefulSetBuilder *StatefulSetBuilder) Build() *appsv1.StatefulSet {
 	return &appsv1.StatefulSet{
 		ObjectMeta: v1.ObjectMeta{
-			Name:      statefulSetBuilder.Name,
-			Namespace: statefulSetBuilder.Namespace,
-			UID:       types.UID(statefulSetBuilder.UID),
+			Name:      statefulSetBuilder.name,
+			Namespace: statefulSetBuilder.namespace,
+			UID:       types.UID(statefulSetBuilder.uid),
 		},
 		Spec: appsv1.StatefulSetSpec{
-			Replicas: &statefulSetBuilder.DesiredReplicas,
+			Replicas: &statefulSetBuilder.desiredReplicas,
 		},
 	}
 }
 
 type DaemonSetBuilder struct {
-	Name      string
-	Namespace string
-	UID       string
+	name      string
+	namespace string
+	uid       string
 }
 
 func NewDaemonSetBuilder() *DaemonSetBuilder {
 	return &DaemonSetBuilder{
-		Namespace: "default",
+		namespace: "default",
 	}
 }
 
 func (daemonSetBuilder *DaemonSetBuilder) WithName(name string) *DaemonSetBuilder {
-	daemonSetBuilder.Name = name
+	daemonSetBuilder.name = name
 	return daemonSetBuilder
 }
 
 func (daemonSetBuilder *DaemonSetBuilder) WithNamespace(namespace string) *DaemonSetBuilder {
-	daemonSetBuilder.Namespace = namespace
+	daemonSetBuilder.namespace = namespace
 	return daemonSetBuilder
 }
 
 func (daemonSetBuilder *DaemonSetBuilder) WithUID(UID string) *DaemonSetBuilder {
-	daemonSetBuilder.UID = UID
+	daemonSetBuilder.uid = UID
 	return daemonSetBuilder
 }
 
 func (daemonSetBuilder *DaemonSetBuilder) Build() *appsv1.DaemonSet {
 	return &appsv1.DaemonSet{
 		ObjectMeta: v1.ObjectMeta{
-			Name:      daemonSetBuilder.Name,
-			Namespace: daemonSetBuilder.Namespace,
-			UID:       types.UID(daemonSetBuilder.UID),
+			Name:      daemonSetBuilder.name,
+			Namespace: daemonSetBuilder.namespace,
+			UID:       types.UID(daemonSetBuilder.uid),
 		},
 	}
 }
 
 type IngressBuilder struct {
-	Name            string
-	Namespace       string
-	ServiceBackends []string
+	name            string
+	namespace       string
+	serviceBackends []string
 }
 
 func NewIngressBuilder() *IngressBuilder {
 	return &IngressBuilder{
-		Namespace:       "default",
-		ServiceBackends: make([]string, 0),
+		namespace:       "default",
+		serviceBackends: make([]string, 0),
 	}
 }
 
 func (ingressBuilder *IngressBuilder) WithName(name string) *IngressBuilder {
-	ingressBuilder.Name = name
+	ingressBuilder.name = name
 	return ingressBuilder
 }
 
 func (ingressBuilder *IngressBuilder) WithNamespace(namespace string) *IngressBuilder {
-	ingressBuilder.Namespace = namespace
+	ingressBuilder.namespace = namespace
 	return ingressBuilder
 }
 
 func (ingressBuilder *IngressBuilder) WithServiceBackend(serviceName string) *IngressBuilder {
-	ingressBuilder.ServiceBackends = append(ingressBuilder.ServiceBackends, serviceName)
+	ingressBuilder.serviceBackends = append(ingressBuilder.serviceBackends, serviceName)
 	return ingressBuilder
 }
 
 func (ingressBuilder *IngressBuilder) Build() *networkingv1beta1.Ingress {
 	ingressPaths := make([]networkingv1beta1.HTTPIngressPath, 0)
-	for _, serviceBackend := range ingressBuilder.ServiceBackends {
+	for _, serviceBackend := range ingressBuilder.serviceBackends {
 		ingressPath := networkingv1beta1.HTTPIngressPath{
 			Backend: networkingv1beta1.IngressBackend{
 				ServiceName: serviceBackend,
@@ -400,8 +400,8 @@ func (ingressBuilder *IngressBuilder) Build() *networkingv1beta1.Ingress {
 	}
 	return &networkingv1beta1.Ingress{
 		ObjectMeta: v1.ObjectMeta{
-			Name:      ingressBuilder.Name,
-			Namespace: ingressBuilder.Namespace,
+			Name:      ingressBuilder.name,
+			Namespace: ingressBuilder.namespace,
 		},
 		Spec: networkingv1beta1.IngressSpec{
 			Rules: []networkingv1beta1.IngressRule{
@@ -418,38 +418,38 @@ func (ingressBuilder *IngressBuilder) Build() *networkingv1beta1.Ingress {
 }
 
 type DeploymentBuilder struct {
-	Name      string
-	Namespace string
-	UID       string
+	name      string
+	namespace string
+	uid       string
 }
 
 func NewDeploymentBuilder() *DeploymentBuilder {
 	return &DeploymentBuilder{
-		Namespace: "default",
+		namespace: "default",
 	}
 }
 
 func (deploymentBuilder *DeploymentBuilder) WithName(name string) *DeploymentBuilder {
-	deploymentBuilder.Name = name
+	deploymentBuilder.name = name
 	return deploymentBuilder
 }
 
 func (deploymentBuilder *DeploymentBuilder) WithNamespace(namespace string) *DeploymentBuilder {
-	deploymentBuilder.Namespace = namespace
+	deploymentBuilder.namespace = namespace
 	return deploymentBuilder
 }
 
 func (deploymentBuilder *DeploymentBuilder) WithUID(UID string) *DeploymentBuilder {
-	deploymentBuilder.UID = UID
+	deploymentBuilder.uid = UID
 	return deploymentBuilder
 }
 
 func (deploymentBuilder *DeploymentBuilder) Build() *appsv1.Deployment {
 	return &appsv1.Deployment{
 		ObjectMeta: v1.ObjectMeta{
-			Name:      deploymentBuilder.Name,
-			Namespace: deploymentBuilder.Namespace,
-			UID:       types.UID(deploymentBuilder.UID),
+			Name:      deploymentBuilder.name,
+			Namespace: deploymentBuilder.namespace,
+			UID:       types.UID(deploymentBuilder.uid),
 		},
 	}
 }
