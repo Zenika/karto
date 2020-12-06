@@ -133,54 +133,22 @@ const Content = ({ className }) => {
         storeControls(state.controls);
     }, [state.controls]);
 
-    const onPodFocus = useCallback(pod => {
-        setState(oldState => ({
-            ...oldState,
-            podDetails: pod
-        }));
-    }, []);
-    const onAllowedRouteFocus = useCallback(allowedRoute => {
-        setState(oldState => ({
-            ...oldState,
-            allowedRouteDetails: allowedRoute
-        }));
-    }, []);
-    const onServiceFocus = useCallback(service => {
-        setState(oldState => ({
-            ...oldState,
-            serviceDetails: service
-        }));
-    }, []);
-    const onIngressFocus = useCallback(ingress => {
-        setState(oldState => ({
-            ...oldState,
-            ingressDetails: ingress
-        }));
-    }, []);
-    const onReplicaSetFocus = useCallback(replicaSet => {
-        setState(oldState => ({
-            ...oldState,
-            replicaSetDetails: replicaSet
-        }));
-    }, []);
-    const onStatefulSetFocus = useCallback(statefulSet => {
-        setState(oldState => ({
-            ...oldState,
-            statefulSetDetails: statefulSet
-        }));
-    }, []);
-    const onDaemonSetFocus = useCallback(daemonSet => {
-        setState(oldState => ({
-            ...oldState,
-            daemonSetDetails: daemonSet
-        }));
-    }, []);
-    const onDeploymentFocus = useCallback(deployment => {
-        setState(oldState => ({
-            ...oldState,
-            deploymentDetails: deployment
-        }));
-    }, []);
+    const makeFocusHandler = key => {
+        return useCallback(value => {
+            setState(oldState => ({
+                ...oldState,
+                [key]: value
+            }));
+        }, []);
+    };
+    const onPodFocus = makeFocusHandler('podDetails');
+    const onAllowedRouteFocus = makeFocusHandler('allowedRouteDetails');
+    const onServiceFocus = makeFocusHandler('serviceDetails');
+    const onIngressFocus = makeFocusHandler('ingressDetails');
+    const onReplicaSetFocus = makeFocusHandler('replicaSetDetails');
+    const onStatefulSetFocus = makeFocusHandler('statefulSetDetails');
+    const onDaemonSetFocus = makeFocusHandler('daemonSetDetails');
+    const onDeploymentFocus = makeFocusHandler('deploymentDetails');
 
     const isSafeToDisplay = (dataSet, displayLargeDatasets) => {
         const tooLarge = dataSet.pods.length > maxRecommendedPods
