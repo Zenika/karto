@@ -107,6 +107,34 @@ describe('App component', () => {
         expect(screen.queryByText('Karto')).toBeInTheDocument();
     });
 
+    it('displays fullscreen button when document.fullscreenEnabled is set', async () => {
+        global.document.fullscreenEnabled = true;
+        render(<App/>);
+        await waitForComponentUpdate();
+
+        expect(screen.queryByLabelText('enter fullscreen')).toBeInTheDocument();
+    });
+
+    it('hides fullscreen button when document.fullscreenEnabled is not set', async () => {
+        global.document.fullscreenEnabled = false;
+        render(<App/>);
+        await waitForComponentUpdate();
+
+        expect(screen.queryByLabelText('enter fullscreen')).not.toBeInTheDocument();
+    });
+
+    it('main content goes fullscreen when fullscreen button clicked', async () => {
+        global.document.fullscreenEnabled = true;
+        const mockFullscreen = jest.fn();
+        render(<App/>);
+        await waitForComponentUpdate();
+        screen.getByLabelText('main content').requestFullscreen = mockFullscreen;
+
+        fireEvent.click(screen.getByLabelText('enter fullscreen'));
+
+        expect(mockFullscreen).toHaveBeenCalled();
+    });
+
     it('displays loading message before analysis result arrive', async () => {
         render(<App/>);
 
