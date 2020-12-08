@@ -154,7 +154,7 @@ function d3DeploymentLink({ deployment, targetReplicaSet }) {
     return { id, source, target, sourceData: deployment };
 }
 
-export default class ClusterD3Graph extends D3Graph {
+export default class D3ClusterGraph extends D3Graph {
 
     constructor() {
         super();

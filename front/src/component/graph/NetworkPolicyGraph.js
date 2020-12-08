@@ -1,7 +1,7 @@
 import { memo, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { makeStyles } from '@material-ui/core/styles';
-import NetworkPolicyD3Graph from './d3/NetworkPolicyD3Graph';
+import D3NetworkPolicyGraph from './d3/D3NetworkPolicyGraph';
 
 const useStyles = makeStyles(theme => ({
     root: {
@@ -41,9 +41,9 @@ const useStyles = makeStyles(theme => ({
     }
 }));
 
-const NetworkPolicyMap = ({ dataSet, onPodFocus, onAllowedRouteFocus }) => {
+const NetworkPolicyGraph = ({ dataSet, onPodFocus, onAllowedRouteFocus }) => {
     const classes = useStyles();
-    const d3Graph = useRef(new NetworkPolicyD3Graph());
+    const d3Graph = useRef(new D3NetworkPolicyGraph());
 
     useEffect(() => {
         d3Graph.current.init();
@@ -55,7 +55,7 @@ const NetworkPolicyMap = ({ dataSet, onPodFocus, onAllowedRouteFocus }) => {
     return <div id="graph" className={classes.root}/>;
 };
 
-NetworkPolicyMap.propTypes = {
+NetworkPolicyGraph.propTypes = {
     dataSet: PropTypes.shape({
         podIsolations: PropTypes.arrayOf(PropTypes.shape({
             displayName: PropTypes.string.isRequired,
@@ -77,4 +77,4 @@ NetworkPolicyMap.propTypes = {
     onAllowedRouteFocus: PropTypes.func.isRequired
 };
 
-export default memo(NetworkPolicyMap);
+export default memo(NetworkPolicyGraph);

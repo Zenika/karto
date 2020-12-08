@@ -8,7 +8,7 @@ import {
     LINK_ARROW_FADED_DEF_ID,
     LINK_FORCE
 } from './D3Constants';
-import { closestPointTo, closestSegmentTo } from '../geometry/geometryUtils';
+import { closestPointTo, closestSegmentTo } from '../utils/geometryUtils';
 import { flatten } from '../../utils/utils';
 
 export default class D3Graph {

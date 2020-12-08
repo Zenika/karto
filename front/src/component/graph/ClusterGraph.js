@@ -1,7 +1,7 @@
 import { memo, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { makeStyles } from '@material-ui/core/styles';
-import ClusterD3Graph from './d3/ClusterD3Graph';
+import D3ClusterGraph from './d3/D3ClusterGraph';
 
 const useStyles = makeStyles(theme => ({
     root: {
@@ -35,14 +35,14 @@ const useStyles = makeStyles(theme => ({
     }
 }));
 
-const ClusterMap = (
+const ClusterGraph = (
     {
         dataSet, onPodFocus, onServiceFocus, onIngressFocus, onReplicaSetFocus, onStatefulSetFocus, onDaemonSetFocus,
         onDeploymentFocus
     }
 ) => {
     const classes = useStyles();
-    const d3Graph = useRef(new ClusterD3Graph());
+    const d3Graph = useRef(new D3ClusterGraph());
 
     useEffect(() => {
         d3Graph.current.init();
@@ -57,7 +57,7 @@ const ClusterMap = (
     return <div id="graph" className={classes.root}/>;
 };
 
-ClusterMap.propTypes = {
+ClusterGraph.propTypes = {
     dataSet: PropTypes.shape({
         pods: PropTypes.arrayOf(PropTypes.shape({
             displayName: PropTypes.string.isRequired,
@@ -122,4 +122,4 @@ ClusterMap.propTypes = {
     onDeploymentFocus: PropTypes.func.isRequired
 };
 
-export default memo(ClusterMap);
+export default memo(ClusterGraph);
