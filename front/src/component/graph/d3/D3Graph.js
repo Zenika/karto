@@ -10,6 +10,7 @@ import {
 } from './D3Constants';
 import { closestPointTo, closestSegmentTo } from '../utils/geometryUtils';
 import { flatten } from '../../utils/utils';
+import { saveSvgAsPng } from 'save-svg-as-png';
 
 export default class D3Graph {
 
@@ -144,7 +145,11 @@ export default class D3Graph {
     }
 
     createContainerLayout() {
-        return d3.select('#graph').append('svg')
+        const svg = d3.select('#graph');
+        svg
+            .selectAll('*')
+            .remove();
+        return svg
             .attr('width', '100%')
             .attr('height', '100%')
             .attr('viewBox', [-GRAPH_WIDTH / 2, -GRAPH_HEIGHT / 2, GRAPH_WIDTH, GRAPH_HEIGHT])
@@ -297,6 +302,18 @@ export default class D3Graph {
     }
 
     focusOnElement(element) {
+        saveSvgAsPng(document.querySelector('#graph'), 'test.png',
+            {
+                top: -GRAPH_HEIGHT / 2,
+                left: -GRAPH_WIDTH / 2,
+                scale: 10,
+                encoderOptions: 1,
+                modifyStyle: s => {
+                    return s
+                        .replace('rgb(255, 255, 255)', 'black')
+                        .replace('font-weight: 100', 'font-weight: 300');
+                }
+            });
         if (this.isDragging || this.isAlreadyFocused(element)) {
             return;
         }
