@@ -24,6 +24,7 @@ export default class D3Graph {
         const dataChanged = this.updateAllLayers(dataSet, focusHandlers);
         this.updateForceSimulation(dataChanged);
         this.restorePreviousFocus();
+        this.zoomToFit();
     }
 
     destroy() {
@@ -64,11 +65,11 @@ export default class D3Graph {
     }
 
     initStructure() {
-        const svgRoot = this.createContainerLayout();
-        this.attachZoomHandlerTo(svgRoot);
-        this.attachMouseMouveHandlerTo(svgRoot);
-        this.attachSharedDefinitionsTo(svgRoot);
-        this.svg = this.createContentLayout(svgRoot);
+        this.svg = this.createContainerLayout();
+        this.attachZoomHandler();
+        this.attachMouseMouveHandler();
+        this.attachSharedDefinitions();
+        this.content = this.createContentLayout();
     }
 
     initLayers() {
@@ -155,20 +156,40 @@ export default class D3Graph {
             .attr('aria-label', 'graph');
     }
 
-    attachZoomHandlerTo(d3Selection) {
-        d3Selection.call(d3.zoom().on('zoom', event => this.handleZoom(event)));
+    attachZoomHandler() {
+        this.zoom = d3.zoom().on('zoom', event => this.handleZoom(event));
+        this.svg.call(this.zoom);
     }
 
     handleZoom(event) {
         this.zoomFactor = event.transform.k;
-        this.svg.attr('transform', event.transform);
+        this.content.attr('transform', event.transform);
         this.renderAllLayers();
     };
 
-    attachMouseMouveHandlerTo(d3Selection) {
-        d3Selection.on('mousemove', event => {
+    zoomToFit() {
+        setTimeout(() => {
+            const boundingBox = this.content.node().getBBox();
+            const boundingBoxWidth = boundingBox.width;
+            const boundingBoxHeight = boundingBox.height;
+            if (boundingBoxWidth === 0 || boundingBoxHeight === 0) {
+                // Empty graph, do nothing
+                return;
+            }
+            const centerX = boundingBox.x + boundingBoxWidth / 2;
+            const centerY = boundingBox.y + boundingBoxHeight / 2;
+            const paddingPercent = 0.7;
+            const scale = paddingPercent /
+                Math.max(boundingBoxWidth / GRAPH_WIDTH, boundingBoxHeight / GRAPH_HEIGHT);
+            const transform = d3.zoomIdentity.translate(-scale * centerX, -scale * centerY).scale(scale);
+            this.svg.transition().duration(500).call(this.zoom.transform, transform);
+        }, 50);
+    }
+
+    attachMouseMouveHandler() {
+        this.svg.on('mousemove', event => {
             const mouse = d3.pointer(event);
-            const zoomTransform = d3.zoomTransform(d3Selection.node());
+            const zoomTransform = d3.zoomTransform(this.svg.node());
             this.handleMouseMove(zoomTransform.invert(mouse));
         });
     }
@@ -195,8 +216,8 @@ export default class D3Graph {
         return closestSegmentTo(targetPoint, linkSegments, upperBound);
     }
 
-    attachSharedDefinitionsTo(d3Selection) {
-        const defs = d3Selection.append('defs');
+    attachSharedDefinitions() {
+        const defs = this.svg.append('defs');
         this.defineArrowMarker(defs, LINK_ARROW_DEF_ID, 'link-arrow');
         this.defineArrowMarker(defs, LINK_ARROW_FADED_DEF_ID, 'link-arrow-faded');
     }
@@ -215,22 +236,22 @@ export default class D3Graph {
             .attr('class', className);
     }
 
-    createContentLayout(d3Selection) {
-        return d3Selection
+    createContentLayout() {
+        return this.svg
             .append('g')
             .attr('aria-label', 'layers container');
     }
 
     createLinkLayersContainer() {
-        return this.svg.append('g').attr('id', 'links');
+        return this.content.append('g').attr('id', 'links');
     }
 
     createItemLayersContainer() {
-        return this.svg.append('g').attr('id', 'items');
+        return this.content.append('g').attr('id', 'items');
     }
 
     createLabelLayersContainer() {
-        return this.svg.append('g').attr('id', 'labels');
+        return this.content.append('g').attr('id', 'labels');
     }
 
     attachDragHandlerTo(layer, d3Selection) {
