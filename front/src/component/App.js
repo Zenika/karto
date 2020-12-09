@@ -2,7 +2,10 @@ import Header from './Header';
 import Content from './Content';
 import { makeStyles } from '@material-ui/core/styles';
 
-const useStyles = makeStyles({
+const useStyles = makeStyles(theme => ({
+    root: {
+        backgroundColor: theme.palette.background.default
+    },
     header: {
         position: 'absolute',
         top: 0,
@@ -13,7 +16,7 @@ const useStyles = makeStyles({
     content: {
         height: '100vh'
     }
-});
+}));
 
 const App = () => {
     const classes = useStyles();

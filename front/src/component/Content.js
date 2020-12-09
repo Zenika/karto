@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import classNames from 'classnames';
@@ -22,8 +22,6 @@ import { labelSelectorOperators, maxRecommendedAllowedRoutes, maxRecommendedPods
 import StatefulSetDetails from './detail/StatefulSetDetails';
 import DaemonSetDetails from './detail/DaemonSetDetails';
 import IngressDetails from './detail/IngressDetails';
-import Button from '@material-ui/core/Button';
-import FullscreenIcon from '@material-ui/icons/Fullscreen';
 
 const VIEWS = {
     WORKLOADS: 'Workloads',
@@ -52,8 +50,7 @@ const useStyles = makeStyles(theme => ({
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        height: '100vh',
-        backgroundColor: theme.palette.background.default
+        height: '100vh'
     },
     controls: {
         position: 'absolute',
@@ -84,11 +81,6 @@ const useStyles = makeStyles(theme => ({
         marginTop: theme.spacing(1),
         maxWidth: 500,
         textAlign: 'center'
-    },
-    fullscreenButton: {
-        position: 'absolute',
-        top: 0,
-        right: 0
     },
     details: {
         position: 'absolute',
@@ -142,10 +134,6 @@ const Content = ({ className }) => {
     useEffect(() => {
         storeControls(state.controls);
     }, [state.controls]);
-
-    const mainRef = useRef(null);
-
-    const requestFullscreen = () => mainRef.current.requestFullscreen();
 
     const makeFocusHandler = key => {
         return useCallback(value => {
@@ -225,7 +213,7 @@ const Content = ({ className }) => {
 
     return (
         <div className={classNames(classes.root, className)}>
-            <main ref={mainRef} className={classes.main} aria-label="main content">
+            <main className={classes.main}>
                 {state.isLoading && <>
                     <CircularProgress thickness={1} size={60}/>
                     <Typography className={classes.message} variant="caption">
@@ -340,11 +328,6 @@ const Content = ({ className }) => {
                         onChange={handleControlChange('displayLargeDatasets')}/>
                 </div>
             </aside>
-            {document.fullscreenEnabled && (
-                <Button className={classes.fullscreenButton} color="primary" onClick={requestFullscreen}>
-                    <FullscreenIcon aria-label="enter fullscreen"/>
-                </Button>
-            )}
             {state.podDetails && (
                 <aside className={classes.details}>
                     <PodDetails data={state.podDetails}/>
