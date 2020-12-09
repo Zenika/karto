@@ -21,7 +21,7 @@ const useStyles = makeStyles(theme => ({
 const App = () => {
     const classes = useStyles();
     return (
-        <div>
+        <div className={classes.root}>
             <Header className={classes.header}/>
             <Content className={classes.content}/>
         </div>
