@@ -13,9 +13,9 @@ import AllowedRouteDetails from './detail/AllowedRouteDetails';
 import PodDetails from './detail/PodDetails';
 import ServiceDetails from './detail/ServiceDetails';
 import MultiKeyValueSelectControl from './control/MultiKeyValueSelectControl';
-import ClusterMap from './map/ClusterMap';
+import ClusterGraph from './graph/ClusterGraph';
 import RadioGroupControl from './control/RadioGroupControl';
-import NetworkPolicyMap from './map/NetworkPolicyMap';
+import NetworkPolicyGraph from './graph/NetworkPolicyGraph';
 import ReplicaSetDetails from './detail/ReplicaSetDetails';
 import DeploymentDetails from './detail/DeploymentDetails';
 import { labelSelectorOperators, maxRecommendedAllowedRoutes, maxRecommendedPods } from '../constants';
@@ -60,7 +60,8 @@ const useStyles = makeStyles(theme => ({
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'flex-start',
-        padding: `0 ${theme.spacing(2)}px`
+        padding: `0 ${theme.spacing(2)}px`,
+        pointerEvents: 'none'
     },
     controlsTitle: {
         marginBottom: theme.spacing(1),
@@ -73,7 +74,8 @@ const useStyles = makeStyles(theme => ({
         display: 'flex',
         flexDirection: 'column',
         marginBottom: theme.spacing(1),
-        width: '100%'
+        width: '100%',
+        pointerEvents: 'auto'
     },
     message: {
         marginTop: theme.spacing(1),
@@ -234,10 +236,10 @@ const Content = ({ className }) => {
                 {!state.isLoading && state.dataSet && state.dataSet.pods.length > 0
                 && isSafeToDisplay(state.dataSet, state.controls.displayLargeDatasets)
                 && state.controls.displayedView === VIEWS.WORKLOADS && <>
-                    <ClusterMap dataSet={state.dataSet} onPodFocus={onPodFocus}
-                                onServiceFocus={onServiceFocus} onIngressFocus={onIngressFocus}
-                                onReplicaSetFocus={onReplicaSetFocus} onStatefulSetFocus={onStatefulSetFocus}
-                                onDaemonSetFocus={onDaemonSetFocus} onDeploymentFocus={onDeploymentFocus}/>
+                    <ClusterGraph dataSet={state.dataSet} onPodFocus={onPodFocus}
+                                  onServiceFocus={onServiceFocus} onIngressFocus={onIngressFocus}
+                                  onReplicaSetFocus={onReplicaSetFocus} onStatefulSetFocus={onStatefulSetFocus}
+                                  onDaemonSetFocus={onDaemonSetFocus} onDeploymentFocus={onDeploymentFocus}/>
                     <Typography className={classes.graphCaption} variant="caption">
                         {`Displaying ${state.dataSet.pods.length}/${state.analysisResult.pods.length} pods, `
                         + `${state.dataSet.services.length}/${state.analysisResult.services.length} services, `
@@ -252,8 +254,8 @@ const Content = ({ className }) => {
                 {!state.isLoading && state.dataSet && state.dataSet.pods.length > 0
                 && isSafeToDisplay(state.dataSet, state.controls.displayLargeDatasets)
                 && state.controls.displayedView === VIEWS.NETWORK_POLICIES && <>
-                    <NetworkPolicyMap dataSet={state.dataSet} onPodFocus={onPodFocus}
-                                      onAllowedRouteFocus={onAllowedRouteFocus}/>
+                    <NetworkPolicyGraph dataSet={state.dataSet} onPodFocus={onPodFocus}
+                                        onAllowedRouteFocus={onAllowedRouteFocus}/>
                     <Typography className={classes.graphCaption} variant="caption">
                         {`Displaying ${state.dataSet.pods.length}/${state.analysisResult.pods.length} pods`
                         + ` and ${state.dataSet.allowedRoutes.length}/`

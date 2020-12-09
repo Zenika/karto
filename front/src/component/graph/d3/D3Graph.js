@@ -8,7 +8,7 @@ import {
     LINK_ARROW_FADED_DEF_ID,
     LINK_FORCE
 } from './D3Constants';
-import { closestPointTo, closestSegmentTo } from '../geometry/geometryUtils';
+import { closestPointTo, closestSegmentTo } from '../utils/geometryUtils';
 import { flatten } from '../../utils/utils';
 
 export default class D3Graph {
@@ -144,7 +144,11 @@ export default class D3Graph {
     }
 
     createContainerLayout() {
-        return d3.select('#graph').append('svg')
+        const svg = d3.select('#graph');
+        svg
+            .selectAll('*')
+            .remove();
+        return svg
             .attr('width', '100%')
             .attr('height', '100%')
             .attr('viewBox', [-GRAPH_WIDTH / 2, -GRAPH_HEIGHT / 2, GRAPH_WIDTH, GRAPH_HEIGHT])

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom/extend-expect';
-import NetworkPolicyMap from './NetworkPolicyMap';
+import NetworkPolicyGraph from './NetworkPolicyGraph';
 import {
     dragAndDropItem,
     getItemPosition,
@@ -13,7 +13,7 @@ import {
     waitForItemPositionStable
 } from '../utils/testutils';
 
-describe('NetworkPolicyMap component', () => {
+describe('NetworkPolicyGraph component', () => {
 
     const testTimeout = 10000;
     const waitTimeout = 5000;
@@ -48,7 +48,7 @@ describe('NetworkPolicyMap component', () => {
             podIsolations: [pod1, pod2],
             allowedRoutes: []
         };
-        render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<NetworkPolicyGraph onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
 
         expect(screen.queryAllByLabelText('pod')).toHaveLength(2);
         expect(screen.queryByText(pod1.displayName)).toBeInTheDocument();
@@ -60,7 +60,7 @@ describe('NetworkPolicyMap component', () => {
             podIsolations: [pod1, pod2, pod3],
             allowedRoutes: [allowedRoute1_2, allowedRoute2_3]
         };
-        render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<NetworkPolicyGraph onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
 
         expect(screen.queryAllByLabelText('allowed route')).toHaveLength(2);
     });
@@ -70,7 +70,7 @@ describe('NetworkPolicyMap component', () => {
             podIsolations: [pod1],
             allowedRoutes: []
         };
-        render(<NetworkPolicyMap onPodFocus={mockFocusHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<NetworkPolicyGraph onPodFocus={mockFocusHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('pod')[0]);
@@ -83,7 +83,7 @@ describe('NetworkPolicyMap component', () => {
             podIsolations: [pod1, pod2],
             allowedRoutes: [allowedRoute1_2]
         };
-        render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={mockFocusHandler} dataSet={dataSet}/>);
+        render(<NetworkPolicyGraph onPodFocus={noOpHandler} onAllowedRouteFocus={mockFocusHandler} dataSet={dataSet}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], waitTimeout);
 
         hoverLink(screen.getAllByLabelText('allowed route')[0]);
@@ -105,9 +105,9 @@ describe('NetworkPolicyMap component', () => {
         };
 
         const { rerender } = render(
-            <NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet1}/>
+            <NetworkPolicyGraph onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet1}/>
         );
-        rerender(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet2}/>);
+        rerender(<NetworkPolicyGraph onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet2}/>);
 
         expect(screen.queryAllByLabelText('pod')).toHaveLength(3);
         expect(screen.queryByText(pod1.displayName)).not.toBeInTheDocument();
@@ -124,7 +124,7 @@ describe('NetworkPolicyMap component', () => {
             podIsolations: [pod1, pod2Highlighted],
             allowedRoutes: []
         };
-        render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<NetworkPolicyGraph onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
 
         expect(screen.getAllByLabelText('pod')[0]).toHaveAttribute('class', 'item');
         expect(screen.getAllByLabelText('pod')[1]).toHaveAttribute('class', 'item-highlight');
@@ -135,7 +135,7 @@ describe('NetworkPolicyMap component', () => {
             podIsolations: [pod1, pod2],
             allowedRoutes: []
         };
-        render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<NetworkPolicyGraph onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('pod')[0]);
@@ -150,7 +150,7 @@ describe('NetworkPolicyMap component', () => {
             podIsolations: [pod1, pod2Highlighted],
             allowedRoutes: []
         };
-        render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<NetworkPolicyGraph onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('pod')[0]);
@@ -164,7 +164,7 @@ describe('NetworkPolicyMap component', () => {
             podIsolations: [pod1, pod2, pod3],
             allowedRoutes: [allowedRoute1_2, allowedRoute2_3]
         };
-        render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<NetworkPolicyGraph onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], waitTimeout);
 
         hoverLink(screen.getAllByLabelText('allowed route')[0]);
@@ -178,7 +178,7 @@ describe('NetworkPolicyMap component', () => {
             podIsolations: [pod1, pod2, pod3, pod4],
             allowedRoutes: [allowedRoute1_2, allowedRoute3_1, allowedRoute3_4]
         };
-        render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<NetworkPolicyGraph onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('pod')[0]);
@@ -197,7 +197,7 @@ describe('NetworkPolicyMap component', () => {
             podIsolations: [pod1, pod2, pod3],
             allowedRoutes: [allowedRoute1_2, allowedRoute2_3]
         };
-        render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<NetworkPolicyGraph onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], waitTimeout);
 
         hoverLink(screen.getAllByLabelText('allowed route')[0]);
@@ -214,7 +214,7 @@ describe('NetworkPolicyMap component', () => {
             podIsolations: [pod1, pod2, pod3],
             allowedRoutes: [allowedRoute1_2]
         };
-        render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<NetworkPolicyGraph onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('pod')[2]);
@@ -236,13 +236,13 @@ describe('NetworkPolicyMap component', () => {
             allowedRoutes: []
         };
         const { rerender } = render(
-            <NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet1}/>
+            <NetworkPolicyGraph onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet1}/>
         );
         await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('pod')[0]);
         rerender(
-            <NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet2}/>
+            <NetworkPolicyGraph onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet2}/>
         );
 
         expect(screen.getAllByLabelText('pod')[0]).toHaveAttribute('class', 'item');
@@ -259,7 +259,7 @@ describe('NetworkPolicyMap component', () => {
             allowedRoutes: []
         };
         const { rerender } = render(
-            <NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet1}/>
+            <NetworkPolicyGraph onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet1}/>
         );
         await waitForItemPositionStable(screen.getAllByLabelText('pod')[1], waitTimeout);
 
@@ -268,7 +268,7 @@ describe('NetworkPolicyMap component', () => {
         const oldPod1Position = getItemPosition(screen.getAllByLabelText('pod')[0]);
         const oldPod2Position = getItemPosition(screen.getAllByLabelText('pod')[1]);
         rerender(
-            <NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet2}/>
+            <NetworkPolicyGraph onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet2}/>
         );
         await waitForItemPositionStable(screen.getAllByLabelText('pod')[1], waitTimeout);
         const newPod1Position = getItemPosition(screen.getAllByLabelText('pod')[0]);
@@ -283,7 +283,7 @@ describe('NetworkPolicyMap component', () => {
             podIsolations: [pod1],
             allowedRoutes: []
         };
-        render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<NetworkPolicyGraph onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
         patchGraphViewBox();
         await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], waitTimeout);
         const oldFontSize = parseFloat(screen.getByText(pod1.displayName).getAttribute('font-size'));
@@ -304,7 +304,7 @@ describe('NetworkPolicyMap component', () => {
             podIsolations: [pod1, pod2],
             allowedRoutes: [allowedRoute1_2]
         };
-        render(<NetworkPolicyMap onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<NetworkPolicyGraph onPodFocus={noOpHandler} onAllowedRouteFocus={noOpHandler} dataSet={dataSet}/>);
         patchGraphViewBox();
         await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], waitTimeout);
         const oldWidth = parseFloat(screen.getAllByLabelText('allowed route')[0].getAttribute('stroke-width'));
