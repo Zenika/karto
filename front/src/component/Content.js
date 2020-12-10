@@ -35,6 +35,7 @@ const DEFAULT_CONTROLS = {
     includeIngressNeighbors: false,
     includeEgressNeighbors: false,
     autoRefresh: false,
+    autoZoom: false,
     showNamespacePrefix: true,
     highlightPodsWithoutIngressIsolation: false,
     highlightPodsWithoutEgressIsolation: false,
@@ -236,10 +237,11 @@ const Content = ({ className }) => {
                 {!state.isLoading && state.dataSet && state.dataSet.pods.length > 0
                 && isSafeToDisplay(state.dataSet, state.controls.displayLargeDatasets)
                 && state.controls.displayedView === VIEWS.WORKLOADS && <>
-                    <ClusterGraph dataSet={state.dataSet} onPodFocus={onPodFocus}
-                                  onServiceFocus={onServiceFocus} onIngressFocus={onIngressFocus}
-                                  onReplicaSetFocus={onReplicaSetFocus} onStatefulSetFocus={onStatefulSetFocus}
-                                  onDaemonSetFocus={onDaemonSetFocus} onDeploymentFocus={onDeploymentFocus}/>
+                    <ClusterGraph dataSet={state.dataSet} autoZoom={state.controls.autoZoom}
+                                  onPodFocus={onPodFocus} onServiceFocus={onServiceFocus}
+                                  onIngressFocus={onIngressFocus} onReplicaSetFocus={onReplicaSetFocus}
+                                  onStatefulSetFocus={onStatefulSetFocus} onDaemonSetFocus={onDaemonSetFocus}
+                                  onDeploymentFocus={onDeploymentFocus}/>
                     <Typography className={classes.graphCaption} variant="caption">
                         {`Displaying ${state.dataSet.pods.length}/${state.analysisResult.pods.length} pods, `
                         + `${state.dataSet.services.length}/${state.analysisResult.services.length} services, `
@@ -254,8 +256,8 @@ const Content = ({ className }) => {
                 {!state.isLoading && state.dataSet && state.dataSet.pods.length > 0
                 && isSafeToDisplay(state.dataSet, state.controls.displayLargeDatasets)
                 && state.controls.displayedView === VIEWS.NETWORK_POLICIES && <>
-                    <NetworkPolicyGraph dataSet={state.dataSet} onPodFocus={onPodFocus}
-                                        onAllowedRouteFocus={onAllowedRouteFocus}/>
+                    <NetworkPolicyGraph dataSet={state.dataSet} autoZoom={state.controls.autoZoom}
+                                        onPodFocus={onPodFocus} onAllowedRouteFocus={onAllowedRouteFocus}/>
                     <Typography className={classes.graphCaption} variant="caption">
                         {`Displaying ${state.dataSet.pods.length}/${state.analysisResult.pods.length} pods`
                         + ` and ${state.dataSet.allowedRoutes.length}/`
@@ -306,6 +308,10 @@ const Content = ({ className }) => {
                     <SwitchControl
                         className={classes.controlsItem} name="Auto refresh" checked={state.controls.autoRefresh}
                         onChange={handleControlChange('autoRefresh')}/>
+                    <SwitchControl
+                        className={classes.controlsItem} name="Auto zoom"
+                        checked={state.controls.autoZoom}
+                        onChange={handleControlChange('autoZoom')}/>
                     <SwitchControl
                         className={classes.controlsItem} name="Show namespace prefix"
                         checked={state.controls.showNamespacePrefix}

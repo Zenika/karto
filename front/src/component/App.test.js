@@ -304,6 +304,7 @@ describe('App component', () => {
             includeIngressNeighbors: true,
             includeEgressNeighbors: true,
             autoRefresh: true,
+            autoZoom: true,
             showNamespacePrefix: false,
             highlightPodsWithoutIngressIsolation: true,
             highlightPodsWithoutEgressIsolation: true,
@@ -333,6 +334,7 @@ describe('App component', () => {
             includeIngressNeighbors: false,
             includeEgressNeighbors: false,
             autoRefresh: false,
+            autoZoom: false,
             showNamespacePrefix: true,
             highlightPodsWithoutIngressIsolation: false,
             highlightPodsWithoutEgressIsolation: false,
@@ -482,6 +484,25 @@ describe('App component', () => {
 
         expect(computeDataSet).toHaveBeenCalledWith(expect.anything(),
             expect.objectContaining({ includeEgressNeighbors: true }));
+    });
+
+    it('can change auto zoom display option', async () => {
+        render(<App/>);
+        await waitForComponentUpdate();
+
+        expect(ClusterGraph.mock.calls[0][0].autoZoom).toEqual(false);
+
+        fireEvent.click(screen.getByText('Network policies'));
+        await waitForComponentUpdate();
+        expect(NetworkPolicyGraph.mock.calls[0][0].autoZoom).toEqual(false);
+
+        fireEvent.click(screen.getByText('Auto zoom'));
+        await waitForComponentUpdate();
+        expect(NetworkPolicyGraph.mock.calls[1][0].autoZoom).toEqual(true);
+
+        fireEvent.click(screen.getByText('Workloads'));
+        await waitForComponentUpdate();
+        expect(NetworkPolicyGraph.mock.calls[1][0].autoZoom).toEqual(true);
     });
 
     it('can change namespace prefix display option', async () => {

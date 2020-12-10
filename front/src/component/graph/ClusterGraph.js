@@ -1,12 +1,11 @@
-import { memo, useRef } from 'react';
+import { memo } from 'react';
 import PropTypes from 'prop-types';
 import D3ClusterGraph from './d3/D3ClusterGraph';
 import Graph from './Graph';
 
-const ClusterGraph = ({ dataSet, ...focusHandlers }) => {
-    const d3Graph = useRef(new D3ClusterGraph());
-
-    return <Graph dataSet={dataSet} focusHandlers={focusHandlers} d3Graph={d3Graph.current}/>;
+const ClusterGraph = ({ dataSet, autoZoom, ...focusHandlers }) => {
+    return <Graph dataSet={dataSet} autoZoom={autoZoom} focusHandlers={focusHandlers}
+                  d3GraphClass={D3ClusterGraph}/>;
 };
 
 ClusterGraph.propTypes = {
@@ -65,6 +64,7 @@ ClusterGraph.propTypes = {
             })).isRequired
         }))
     }).isRequired,
+    autoZoom: PropTypes.bool.isRequired,
     onPodFocus: PropTypes.func.isRequired,
     onServiceFocus: PropTypes.func.isRequired,
     onIngressFocus: PropTypes.func.isRequired,

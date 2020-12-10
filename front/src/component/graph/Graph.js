@@ -54,17 +54,18 @@ const useStyles = makeStyles(theme => ({
     }
 }));
 
-const Graph = ({ dataSet, focusHandlers, d3Graph }) => {
+const Graph = ({ dataSet, autoZoom, focusHandlers, d3GraphClass }) => {
     const classes = useStyles();
+    const d3Graph = useRef(new d3GraphClass());
     const fullscreenElementRef = useRef(null);
     const graphRef = useRef(null);
 
     useEffect(() => {
-        d3Graph.init();
-        return () => d3Graph.destroy();
+        d3Graph.current.init();
+        return () => d3Graph.current.destroy();
     }, []);
 
-    useEffect(() => d3Graph.update(dataSet, focusHandlers));
+    useEffect(() => d3Graph.current.update(dataSet, autoZoom, focusHandlers));
 
     const goFullScreen = () => fullscreenElementRef.current.requestFullscreen();
     const download = () => saveSvgAsPng(graphRef.current, 'karto-export.png', {
