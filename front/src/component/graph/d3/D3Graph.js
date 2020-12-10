@@ -20,11 +20,11 @@ export default class D3Graph {
         this.initForceSimulation();
     }
 
-    update(dataSet, focusHandlers) {
+    update(dataSet, autoZoom, focusHandlers) {
         const dataChanged = this.updateAllLayers(dataSet, focusHandlers);
         this.updateForceSimulation(dataChanged);
         this.restorePreviousFocus();
-        this.zoomToFit();
+        this.applyAutoZoom(autoZoom, dataChanged);
     }
 
     destroy() {
@@ -144,6 +144,15 @@ export default class D3Graph {
         }
     }
 
+    applyAutoZoom(autoZoom, dataChanged) {
+        if (!autoZoom || !dataChanged) {
+            return;
+        }
+        setTimeout(() => {
+            this.zoomToFit();
+        }, 50);
+    }
+
     createContainerLayout() {
         const svg = d3.select('#graph');
         svg
@@ -168,22 +177,20 @@ export default class D3Graph {
     };
 
     zoomToFit() {
-        setTimeout(() => {
-            const boundingBox = this.content.node().getBBox();
-            const boundingBoxWidth = boundingBox.width;
-            const boundingBoxHeight = boundingBox.height;
-            if (boundingBoxWidth === 0 || boundingBoxHeight === 0) {
-                // Empty graph, do nothing
-                return;
-            }
-            const centerX = boundingBox.x + boundingBoxWidth / 2;
-            const centerY = boundingBox.y + boundingBoxHeight / 2;
-            const paddingPercent = 0.7;
-            const scale = paddingPercent /
-                Math.max(boundingBoxWidth / GRAPH_WIDTH, boundingBoxHeight / GRAPH_HEIGHT);
-            const transform = d3.zoomIdentity.translate(-scale * centerX, -scale * centerY).scale(scale);
-            this.svg.transition().duration(500).call(this.zoom.transform, transform);
-        }, 50);
+        const boundingBox = this.content.node().getBBox();
+        const boundingBoxWidth = boundingBox.width;
+        const boundingBoxHeight = boundingBox.height;
+        if (boundingBoxWidth === 0 || boundingBoxHeight === 0) {
+            // Empty graph, do nothing
+            return;
+        }
+        const centerX = boundingBox.x + boundingBoxWidth / 2;
+        const centerY = boundingBox.y + boundingBoxHeight / 2;
+        const paddingPercent = 0.7;
+        const scale = paddingPercent /
+            Math.max(boundingBoxWidth / GRAPH_WIDTH, boundingBoxHeight / GRAPH_HEIGHT);
+        const transform = d3.zoomIdentity.translate(-scale * centerX, -scale * centerY).scale(scale);
+        this.svg.transition().duration(500).call(this.zoom.transform, transform);
     }
 
     attachMouseMouveHandler() {

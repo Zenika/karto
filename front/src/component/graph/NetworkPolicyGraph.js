@@ -1,12 +1,11 @@
-import { memo, useRef } from 'react';
+import { memo } from 'react';
 import PropTypes from 'prop-types';
 import D3NetworkPolicyGraph from './d3/D3NetworkPolicyGraph';
 import Graph from './Graph';
 
-const NetworkPolicyGraph = ({ dataSet, ...focusHandlers }) => {
-    const d3Graph = useRef(new D3NetworkPolicyGraph());
-
-    return <Graph dataSet={dataSet} focusHandlers={focusHandlers} d3Graph={d3Graph.current}/>;
+const NetworkPolicyGraph = ({ dataSet, autoZoom, ...focusHandlers }) => {
+    return <Graph dataSet={dataSet} autoZoom={autoZoom} focusHandlers={focusHandlers}
+                  d3GraphClass={D3NetworkPolicyGraph}/>;
 };
 
 NetworkPolicyGraph.propTypes = {
@@ -27,6 +26,7 @@ NetworkPolicyGraph.propTypes = {
             }).isRequired
         })).isRequired
     }).isRequired,
+    autoZoom: PropTypes.bool.isRequired,
     onPodFocus: PropTypes.func.isRequired,
     onAllowedRouteFocus: PropTypes.func.isRequired
 };

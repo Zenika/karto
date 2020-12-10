@@ -9,18 +9,16 @@ jest.mock('save-svg-as-png');
 
 describe('Graph component', () => {
 
-    const mockD3Graph = new D3Graph();
-
     it('displays fullscreen button when document.fullscreenEnabled is set', async () => {
         global.document.fullscreenEnabled = true;
-        render(<Graph d3Graph={mockD3Graph}/>);
+        render(<Graph d3GraphClass={D3Graph}/>);
 
         expect(screen.queryByLabelText('enter fullscreen')).toBeInTheDocument();
     });
 
     it('hides fullscreen button when document.fullscreenEnabled is not set', async () => {
         global.document.fullscreenEnabled = false;
-        render(<Graph d3Graph={mockD3Graph}/>);
+        render(<Graph d3GraphClass={D3Graph}/>);
 
         expect(screen.queryByLabelText('enter fullscreen')).not.toBeInTheDocument();
     });
@@ -28,7 +26,7 @@ describe('Graph component', () => {
     it('goes fullscreen when fullscreen button clicked', async () => {
         global.document.fullscreenEnabled = true;
         const mockFullscreen = jest.fn();
-        render(<Graph d3Graph={mockD3Graph}/>);
+        render(<Graph d3GraphClass={D3Graph}/>);
         screen.getByLabelText('graph container').requestFullscreen = mockFullscreen;
 
         fireEvent.click(screen.getByLabelText('enter fullscreen'));
@@ -38,7 +36,7 @@ describe('Graph component', () => {
 
     it('downloads image when download button clicked', async () => {
         global.document.fullscreenEnabled = true;
-        render(<Graph d3Graph={mockD3Graph}/>);
+        render(<Graph d3GraphClass={D3Graph}/>);
 
         fireEvent.click(screen.getByLabelText('download'));
 
