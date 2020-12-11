@@ -41,11 +41,11 @@ export default class D3GraphLayer {
     }
 
     updateElements(dataChanged, newElementAttributesApplier) {
-
+        // Overridden by children classes
     }
 
     updateElementsPositionAndScale(zoomFactor) {
-
+        // Overridden by children classes
     }
 
     onElementFocused(element) {
@@ -71,6 +71,6 @@ export default class D3GraphLayer {
     }
 
     applyFocus(focusPolicy) {
-
+        // Overridden by children classes
     }
 }

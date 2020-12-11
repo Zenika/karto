@@ -13,9 +13,9 @@ import AllowedRouteDetails from './detail/AllowedRouteDetails';
 import PodDetails from './detail/PodDetails';
 import ServiceDetails from './detail/ServiceDetails';
 import MultiKeyValueSelectControl from './control/MultiKeyValueSelectControl';
-import ClusterMap from './map/ClusterMap';
+import ClusterGraph from './graph/ClusterGraph';
 import RadioGroupControl from './control/RadioGroupControl';
-import NetworkPolicyMap from './map/NetworkPolicyMap';
+import NetworkPolicyGraph from './graph/NetworkPolicyGraph';
 import ReplicaSetDetails from './detail/ReplicaSetDetails';
 import DeploymentDetails from './detail/DeploymentDetails';
 import { labelSelectorOperators, maxRecommendedAllowedRoutes, maxRecommendedPods } from '../constants';
@@ -35,6 +35,7 @@ const DEFAULT_CONTROLS = {
     includeIngressNeighbors: false,
     includeEgressNeighbors: false,
     autoRefresh: false,
+    autoZoom: false,
     showNamespacePrefix: true,
     highlightPodsWithoutIngressIsolation: false,
     highlightPodsWithoutEgressIsolation: false,
@@ -60,7 +61,8 @@ const useStyles = makeStyles(theme => ({
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'flex-start',
-        padding: `0 ${theme.spacing(2)}px`
+        padding: `0 ${theme.spacing(2)}px`,
+        pointerEvents: 'none'
     },
     controlsTitle: {
         marginBottom: theme.spacing(1),
@@ -73,7 +75,8 @@ const useStyles = makeStyles(theme => ({
         display: 'flex',
         flexDirection: 'column',
         marginBottom: theme.spacing(1),
-        width: '100%'
+        width: '100%',
+        pointerEvents: 'auto'
     },
     message: {
         marginTop: theme.spacing(1),
@@ -133,54 +136,22 @@ const Content = ({ className }) => {
         storeControls(state.controls);
     }, [state.controls]);
 
-    const onPodFocus = useCallback(pod => {
-        setState(oldState => ({
-            ...oldState,
-            podDetails: pod
-        }));
-    }, []);
-    const onAllowedRouteFocus = useCallback(allowedRoute => {
-        setState(oldState => ({
-            ...oldState,
-            allowedRouteDetails: allowedRoute
-        }));
-    }, []);
-    const onServiceFocus = useCallback(service => {
-        setState(oldState => ({
-            ...oldState,
-            serviceDetails: service
-        }));
-    }, []);
-    const onIngressFocus = useCallback(ingress => {
-        setState(oldState => ({
-            ...oldState,
-            ingressDetails: ingress
-        }));
-    }, []);
-    const onReplicaSetFocus = useCallback(replicaSet => {
-        setState(oldState => ({
-            ...oldState,
-            replicaSetDetails: replicaSet
-        }));
-    }, []);
-    const onStatefulSetFocus = useCallback(statefulSet => {
-        setState(oldState => ({
-            ...oldState,
-            statefulSetDetails: statefulSet
-        }));
-    }, []);
-    const onDaemonSetFocus = useCallback(daemonSet => {
-        setState(oldState => ({
-            ...oldState,
-            daemonSetDetails: daemonSet
-        }));
-    }, []);
-    const onDeploymentFocus = useCallback(deployment => {
-        setState(oldState => ({
-            ...oldState,
-            deploymentDetails: deployment
-        }));
-    }, []);
+    const makeFocusHandler = key => {
+        return useCallback(value => {
+            setState(oldState => ({
+                ...oldState,
+                [key]: value
+            }));
+        }, []);
+    };
+    const onPodFocus = makeFocusHandler('podDetails');
+    const onAllowedRouteFocus = makeFocusHandler('allowedRouteDetails');
+    const onServiceFocus = makeFocusHandler('serviceDetails');
+    const onIngressFocus = makeFocusHandler('ingressDetails');
+    const onReplicaSetFocus = makeFocusHandler('replicaSetDetails');
+    const onStatefulSetFocus = makeFocusHandler('statefulSetDetails');
+    const onDaemonSetFocus = makeFocusHandler('daemonSetDetails');
+    const onDeploymentFocus = makeFocusHandler('deploymentDetails');
 
     const isSafeToDisplay = (dataSet, displayLargeDatasets) => {
         const tooLarge = dataSet.pods.length > maxRecommendedPods
@@ -266,10 +237,11 @@ const Content = ({ className }) => {
                 {!state.isLoading && state.dataSet && state.dataSet.pods.length > 0
                 && isSafeToDisplay(state.dataSet, state.controls.displayLargeDatasets)
                 && state.controls.displayedView === VIEWS.WORKLOADS && <>
-                    <ClusterMap dataSet={state.dataSet} onPodFocus={onPodFocus}
-                                onServiceFocus={onServiceFocus} onIngressFocus={onIngressFocus}
-                                onReplicaSetFocus={onReplicaSetFocus} onStatefulSetFocus={onStatefulSetFocus}
-                                onDaemonSetFocus={onDaemonSetFocus} onDeploymentFocus={onDeploymentFocus}/>
+                    <ClusterGraph dataSet={state.dataSet} autoZoom={state.controls.autoZoom}
+                                  onPodFocus={onPodFocus} onServiceFocus={onServiceFocus}
+                                  onIngressFocus={onIngressFocus} onReplicaSetFocus={onReplicaSetFocus}
+                                  onStatefulSetFocus={onStatefulSetFocus} onDaemonSetFocus={onDaemonSetFocus}
+                                  onDeploymentFocus={onDeploymentFocus}/>
                     <Typography className={classes.graphCaption} variant="caption">
                         {`Displaying ${state.dataSet.pods.length}/${state.analysisResult.pods.length} pods, `
                         + `${state.dataSet.services.length}/${state.analysisResult.services.length} services, `
@@ -284,8 +256,8 @@ const Content = ({ className }) => {
                 {!state.isLoading && state.dataSet && state.dataSet.pods.length > 0
                 && isSafeToDisplay(state.dataSet, state.controls.displayLargeDatasets)
                 && state.controls.displayedView === VIEWS.NETWORK_POLICIES && <>
-                    <NetworkPolicyMap dataSet={state.dataSet} onPodFocus={onPodFocus}
-                                      onAllowedRouteFocus={onAllowedRouteFocus}/>
+                    <NetworkPolicyGraph dataSet={state.dataSet} autoZoom={state.controls.autoZoom}
+                                        onPodFocus={onPodFocus} onAllowedRouteFocus={onAllowedRouteFocus}/>
                     <Typography className={classes.graphCaption} variant="caption">
                         {`Displaying ${state.dataSet.pods.length}/${state.analysisResult.pods.length} pods`
                         + ` and ${state.dataSet.allowedRoutes.length}/`
@@ -336,6 +308,10 @@ const Content = ({ className }) => {
                     <SwitchControl
                         className={classes.controlsItem} name="Auto refresh" checked={state.controls.autoRefresh}
                         onChange={handleControlChange('autoRefresh')}/>
+                    <SwitchControl
+                        className={classes.controlsItem} name="Auto zoom"
+                        checked={state.controls.autoZoom}
+                        onChange={handleControlChange('autoZoom')}/>
                     <SwitchControl
                         className={classes.controlsItem} name="Show namespace prefix"
                         checked={state.controls.showNamespacePrefix}

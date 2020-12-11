@@ -9,3 +9,5 @@ export const LINK_ARROW_DEF_ID = 'arrow';
 export const LINK_ARROW_FADED_DEF_ID = 'arrow-faded';
 export const LINK_FORCE = 'link';
 export const CHARGE_FORCE = 'charge';
+export const ZOOM_ANIMATION_DELAY = 50;
+export const ZOOM_ANIMATION_DURATION = 500;

@@ -21,6 +21,11 @@ export function patchGraphViewBox() {
     };
 }
 
+export function patchLayersContainerBBox() {
+    const layersContainer = screen.getByLabelText('layers container');
+    layersContainer.getBBox = () => ({ x: -100, y: -80, width: 300, height: 200 });
+}
+
 export function getItemPosition(item) {
     const transformAttr = item.getAttribute('transform');
     const matches = /.*translate\(([^,]+),([^)]+)\).*/.exec(transformAttr);
@@ -45,7 +50,8 @@ export function getScale(element) {
     const transformAttr = element.getAttribute('transform');
     const matches = /.*scale\((-?\d+\.?\d*)\).*/.exec(transformAttr);
     if (matches == null) {
-        return null;
+        // No transform attribute means no scaling
+        return 1;
     }
     return parseFloat(matches[1]);
 }
@@ -64,6 +70,10 @@ export function waitForItemPositionStable(item, timeout) {
         }
         return new Promise((resolve, reject) => isStable ? resolve() : setTimeout(reject, 200));
     }, { timeout });
+}
+
+export function waitForTime(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 export function hoverLink(link) {

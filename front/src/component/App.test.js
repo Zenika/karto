@@ -2,16 +2,16 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom/extend-expect';
 import { computeDataSet, fetchAnalysisResult } from '../service/analysisResultService';
 import { labelSelectorOperators, maxRecommendedAllowedRoutes, maxRecommendedPods } from '../constants';
-import ClusterMap from './map/ClusterMap';
-import NetworkPolicyMap from './map/NetworkPolicyMap';
+import ClusterGraph from './graph/ClusterGraph';
+import NetworkPolicyGraph from './graph/NetworkPolicyGraph';
 import { getControls } from '../service/storageService';
 import { configureMockForPopper } from './utils/testutils';
 import App from './App';
 
 jest.mock('../service/analysisResultService');
 jest.mock('../service/storageService');
-jest.mock('./map/ClusterMap', () => ({ __esModule: true, default: jest.fn() }));
-jest.mock('./map/NetworkPolicyMap', () => ({ __esModule: true, default: jest.fn() }));
+jest.mock('./graph/ClusterGraph', () => ({ __esModule: true, default: jest.fn() }));
+jest.mock('./graph/NetworkPolicyGraph', () => ({ __esModule: true, default: jest.fn() }));
 
 describe('App component', () => {
 
@@ -76,7 +76,7 @@ describe('App component', () => {
 
     beforeEach(() => {
         jest.useFakeTimers();
-        ClusterMap.mockImplementation(props => {
+        ClusterGraph.mockImplementation(props => {
             podDetailsHandler = props.onPodFocus;
             serviceDetailsHandler = props.onServiceFocus;
             ingressDetailsHandler = props.onIngressFocus;
@@ -84,12 +84,12 @@ describe('App component', () => {
             statefulSetDetailsHandler = props.onStatefulSetFocus;
             daemonSetDetailsHandler = props.onDaemonSetFocus;
             deploymentDetailsHandler = props.onDeploymentFocus;
-            return <div>Mock ClusterMap</div>;
+            return <div>Mock ClusterGraph</div>;
         });
-        NetworkPolicyMap.mockImplementation(props => {
+        NetworkPolicyGraph.mockImplementation(props => {
             podDetailsHandler = props.onPodFocus;
             allowedRouteDetailsHandler = props.onAllowedRouteFocus;
-            return <div>Mock NetworkPolicyMap</div>;
+            return <div>Mock NetworkPolicyGraph</div>;
         });
         mockAnalysisResult({});
         mockDataSet({});
@@ -192,10 +192,10 @@ describe('App component', () => {
         render(<App/>);
         await waitForComponentUpdate();
 
-        expect(screen.queryByText('Mock ClusterMap')).toBeInTheDocument();
-        expect(ClusterMap).toHaveBeenCalledTimes(1);
-        expect(ClusterMap.mock.calls[0][0].dataSet).toEqual(dataSet);
-        expect(screen.queryByText('Mock NetworkPolicyMap')).not.toBeInTheDocument();
+        expect(screen.queryByText('Mock ClusterGraph')).toBeInTheDocument();
+        expect(ClusterGraph).toHaveBeenCalledTimes(1);
+        expect(ClusterGraph.mock.calls[0][0].dataSet).toEqual(dataSet);
+        expect(screen.queryByText('Mock NetworkPolicyGraph')).not.toBeInTheDocument();
     });
 
     it('displays network policy map when selected', async () => {
@@ -216,10 +216,10 @@ describe('App component', () => {
         fireEvent.click(screen.getByText('Network policies'));
         await waitForComponentUpdate();
 
-        expect(screen.queryByText('Mock ClusterMap')).not.toBeInTheDocument();
-        expect(NetworkPolicyMap).toHaveBeenCalledTimes(1);
-        expect(NetworkPolicyMap.mock.calls[0][0].dataSet).toEqual(dataSet);
-        expect(screen.queryByText('Mock NetworkPolicyMap')).toBeInTheDocument();
+        expect(screen.queryByText('Mock ClusterGraph')).not.toBeInTheDocument();
+        expect(NetworkPolicyGraph).toHaveBeenCalledTimes(1);
+        expect(NetworkPolicyGraph.mock.calls[0][0].dataSet).toEqual(dataSet);
+        expect(screen.queryByText('Mock NetworkPolicyGraph')).toBeInTheDocument();
     });
 
     it('displays cluster map when selected', async () => {
@@ -230,11 +230,11 @@ describe('App component', () => {
         fireEvent.click(screen.getByText('Workloads'));
         await waitForComponentUpdate();
 
-        expect(screen.queryByText('Mock ClusterMap')).toBeInTheDocument();
-        expect(screen.queryByText('Mock NetworkPolicyMap')).not.toBeInTheDocument();
+        expect(screen.queryByText('Mock ClusterGraph')).toBeInTheDocument();
+        expect(screen.queryByText('Mock NetworkPolicyGraph')).not.toBeInTheDocument();
     });
 
-    it('displays a caption for ClusterMap', async () => {
+    it('displays a caption for ClusterGraph', async () => {
         const analysisResult = {
             pods: [{}, {}],
             services: [{}, {}, {}],
@@ -262,7 +262,7 @@ describe('App component', () => {
             '5/6 statefulSets, 6/7 daemonSets and 7/8 deployments')).toBeInTheDocument();
     });
 
-    it('displays a caption for NetworkPolicyMap', async () => {
+    it('displays a caption for NetworkPolicyGraph', async () => {
         const analysisResult = {
             pods: [{}, {}],
             allowedRoutes: [{}, {}, {}]
@@ -304,6 +304,7 @@ describe('App component', () => {
             includeIngressNeighbors: true,
             includeEgressNeighbors: true,
             autoRefresh: true,
+            autoZoom: true,
             showNamespacePrefix: false,
             highlightPodsWithoutIngressIsolation: true,
             highlightPodsWithoutEgressIsolation: true,
@@ -333,6 +334,7 @@ describe('App component', () => {
             includeIngressNeighbors: false,
             includeEgressNeighbors: false,
             autoRefresh: false,
+            autoZoom: false,
             showNamespacePrefix: true,
             highlightPodsWithoutIngressIsolation: false,
             highlightPodsWithoutEgressIsolation: false,
@@ -482,6 +484,25 @@ describe('App component', () => {
 
         expect(computeDataSet).toHaveBeenCalledWith(expect.anything(),
             expect.objectContaining({ includeEgressNeighbors: true }));
+    });
+
+    it('can change auto zoom display option', async () => {
+        render(<App/>);
+        await waitForComponentUpdate();
+
+        expect(ClusterGraph.mock.calls[0][0].autoZoom).toEqual(false);
+
+        fireEvent.click(screen.getByText('Network policies'));
+        await waitForComponentUpdate();
+        expect(NetworkPolicyGraph.mock.calls[0][0].autoZoom).toEqual(false);
+
+        fireEvent.click(screen.getByText('Auto zoom'));
+        await waitForComponentUpdate();
+        expect(NetworkPolicyGraph.mock.calls[1][0].autoZoom).toEqual(true);
+
+        fireEvent.click(screen.getByText('Workloads'));
+        await waitForComponentUpdate();
+        expect(NetworkPolicyGraph.mock.calls[1][0].autoZoom).toEqual(true);
     });
 
     it('can change namespace prefix display option', async () => {

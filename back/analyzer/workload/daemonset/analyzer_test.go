@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func Test_Analyze(t *testing.T) {
+func TestAnalyze(t *testing.T) {
 	type args struct {
 		daemonSet *appsv1.DaemonSet
 		pods      []*corev1.Pod

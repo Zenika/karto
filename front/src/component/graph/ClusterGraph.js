@@ -1,63 +1,14 @@
-import { memo, useEffect, useRef } from 'react';
+import { memo } from 'react';
 import PropTypes from 'prop-types';
-import { makeStyles } from '@material-ui/core/styles';
-import ClusterD3Graph from './d3/ClusterD3Graph';
+import D3ClusterGraph from './d3/D3ClusterGraph';
+import Graph from './Graph';
 
-const useStyles = makeStyles(theme => ({
-    root: {
-        height: '100%',
-        width: '100%',
-        overflow: 'hidden',
-        '& .item': {
-            fill: theme.palette.secondary.main
-        },
-        '& .item-faded': {
-            fill: theme.palette.secondary.dark
-        },
-        '& .label': {
-            fill: theme.palette.text.primary,
-            fontWeight: 100,
-            cursor: 'default',
-            pointerEvents: 'none'
-        },
-        '& .link': {
-            stroke: theme.palette.primary.main
-        },
-        '& .link-faded': {
-            stroke: theme.palette.primary.dark
-        },
-        '& .link-arrow': {
-            fill: theme.palette.primary.main
-        },
-        '& .link-arrow-faded': {
-            fill: theme.palette.primary.dark
-        }
-    }
-}));
-
-const ClusterMap = (
-    {
-        dataSet, onPodFocus, onServiceFocus, onIngressFocus, onReplicaSetFocus, onStatefulSetFocus, onDaemonSetFocus,
-        onDeploymentFocus
-    }
-) => {
-    const classes = useStyles();
-    const d3Graph = useRef(new ClusterD3Graph());
-
-    useEffect(() => {
-        d3Graph.current.init();
-        return () => d3Graph.current.destroy();
-    }, []);
-
-    useEffect(() => d3Graph.current.update(dataSet, {
-        onPodFocus, onServiceFocus, onIngressFocus, onReplicaSetFocus, onStatefulSetFocus, onDaemonSetFocus,
-        onDeploymentFocus
-    }));
-
-    return <div id="graph" className={classes.root}/>;
+const ClusterGraph = ({ dataSet, autoZoom, ...focusHandlers }) => {
+    return <Graph dataSet={dataSet} autoZoom={autoZoom} focusHandlers={focusHandlers}
+                  d3GraphClass={D3ClusterGraph}/>;
 };
 
-ClusterMap.propTypes = {
+ClusterGraph.propTypes = {
     dataSet: PropTypes.shape({
         pods: PropTypes.arrayOf(PropTypes.shape({
             displayName: PropTypes.string.isRequired,
@@ -113,6 +64,7 @@ ClusterMap.propTypes = {
             })).isRequired
         }))
     }).isRequired,
+    autoZoom: PropTypes.bool.isRequired,
     onPodFocus: PropTypes.func.isRequired,
     onServiceFocus: PropTypes.func.isRequired,
     onIngressFocus: PropTypes.func.isRequired,
@@ -122,4 +74,4 @@ ClusterMap.propTypes = {
     onDeploymentFocus: PropTypes.func.isRequired
 };
 
-export default memo(ClusterMap);
+export default memo(ClusterGraph);

@@ -1,7 +1,6 @@
 package traffic
 
 import (
-	"fmt"
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -14,7 +13,7 @@ import (
 	"testing"
 )
 
-func Test_Analyze(t *testing.T) {
+func TestAnalyze(t *testing.T) {
 	type args struct {
 		clusterState ClusterState
 	}
@@ -52,7 +51,7 @@ func Test_Analyze(t *testing.T) {
 		},
 		Ports: []int32{80, 443},
 	}
-	var tests = []struct {
+	tests := []struct {
 		name                   string
 		mocks                  mocks
 		args                   args
@@ -144,11 +143,9 @@ func (mock mockPodIsolationAnalyzer) Analyze(pod *corev1.Pod,
 			return call.returnValue
 		}
 	}
-	fmt.Printf("mockPodIsolationAnalyzer was called with unexpected arguments: \n")
-	fmt.Printf("\tpod:%s\n", pod)
-	fmt.Printf("\tnetworkPolicies=%s\n", networkPolicies)
-	mock.t.FailNow()
-	panic("unreachable but required to compile")
+	mock.t.Fatalf("mockPodIsolationAnalyzer was called with unexpected arguments: \n\tpod: %s\n"+
+		"\tnetworkPolicies: %s\n", pod, networkPolicies)
+	return nil
 }
 
 func createMockPodIsolationAnalyzer(t *testing.T, calls []mockPodIsolationAnalyzerCall) podisolation.Analyzer {
@@ -183,12 +180,10 @@ func (mock mockAllowedRouteAnalyzer) Analyze(sourcePodIsolation *shared.PodIsola
 			return call.returnValue
 		}
 	}
-	fmt.Printf("mockAllowedRouteAnalyzer was called with unexpected arguments: \n")
-	fmt.Printf("\tsourcePodIsolation:%s\n", sourcePodIsolation)
-	fmt.Printf("\ttargetPodIsolation=%s\n", targetPodIsolation)
-	fmt.Printf("\tnamespaces=%s\n", namespaces)
-	mock.t.FailNow()
-	panic("unreachable but required to compile")
+	mock.t.Fatalf("mockAllowedRouteAnalyzer was called with unexpected arguments: \n"+
+		"\tsourcePodIsolation: %s\n\ttargetPodIsolation: %s\n\tnamespaces: %s\n", sourcePodIsolation,
+		targetPodIsolation, namespaces)
+	return nil
 }
 
 func createMockAllowedRouteAnalyzer(t *testing.T, calls []mockAllowedRouteAnalyzerCall) allowedroute.Analyzer {

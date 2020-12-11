@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom/extend-expect';
-import ClusterMap from './ClusterMap';
+import ClusterGraph from './ClusterGraph';
 import {
     dragAndDropItem,
     getItemPosition,
@@ -9,11 +9,14 @@ import {
     hoverItem,
     hoverLink,
     patchGraphViewBox,
+    patchLayersContainerBBox,
     scrollDown,
-    waitForItemPositionStable
+    waitForItemPositionStable,
+    waitForTime
 } from '../utils/testutils';
+import { ZOOM_ANIMATION_DELAY, ZOOM_ANIMATION_DURATION } from './d3/D3Constants';
 
-describe('ClusterMap component', () => {
+describe('ClusterGraph component', () => {
 
     const testTimeout = 10000;
     const waitTimeout = 5000;
@@ -139,9 +142,10 @@ describe('ClusterMap component', () => {
             daemonSets: [],
             deployments: []
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
 
         expect(screen.queryAllByLabelText('pod')).toHaveLength(2);
         expect(screen.queryByText(pod1.displayName)).toBeInTheDocument();
@@ -158,9 +162,10 @@ describe('ClusterMap component', () => {
             daemonSets: [],
             deployments: []
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
 
         expect(screen.queryAllByLabelText('service')).toHaveLength(2);
         expect(screen.queryByText(service1_2.displayName)).toBeInTheDocument();
@@ -178,9 +183,10 @@ describe('ClusterMap component', () => {
             daemonSets: [],
             deployments: []
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
 
         expect(screen.queryAllByLabelText('ingress')).toHaveLength(2);
         expect(screen.queryByText(ingress1_2.displayName)).toBeInTheDocument();
@@ -198,9 +204,10 @@ describe('ClusterMap component', () => {
             daemonSets: [],
             deployments: []
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
 
         expect(screen.queryAllByLabelText('replicaset')).toHaveLength(2);
         expect(screen.queryByText(replicaSet1_2.displayName)).toBeInTheDocument();
@@ -218,9 +225,10 @@ describe('ClusterMap component', () => {
             daemonSets: [],
             deployments: []
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
 
         expect(screen.queryAllByLabelText('statefulset')).toHaveLength(2);
         expect(screen.queryByText(statefulSet1_2.displayName)).toBeInTheDocument();
@@ -238,9 +246,10 @@ describe('ClusterMap component', () => {
             daemonSets: [daemonSet1_2, daemonSet3],
             deployments: []
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
 
         expect(screen.queryAllByLabelText('daemonset')).toHaveLength(2);
         expect(screen.queryByText(daemonSet1_2.displayName)).toBeInTheDocument();
@@ -258,9 +267,10 @@ describe('ClusterMap component', () => {
             daemonSets: [],
             deployments: [deployment1_2, deployment3]
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
 
         expect(screen.queryAllByLabelText('deployment')).toHaveLength(2);
         expect(screen.queryByText(deployment1_2.displayName)).toBeInTheDocument();
@@ -278,9 +288,10 @@ describe('ClusterMap component', () => {
             daemonSets: [daemonSet5],
             deployments: []
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
 
         const allPodLabels = screen.queryAllByText(/ns\/pod\d/);
         expect(allPodLabels[0].textContent).toEqual(pod1.displayName);
@@ -300,9 +311,10 @@ describe('ClusterMap component', () => {
             daemonSets: [],
             deployments: []
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
 
         const allServiceLabels = screen.queryAllByText(/ns\/svc\d/);
         expect(allServiceLabels[0].textContent).toEqual(service1.displayName);
@@ -319,9 +331,10 @@ describe('ClusterMap component', () => {
             daemonSets: [],
             deployments: []
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
 
         const allIngressLabels = screen.queryAllByText(/ns\/ing\d/);
         expect(allIngressLabels[0].textContent).toEqual(ingress1.displayName);
@@ -338,9 +351,10 @@ describe('ClusterMap component', () => {
             daemonSets: [],
             deployments: []
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
 
         const allReplicaSetLabels = screen.queryAllByText(/ns\/rs\d/);
         expect(allReplicaSetLabels[0].textContent).toEqual(replicaSet1.displayName);
@@ -357,9 +371,10 @@ describe('ClusterMap component', () => {
             daemonSets: [],
             deployments: []
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
 
         const allStatefulSetLabels = screen.queryAllByText(/ns\/ss\d/);
         expect(allStatefulSetLabels[0].textContent).toEqual(statefulSet1.displayName);
@@ -376,9 +391,10 @@ describe('ClusterMap component', () => {
             daemonSets: [daemonSet2, daemonSet1],
             deployments: []
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
 
         const allDaemonSetLabels = screen.queryAllByText(/ns\/ds\d/);
         expect(allDaemonSetLabels[0].textContent).toEqual(daemonSet1.displayName);
@@ -395,9 +411,10 @@ describe('ClusterMap component', () => {
             daemonSets: [],
             deployments: [deployment2, deployment1]
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
 
         const allDeploymentLabels = screen.queryAllByText(/ns\/dep\d/);
         expect(allDeploymentLabels[0].textContent).toEqual(deployment1.displayName);
@@ -414,9 +431,10 @@ describe('ClusterMap component', () => {
             daemonSets: [],
             deployments: []
         };
-        render(<ClusterMap onPodFocus={mockFocusHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={mockFocusHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('pod')[0]);
@@ -434,9 +452,10 @@ describe('ClusterMap component', () => {
             daemonSets: [],
             deployments: []
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={mockFocusHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={mockFocusHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('service')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('service')[0]);
@@ -460,9 +479,10 @@ describe('ClusterMap component', () => {
             daemonSets: [],
             deployments: []
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={mockFocusHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={mockFocusHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('ingress')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('ingress')[0]);
@@ -486,9 +506,10 @@ describe('ClusterMap component', () => {
             daemonSets: [],
             deployments: []
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={mockFocusHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={mockFocusHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('replicaset')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('replicaset')[0]);
@@ -512,9 +533,10 @@ describe('ClusterMap component', () => {
             daemonSets: [],
             deployments: []
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={mockFocusHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={mockFocusHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('statefulset')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('statefulset')[0]);
@@ -538,9 +560,10 @@ describe('ClusterMap component', () => {
             daemonSets: [daemonSet1],
             deployments: []
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={mockFocusHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={mockFocusHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('daemonset')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('daemonset')[0]);
@@ -564,9 +587,10 @@ describe('ClusterMap component', () => {
             daemonSets: [],
             deployments: [deployment1]
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={mockFocusHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={mockFocusHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('deployment')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('deployment')[0]);
@@ -620,13 +644,15 @@ describe('ClusterMap component', () => {
         };
 
         const { rerender } = render(
-            <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                        onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                        onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet1}/>
+            <ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                          onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                          onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet1}
+                          autoZoom={false}/>
         );
-        rerender(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet2}/>);
+        rerender(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                               onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                               onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet2}
+                               autoZoom={false}/>);
 
         expect(screen.queryAllByLabelText('pod')).toHaveLength(6);
         expect(screen.queryByText(pod1.displayName)).not.toBeInTheDocument();
@@ -680,9 +706,10 @@ describe('ClusterMap component', () => {
             daemonSets: [],
             deployments: []
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('pod')[0]);
@@ -701,9 +728,10 @@ describe('ClusterMap component', () => {
             daemonSets: [],
             deployments: []
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('service')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('service')[0]);
@@ -724,9 +752,10 @@ describe('ClusterMap component', () => {
             daemonSets: [],
             deployments: []
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('ingress')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('ingress')[0]);
@@ -747,9 +776,10 @@ describe('ClusterMap component', () => {
             daemonSets: [],
             deployments: []
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('replicaset')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('replicaset')[0]);
@@ -770,9 +800,10 @@ describe('ClusterMap component', () => {
             daemonSets: [],
             deployments: []
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('statefulset')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('statefulset')[0]);
@@ -793,9 +824,10 @@ describe('ClusterMap component', () => {
             daemonSets: [daemonSet1, daemonSet2],
             deployments: []
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('daemonset')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('daemonset')[0]);
@@ -816,9 +848,10 @@ describe('ClusterMap component', () => {
             daemonSets: [],
             deployments: [deployment1, deployment2]
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('deployment')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('deployment')[0]);
@@ -840,9 +873,10 @@ describe('ClusterMap component', () => {
             daemonSets: [daemonSet1_2, daemonSet3],
             deployments: [deployment12_3, deployment4]
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('pod')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('pod')[0]);
@@ -891,9 +925,10 @@ describe('ClusterMap component', () => {
             daemonSets: [daemonSet1],
             deployments: [deployment123]
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('replicaset')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('service')[0]);
@@ -930,9 +965,10 @@ describe('ClusterMap component', () => {
             daemonSets: [daemonSet1],
             deployments: [deployment12]
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('service')[0], waitTimeout);
 
         hoverLink(screen.getAllByLabelText('service link')[0]);
@@ -970,9 +1006,10 @@ describe('ClusterMap component', () => {
             daemonSets: [daemonSet1],
             deployments: [deployment12, deployment3]
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('replicaset')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('replicaset')[0]);
@@ -1009,9 +1046,10 @@ describe('ClusterMap component', () => {
             daemonSets: [daemonSet1],
             deployments: [deployment12, deployment3]
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('replicaset')[0], waitTimeout);
 
         hoverLink(screen.getAllByLabelText('replicaset link')[0]);
@@ -1048,9 +1086,10 @@ describe('ClusterMap component', () => {
             daemonSets: [daemonSet1],
             deployments: [deployment1]
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('statefulset')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('statefulset')[0]);
@@ -1085,9 +1124,10 @@ describe('ClusterMap component', () => {
             daemonSets: [daemonSet1],
             deployments: [deployment1]
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('statefulset')[0], waitTimeout);
 
         hoverLink(screen.getAllByLabelText('statefulset link')[0]);
@@ -1122,9 +1162,10 @@ describe('ClusterMap component', () => {
             daemonSets: [daemonSet1_2, daemonSet3],
             deployments: [deployment1]
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('daemonset')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('daemonset')[0]);
@@ -1159,9 +1200,10 @@ describe('ClusterMap component', () => {
             daemonSets: [daemonSet1_2, daemonSet3],
             deployments: [deployment1]
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('daemonset')[0], waitTimeout);
 
         hoverLink(screen.getAllByLabelText('daemonset link')[0]);
@@ -1196,9 +1238,10 @@ describe('ClusterMap component', () => {
             daemonSets: [daemonSet1],
             deployments: [deployment12_3, deployment4]
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('deployment')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('deployment')[0]);
@@ -1239,9 +1282,10 @@ describe('ClusterMap component', () => {
             daemonSets: [daemonSet1],
             deployments: [deployment1_2, deployment3]
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('deployment')[0], waitTimeout);
 
         hoverLink(screen.getAllByLabelText('deployment link')[0]);
@@ -1280,9 +1324,10 @@ describe('ClusterMap component', () => {
             daemonSets: [daemonSet1],
             deployments: [deployment1]
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
         await waitForItemPositionStable(screen.getAllByLabelText('service')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('pod')[0]);
@@ -1323,17 +1368,19 @@ describe('ClusterMap component', () => {
             deployments: [deployment1]
         };
         const { rerender } = render(
-            <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                        onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                        onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet1}/>
+            <ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                          onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                          onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet1}
+                          autoZoom={false}/>
         );
         await waitForItemPositionStable(screen.getAllByLabelText('service')[0], waitTimeout);
 
         hoverItem(screen.getAllByLabelText('service')[0]);
         rerender(
-            <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                        onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                        onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet2}/>
+            <ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                          onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                          onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet2}
+                          autoZoom={false}/>
         );
 
         expect(screen.getAllByLabelText('pod')[0]).toHaveAttribute('class', 'item');
@@ -1370,9 +1417,10 @@ describe('ClusterMap component', () => {
             deployments: []
         };
         const { rerender } = render(
-            <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                        onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                        onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet1}/>
+            <ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                          onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                          onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet1}
+                          autoZoom={false}/>
         );
         await waitForItemPositionStable(screen.getAllByLabelText('service')[1], waitTimeout);
 
@@ -1381,9 +1429,10 @@ describe('ClusterMap component', () => {
         const oldService1Position = getItemPosition(screen.getAllByLabelText('service')[0]);
         const oldService2Position = getItemPosition(screen.getAllByLabelText('service')[1]);
         rerender(
-            <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                        onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                        onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet2}/>
+            <ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                          onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                          onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet2}
+                          autoZoom={false}/>
         );
         await waitForItemPositionStable(screen.getAllByLabelText('service')[2], waitTimeout);
         const newService1Position = getItemPosition(screen.getAllByLabelText('service')[0]);
@@ -1413,9 +1462,10 @@ describe('ClusterMap component', () => {
             deployments: []
         };
         const { rerender } = render(
-            <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                        onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                        onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet1}/>
+            <ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                          onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                          onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet1}
+                          autoZoom={false}/>
         );
         await waitForItemPositionStable(screen.getAllByLabelText('ingress')[1], waitTimeout);
 
@@ -1424,9 +1474,10 @@ describe('ClusterMap component', () => {
         const oldIngress1Position = getItemPosition(screen.getAllByLabelText('ingress')[0]);
         const oldIngress2Position = getItemPosition(screen.getAllByLabelText('ingress')[1]);
         rerender(
-            <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                        onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                        onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet2}/>
+            <ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                          onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                          onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet2}
+                          autoZoom={false}/>
         );
         await waitForItemPositionStable(screen.getAllByLabelText('ingress')[2], waitTimeout);
         const newIngress1Position = getItemPosition(screen.getAllByLabelText('ingress')[0]);
@@ -1456,9 +1507,10 @@ describe('ClusterMap component', () => {
             deployments: [deployment1]
         };
         const { rerender } = render(
-            <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                        onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                        onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet1}/>
+            <ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                          onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                          onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet1}
+                          autoZoom={false}/>
         );
         await waitForItemPositionStable(screen.getAllByLabelText('replicaset')[1], waitTimeout);
 
@@ -1467,9 +1519,10 @@ describe('ClusterMap component', () => {
         const oldReplicaSet1Position = getItemPosition(screen.getAllByLabelText('replicaset')[0]);
         const oldReplicaSet2Position = getItemPosition(screen.getAllByLabelText('replicaset')[1]);
         rerender(
-            <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                        onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                        onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet2}/>
+            <ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                          onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                          onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet2}
+                          autoZoom={false}/>
         );
         await waitForItemPositionStable(screen.getAllByLabelText('replicaset')[2], waitTimeout);
         const newReplicaSet1Position = getItemPosition(screen.getAllByLabelText('replicaset')[0]);
@@ -1499,9 +1552,10 @@ describe('ClusterMap component', () => {
             deployments: []
         };
         const { rerender } = render(
-            <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                        onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                        onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet1}/>
+            <ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                          onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                          onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet1}
+                          autoZoom={false}/>
         );
         await waitForItemPositionStable(screen.getAllByLabelText('statefulset')[1], waitTimeout);
 
@@ -1510,9 +1564,10 @@ describe('ClusterMap component', () => {
         const oldStatefulSet1Position = getItemPosition(screen.getAllByLabelText('statefulset')[0]);
         const oldStatefulSet2Position = getItemPosition(screen.getAllByLabelText('statefulset')[1]);
         rerender(
-            <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                        onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                        onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet2}/>
+            <ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                          onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                          onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet2}
+                          autoZoom={false}/>
         );
         await waitForItemPositionStable(screen.getAllByLabelText('statefulset')[2], waitTimeout);
         const newStatefulSet1Position = getItemPosition(screen.getAllByLabelText('statefulset')[0]);
@@ -1542,9 +1597,10 @@ describe('ClusterMap component', () => {
             deployments: []
         };
         const { rerender } = render(
-            <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                        onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                        onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet1}/>
+            <ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                          onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                          onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet1}
+                          autoZoom={false}/>
         );
         await waitForItemPositionStable(screen.getAllByLabelText('daemonset')[1], waitTimeout);
 
@@ -1553,9 +1609,10 @@ describe('ClusterMap component', () => {
         const oldDaemonSet1Position = getItemPosition(screen.getAllByLabelText('daemonset')[0]);
         const oldDaemonSet2Position = getItemPosition(screen.getAllByLabelText('daemonset')[1]);
         rerender(
-            <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                        onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                        onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet2}/>
+            <ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                          onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                          onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet2}
+                          autoZoom={false}/>
         );
         await waitForItemPositionStable(screen.getAllByLabelText('daemonset')[2], waitTimeout);
         const newDaemonSet1Position = getItemPosition(screen.getAllByLabelText('daemonset')[0]);
@@ -1585,9 +1642,10 @@ describe('ClusterMap component', () => {
             deployments: [deployment1, deployment2, deployment3]
         };
         const { rerender } = render(
-            <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                        onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                        onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet1}/>
+            <ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                          onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                          onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet1}
+                          autoZoom={false}/>
         );
         await waitForItemPositionStable(screen.getAllByLabelText('deployment')[1], waitTimeout);
 
@@ -1596,9 +1654,10 @@ describe('ClusterMap component', () => {
         const oldDeployment1Position = getItemPosition(screen.getAllByLabelText('deployment')[0]);
         const oldDeployment2Position = getItemPosition(screen.getAllByLabelText('deployment')[1]);
         rerender(
-            <ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                        onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                        onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet2}/>
+            <ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                          onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                          onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet2}
+                          autoZoom={false}/>
         );
         await waitForItemPositionStable(screen.getAllByLabelText('deployment')[2], waitTimeout);
         const newDeployment1Position = getItemPosition(screen.getAllByLabelText('deployment')[0]);
@@ -1618,9 +1677,10 @@ describe('ClusterMap component', () => {
             daemonSets: [daemonSet1],
             deployments: [deployment1]
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
         patchGraphViewBox();
         await waitForItemPositionStable(screen.getAllByLabelText('service')[0], waitTimeout);
         const oldPodFontSize = parseFloat(screen.getByText(pod1.displayName).getAttribute('font-size'));
@@ -1682,9 +1742,10 @@ describe('ClusterMap component', () => {
             daemonSets: [daemonSet1],
             deployments: [deployment1]
         };
-        render(<ClusterMap onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
-                           onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
-                           onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}/>);
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
         patchGraphViewBox();
         await waitForItemPositionStable(screen.getAllByLabelText('service')[0], waitTimeout);
         const oldServiceLinkWidth = parseFloat(
@@ -1728,5 +1789,51 @@ describe('ClusterMap component', () => {
         expect(statefulsetLinkScale).toEqual(1 / containerScale);
         expect(daemonsetLinkScale).toEqual(1 / containerScale);
         expect(deploymentLinkScale).toEqual(1 / containerScale);
+    });
+
+    it('zooms to fit displayed elements with autoZoom', async () => {
+        const dataSet = {
+            pods: [pod1, pod2],
+            services: [service1, service2],
+            ingresses: [],
+            replicaSets: [],
+            statefulSets: [],
+            daemonSets: [],
+            deployments: []
+        };
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={true}/>);
+        patchGraphViewBox();
+        patchLayersContainerBBox();
+        await waitForItemPositionStable(screen.getAllByLabelText('service')[0], waitTimeout);
+        await waitForTime(ZOOM_ANIMATION_DELAY + ZOOM_ANIMATION_DURATION);
+
+        const containerScale = getScale(screen.queryByLabelText('layers container'));
+        expect(containerScale).not.toEqual(1);
+    });
+
+    it('does not zoom to fit displayed elements without autoZoom', async () => {
+        const dataSet = {
+            pods: [pod1, pod2],
+            services: [service1, service2],
+            ingresses: [],
+            replicaSets: [],
+            statefulSets: [],
+            daemonSets: [],
+            deployments: []
+        };
+        render(<ClusterGraph onPodFocus={noOpHandler} onServiceFocus={noOpHandler} onIngressFocus={noOpHandler}
+                             onReplicaSetFocus={noOpHandler} onStatefulSetFocus={noOpHandler}
+                             onDaemonSetFocus={noOpHandler} onDeploymentFocus={noOpHandler} dataSet={dataSet}
+                             autoZoom={false}/>);
+        patchGraphViewBox();
+        patchLayersContainerBBox();
+        await waitForItemPositionStable(screen.getAllByLabelText('service')[0], waitTimeout);
+        await waitForTime(ZOOM_ANIMATION_DELAY + ZOOM_ANIMATION_DURATION);
+
+        const containerScale = getScale(screen.queryByLabelText('layers container'));
+        expect(containerScale).toEqual(1);
     });
 });

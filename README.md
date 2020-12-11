@@ -24,6 +24,7 @@ The left part of the screen contains the controls for the main view:
 - Include ingress neighbors: display pods that can reach those in the current selection 
 - Include egress neighbors: display pods that can be reached by those in the current selection
 - Auto refresh: refresh the view every 5 seconds
+- Auto zoom: zoom automatically to fit all elements in the screen
 - Show namespace prefix: include the namespace in pod names
 - Highlight non isolated pods (ingress/egress): color pods with no ingress/egress network policy
 - Always display large datasets: always try to display large sets of pods and routes (may slow down your browser)
@@ -31,8 +32,11 @@ The left part of the screen contains the controls for the main view:
 The main view shows the graph of pods and allowed routes in your selection:
 - Zoom in and out by scrolling
 - Drag and drop graph elements to draw the perfect map of your cluster
+- Hover over any graph element to display details: name, namespace, labels, isolation (ingress/egress)... and more!
 
-Hover over any graph element to display details: name, namespace, labels, isolation (ingress/egress)... and more!
+In the top left part of the screen you will find action buttons to:
+- Export the current graph as PNG to use it in slides or share it 
+- Go fullscreen and use Karto as an office (or situation room!) dashboard
 
 ## Installation
 
@@ -89,8 +93,8 @@ Simply download the Karto binary from the [releases page](https://github.com/Zen
 ### Prerequisites
 
 The following tools must be available locally:
-- [Go](https://golang.org/doc/install) (tested with Go 1.14)
-- [NodeJS 10+](https://nodejs.org/en/download/) (tested with NodeJS 10)
+- [Go](https://golang.org/doc/install) (tested with Go 1.15)
+- [NodeJS](https://nodejs.org/en/download/) (tested with NodeJS 14)
 
 ### Run the frontend in dev mode
 

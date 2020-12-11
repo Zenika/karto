@@ -12,7 +12,7 @@ jobs:
             - karto
   build-front:
     docker:
-      - image: cimg/node:12.16.3
+      - image: cimg/node:14.15.1
     working_directory: /home/circleci/karto
     steps:
       - attach_workspace:
@@ -44,7 +44,7 @@ jobs:
             - karto/front/build
   build-back:
     docker:
-      - image: cimg/go:1.14.2
+      - image: cimg/go:1.15.6
     working_directory: /home/circleci/karto
     steps:
       - attach_workspace:
@@ -94,16 +94,16 @@ jobs:
           command: |
             docker build -t zenikalabs/karto .
             docker tag zenikalabs/karto zenikalabs/karto:v1
-            docker tag zenikalabs/karto zenikalabs/karto:v1.4
-            docker tag zenikalabs/karto zenikalabs/karto:v1.4.0
+            docker tag zenikalabs/karto zenikalabs/karto:v1.5
+            docker tag zenikalabs/karto zenikalabs/karto:v1.5.0
       - run:
           name: Push docker image
           command: |
             echo "$DOCKER_PASS" | docker login --username $DOCKER_USER --password-stdin
             docker push zenikalabs/karto
             docker push zenikalabs/karto:v1
-            docker push zenikalabs/karto:v1.4
-            docker push zenikalabs/karto:v1.4.0
+            docker push zenikalabs/karto:v1.5
+            docker push zenikalabs/karto:v1.5.0
 workflows:
   version: 2
   build-test-and-deploy:

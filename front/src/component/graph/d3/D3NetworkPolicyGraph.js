@@ -27,7 +27,7 @@ function d3AllowedRouteIdFromPodIds(pod1Id, pod2Id) {
     return `${pod1Id}->${pod2Id}`;
 }
 
-export default class NetworkPolicyD3Graph extends D3Graph {
+export default class D3NetworkPolicyGraph extends D3Graph {
 
     constructor() {
         super();

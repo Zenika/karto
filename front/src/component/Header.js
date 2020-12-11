@@ -5,6 +5,8 @@ import PropTypes from 'prop-types';
 
 const useStyles = makeStyles(theme => ({
     root: {
+        zIndex: 1,
+        pointerEvents: 'none',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'flex-start',

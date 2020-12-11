@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func Test_Analyze(t *testing.T) {
+func TestAnalyze(t *testing.T) {
 	type args struct {
 		deployment  *appsv1.Deployment
 		replicaSets []*appsv1.ReplicaSet
