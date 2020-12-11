@@ -14,6 +14,7 @@ import {
     waitForItemPositionStable,
     waitForTime
 } from '../utils/testutils';
+import { ZOOM_ANIMATION_DELAY, ZOOM_ANIMATION_DURATION } from './d3/D3Constants';
 
 describe('ClusterGraph component', () => {
 
@@ -1807,7 +1808,7 @@ describe('ClusterGraph component', () => {
         patchGraphViewBox();
         patchLayersContainerBBox();
         await waitForItemPositionStable(screen.getAllByLabelText('service')[0], waitTimeout);
-        await waitForTime(550);
+        await waitForTime(ZOOM_ANIMATION_DELAY + ZOOM_ANIMATION_DURATION);
 
         const containerScale = getScale(screen.queryByLabelText('layers container'));
         expect(containerScale).not.toEqual(1);
@@ -1830,7 +1831,7 @@ describe('ClusterGraph component', () => {
         patchGraphViewBox();
         patchLayersContainerBBox();
         await waitForItemPositionStable(screen.getAllByLabelText('service')[0], waitTimeout);
-        await waitForTime(550);
+        await waitForTime(ZOOM_ANIMATION_DELAY + ZOOM_ANIMATION_DURATION);
 
         const containerScale = getScale(screen.queryByLabelText('layers container'));
         expect(containerScale).toEqual(1);

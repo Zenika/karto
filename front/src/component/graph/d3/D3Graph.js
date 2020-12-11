@@ -6,7 +6,9 @@ import {
     GRAPH_WIDTH,
     LINK_ARROW_DEF_ID,
     LINK_ARROW_FADED_DEF_ID,
-    LINK_FORCE
+    LINK_FORCE,
+    ZOOM_ANIMATION_DELAY,
+    ZOOM_ANIMATION_DURATION
 } from './D3Constants';
 import { closestPointTo, closestSegmentTo } from '../utils/geometryUtils';
 import { flatten } from '../../utils/utils';
@@ -150,7 +152,7 @@ export default class D3Graph {
         }
         setTimeout(() => {
             this.zoomToFit();
-        }, 50);
+        }, ZOOM_ANIMATION_DELAY);
     }
 
     createContainerLayout() {
@@ -190,7 +192,7 @@ export default class D3Graph {
         const scale = paddingPercent /
             Math.max(boundingBoxWidth / GRAPH_WIDTH, boundingBoxHeight / GRAPH_HEIGHT);
         const transform = d3.zoomIdentity.translate(-scale * centerX, -scale * centerY).scale(scale);
-        this.svg.transition().duration(500).call(this.zoom.transform, transform);
+        this.svg.transition().duration(ZOOM_ANIMATION_DURATION).call(this.zoom.transform, transform);
     }
 
     attachMouseMouveHandler() {
