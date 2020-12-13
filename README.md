@@ -1,5 +1,10 @@
 ![demo](docs/assets/karto-logo.png)
 
+![Build Status](https://img.shields.io/circleci/build/github/Zenika/karto?style=flat-square&color=%235893DF)
+![Latest release](https://img.shields.io/github/release/Zenika/karto.svg?style=flat-square&color=%235893DF)
+![Docker pulls](https://img.shields.io/docker/pulls/zenikalabs/karto?style=flat-square&color=%235893DF)
+![GitHub Downloads](https://img.shields.io/github/downloads/Zenika/karto/total?style=flat-square&color=%235893DF)
+
 # Karto
 
 A simple static analysis tool to explore a Kubernetes cluster.
