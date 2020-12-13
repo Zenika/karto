@@ -4,6 +4,11 @@
 
 A simple static analysis tool to explore a Kubernetes cluster.
 
+![Latest release](https://img.shields.io/github/release/Zenika/karto.svg?style=flat-square&color=%235893DF)
+![Docker pulls](https://img.shields.io/docker/pulls/zenikalabs/karto?style=flat-square&color=%235893DF)
+![GitHub Downloads](https://img.shields.io/github/downloads/Zenika/karto/total?style=flat-square&color=%235893DF)
+![Build Status](https://img.shields.io/circleci/build/github/Zenika/karto?style=flat-square&color=%235893DF)
+
 ## Explore you cluster interactively!
 
 ![deployment-demo](docs/assets/exploring-demo.gif)
