@@ -61,8 +61,8 @@ kubectl apply -f deploy/k8s.yml
 ```
 This will:
 - create a `karto` namespace
-- create a `karto` service account with a role allowing to list all pods, namespaces and network 
-policies in the cluster
+- create a `karto` service account with a role allowing to watch the resources displayed by Karto (namespaces, pods, 
+  network policies, services, deployments...)
 - deploy an instance of the application in this namespace with this service account
 
 #### Exposition
