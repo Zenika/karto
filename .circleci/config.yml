@@ -61,7 +61,7 @@ jobs:
           working_directory: back
           name: Build backend
           command: |
-            cp -R ../front/build frontendBuild
+            cp -R ../front/build/* exposition/frontend
             export CGO_ENABLED=0
             go build karto
             GOOS=darwin GOARCH=amd64 go build -o karto_darwin
