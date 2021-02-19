@@ -3,8 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"karto/api"
 	"karto/clusterlistener"
+	"karto/exposition"
 	"karto/types"
 	"os"
 	"path/filepath"
@@ -24,7 +24,7 @@ func main() {
 	clusterStateChannel := make(chan types.ClusterState)
 	go clusterlistener.Listen(k8sConfigPath, clusterStateChannel)
 	go analysisScheduler.AnalyzeOnClusterStateChange(clusterStateChannel, analysisResultsChannel)
-	api.Expose(":8000", analysisResultsChannel)
+	exposition.Expose(":8000", analysisResultsChannel)
 }
 
 func parseCmd() (bool, string) {
