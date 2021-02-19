@@ -105,7 +105,7 @@ The following tools must be available locally:
 
 In the `front` directory, execute:
 ```shell script
-npm start
+yarn start
 ```
 This will expose the app in dev mode on `localhost:3000` with a proxy to `localhost:8000` for the API calls.
 
@@ -131,7 +131,7 @@ configuration, the frontend is served on the `/` route and the API on the `/api`
 
 To compile the Karto binary from source, first compile the frontend source code. In the `front` directory, execute:
 ```shell script
-npm run build
+yarn build
 ```
 This will generate a `build` directory in `front`.
 
