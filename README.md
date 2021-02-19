@@ -98,7 +98,7 @@ Simply download the Karto binary from the [releases page](https://github.com/Zen
 ### Prerequisites
 
 The following tools must be available locally:
-- [Go](https://golang.org/doc/install) (tested with Go 1.15)
+- [Go](https://golang.org/doc/install) (tested with Go 1.16)
 - [NodeJS](https://nodejs.org/en/download/) (tested with NodeJS 14)
 
 ### Run the frontend in dev mode
@@ -126,7 +126,7 @@ go test ./...
 
 ### Compile the go binary from source
 
-In production mode, the frontend is packaged in the go binary using [pkger](https://github.com/markbates/pkger). In this
+In production mode, the frontend is packaged in the go binary using [embed](https://golang.org/pkg/embed/). In this
 configuration, the frontend is served on the `/` route and the API on the `/api` route.
 
 To compile the Karto binary from source, first compile the frontend source code. In the `front` directory, execute:
@@ -135,15 +135,12 @@ npm run build
 ```
 This will generate a `build` directory in `front`.
 
-Then, package it inside the backend:
+Then, make a copy in a directory visible by the backend module:
 ```shell script
-cp -R front/build back/frontendBuild
-go install github.com/markbates/pkger/cmd/pkger
-pkger
+cp -R front/build/* back/exposition/frontend
 ```
-This will generate a `pkged.go` file in `back` with a binary content equivalent to the generated `build` directory.
 
-Finally, compile the go binary:
+Finally, compile the go binary in the `back` directory:
 ```shell script
 go build karto
 ```

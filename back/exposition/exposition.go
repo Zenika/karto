@@ -1,14 +1,18 @@
-package api
+package exposition
 
 import (
+	"embed"
 	"encoding/json"
 	"fmt"
-	"github.com/markbates/pkger"
+	"io/fs"
 	"karto/types"
 	"log"
 	"net/http"
 	"sync"
 )
+
+//go:embed frontend
+var embeddedFrontend embed.FS
 
 type handler struct {
 	mutex              sync.RWMutex
@@ -58,7 +62,8 @@ func healthCheck(w http.ResponseWriter, _ *http.Request) {
 }
 
 func Expose(address string, resultsChannel <-chan types.AnalysisResult) {
-	frontendHandler := http.FileServer(pkger.Dir("/frontendBuild"))
+	frontendDir, _ := fs.Sub(embeddedFrontend, "frontend")
+	frontendHandler := http.FileServer(http.FS(frontendDir))
 	apiHandler := newHandler()
 	go apiHandler.keepUpdated(resultsChannel)
 	mux := http.NewServeMux()
