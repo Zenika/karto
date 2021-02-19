@@ -1,4 +1,4 @@
-package api
+package exposition
 
 import (
 	"github.com/google/go-cmp/cmp"

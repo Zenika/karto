@@ -4,6 +4,11 @@
 
 A simple static analysis tool to explore a Kubernetes cluster.
 
+![Latest release](https://img.shields.io/github/release/Zenika/karto.svg?style=flat-square&color=%235893DF)
+![Docker pulls](https://img.shields.io/docker/pulls/zenikalabs/karto?style=flat-square&color=%235893DF)
+![GitHub Downloads](https://img.shields.io/github/downloads/Zenika/karto/total?label=github%20downloads&style=flat-square&color=%235893DF)
+![Build Status](https://img.shields.io/circleci/build/github/Zenika/karto?style=flat-square&color=%235893DF)
+
 ## Explore you cluster interactively!
 
 ![deployment-demo](docs/assets/exploring-demo.gif)
@@ -56,8 +61,8 @@ kubectl apply -f deploy/k8s.yml
 ```
 This will:
 - create a `karto` namespace
-- create a `karto` service account with a role allowing to list all pods, namespaces and network 
-policies in the cluster
+- create a `karto` service account with a role allowing to watch the resources displayed by Karto (namespaces, pods, 
+  network policies, services, deployments...)
 - deploy an instance of the application in this namespace with this service account
 
 #### Exposition
@@ -93,14 +98,14 @@ Simply download the Karto binary from the [releases page](https://github.com/Zen
 ### Prerequisites
 
 The following tools must be available locally:
-- [Go](https://golang.org/doc/install) (tested with Go 1.15)
+- [Go](https://golang.org/doc/install) (tested with Go 1.16)
 - [NodeJS](https://nodejs.org/en/download/) (tested with NodeJS 14)
 
 ### Run the frontend in dev mode
 
 In the `front` directory, execute:
 ```shell script
-npm start
+yarn start
 ```
 This will expose the app in dev mode on `localhost:3000` with a proxy to `localhost:8000` for the API calls.
 
@@ -121,24 +126,21 @@ go test ./...
 
 ### Compile the go binary from source
 
-In production mode, the frontend is packaged in the go binary using [pkger](https://github.com/markbates/pkger). In this
+In production mode, the frontend is packaged in the go binary using [embed](https://golang.org/pkg/embed/). In this
 configuration, the frontend is served on the `/` route and the API on the `/api` route.
 
 To compile the Karto binary from source, first compile the frontend source code. In the `front` directory, execute:
 ```shell script
-npm run build
+yarn build
 ```
 This will generate a `build` directory in `front`.
 
-Then, package it inside the backend:
+Then, make a copy in a directory visible by the backend module:
 ```shell script
-cp -R front/build back/frontendBuild
-go install github.com/markbates/pkger/cmd/pkger
-pkger
+cp -R front/build/* back/exposition/frontend
 ```
-This will generate a `pkged.go` file in `back` with a binary content equivalent to the generated `build` directory.
 
-Finally, compile the go binary:
+Finally, compile the go binary in the `back` directory:
 ```shell script
 go build karto
 ```

@@ -44,7 +44,7 @@ jobs:
             - karto/front/build
   build-back:
     docker:
-      - image: cimg/go:1.15.6
+      - image: cimg/go:1.16
     working_directory: /home/circleci/karto
     steps:
       - attach_workspace:
@@ -61,8 +61,7 @@ jobs:
           working_directory: back
           name: Build backend
           command: |
-            cp -R ../front/build frontendBuild
-            go install github.com/markbates/pkger/cmd/pkger && pkger
+            cp -R ../front/build/* exposition/frontend
             export CGO_ENABLED=0
             go build karto
             GOOS=darwin GOARCH=amd64 go build -o karto_darwin
@@ -94,16 +93,16 @@ jobs:
           command: |
             docker build -t zenikalabs/karto .
             docker tag zenikalabs/karto zenikalabs/karto:v1
-            docker tag zenikalabs/karto zenikalabs/karto:v1.5
-            docker tag zenikalabs/karto zenikalabs/karto:v1.5.0
+            docker tag zenikalabs/karto zenikalabs/karto:v1.6
+            docker tag zenikalabs/karto zenikalabs/karto:v1.6.0
       - run:
           name: Push docker image
           command: |
             echo "$DOCKER_PASS" | docker login --username $DOCKER_USER --password-stdin
             docker push zenikalabs/karto
             docker push zenikalabs/karto:v1
-            docker push zenikalabs/karto:v1.5
-            docker push zenikalabs/karto:v1.5.0
+            docker push zenikalabs/karto:v1.6
+            docker push zenikalabs/karto:v1.6.0
 workflows:
   version: 2
   build-test-and-deploy:
