@@ -6,6 +6,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
+	"karto/analyzer/health"
 	"karto/analyzer/pod"
 	"karto/analyzer/traffic"
 	"karto/analyzer/workload"
@@ -24,12 +25,16 @@ func TestAnalyze(t *testing.T) {
 		pods     []mockPodAnalyzerCall
 		traffic  []mockTrafficAnalyzerCall
 		workload []mockWorkloadAnalyzerCall
+		health   []mockHealthAnalyzerCall
 	}
 	k8sNamespace := testutils.NewNamespaceBuilder().WithName("ns").Build()
 	k8sPod1 := testutils.NewPodBuilder().WithName("pod1").WithNamespace("ns").
-		WithLabel("k1", "v1").Build()
+		WithLabel("k1", "v1").
+		WithContainerStatus(true, false, 0).Build()
 	k8sPod2 := testutils.NewPodBuilder().WithName("pod2").WithNamespace("ns").
-		WithLabel("k1", "v2").Build()
+		WithLabel("k1", "v2").
+		WithContainerStatus(true, false, 0).
+		WithContainerStatus(false, false, 0).Build()
 	k8sNetworkPolicy1 := testutils.NewNetworkPolicyBuilder().WithName("netPol1").
 		WithNamespace("ns").Build()
 	k8sNetworkPolicy2 := testutils.NewNetworkPolicyBuilder().WithName("netPol2").
@@ -86,6 +91,10 @@ func TestAnalyze(t *testing.T) {
 		TargetReplicaSets: []types.ReplicaSetRef{replicaSetRef1}}
 	deployment2 := &types.Deployment{Name: k8sDeployment2.Name, Namespace: k8sDeployment2.Namespace,
 		TargetReplicaSets: []types.ReplicaSetRef{replicaSetRef2}}
+	podHealth1 := &types.PodHealth{Pod: podRef1, Containers: 1, ContainersRunning: 1, ContainersReady: 0,
+		ContainersWithoutRestart: 1}
+	podHealth2 := &types.PodHealth{Pod: podRef2, Containers: 2, ContainersRunning: 1, ContainersReady: 0,
+		ContainersWithoutRestart: 2}
 	tests := []struct {
 		name                   string
 		mocks                  mocks
@@ -139,6 +148,16 @@ func TestAnalyze(t *testing.T) {
 						},
 					},
 				},
+				health: []mockHealthAnalyzerCall{
+					{
+						clusterState: health.ClusterState{
+							Pods: []*corev1.Pod{k8sPod1, k8sPod2},
+						},
+						returnValue: health.AnalysisResult{
+							Pods: []*types.PodHealth{podHealth1, podHealth2},
+						},
+					},
+				},
 			},
 			args: args{
 				clusterState: types.ClusterState{
@@ -163,6 +182,7 @@ func TestAnalyze(t *testing.T) {
 				StatefulSets:  []*types.StatefulSet{statefulSet1, statefulSet2},
 				DaemonSets:    []*types.DaemonSet{daemonSet1, daemonSet2},
 				Deployments:   []*types.Deployment{deployment1, deployment2},
+				PodHealths:    []*types.PodHealth{podHealth1, podHealth2},
 			},
 		},
 	}
@@ -171,7 +191,8 @@ func TestAnalyze(t *testing.T) {
 			podAnalyzer := createMockPodAnalyzer(t, tt.mocks.pods)
 			trafficAnalyzer := createMockTrafficAnalyzer(t, tt.mocks.traffic)
 			workloadAnalyzer := createMockWorkloadAnalyzer(t, tt.mocks.workload)
-			analyzer := NewAnalysisScheduler(podAnalyzer, trafficAnalyzer, workloadAnalyzer)
+			healthAnalyzer := createMockHealthAnalyzer(t, tt.mocks.health)
+			analyzer := NewAnalysisScheduler(podAnalyzer, trafficAnalyzer, workloadAnalyzer, healthAnalyzer)
 			clusterStateChannel := make(chan types.ClusterState)
 			resultsChannel := make(chan types.AnalysisResult)
 			go analyzer.AnalyzeOnClusterStateChange(clusterStateChannel, resultsChannel)
@@ -266,6 +287,34 @@ func (mock mockWorkloadAnalyzer) Analyze(clusterState workload.ClusterState) wor
 
 func createMockWorkloadAnalyzer(t *testing.T, calls []mockWorkloadAnalyzerCall) workload.Analyzer {
 	return mockWorkloadAnalyzer{
+		t:     t,
+		calls: calls,
+	}
+}
+
+type mockHealthAnalyzerCall struct {
+	clusterState health.ClusterState
+	returnValue  health.AnalysisResult
+}
+
+type mockHealthAnalyzer struct {
+	t     *testing.T
+	calls []mockHealthAnalyzerCall
+}
+
+func (mock mockHealthAnalyzer) Analyze(clusterState health.ClusterState) health.AnalysisResult {
+	for _, call := range mock.calls {
+		if reflect.DeepEqual(call.clusterState, clusterState) {
+			return call.returnValue
+		}
+	}
+	mock.t.Fatalf("mockHealthAnalyzer was called with unexpected arguments: \n\tclusterState: %s\n",
+		clusterState)
+	return health.AnalysisResult{}
+}
+
+func createMockHealthAnalyzer(t *testing.T, calls []mockHealthAnalyzerCall) health.Analyzer {
+	return mockHealthAnalyzer{
 		t:     t,
 		calls: calls,
 	}

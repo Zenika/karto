@@ -31,6 +31,7 @@ func newHandler() *handler {
 			StatefulSets:  make([]*types.StatefulSet, 0),
 			DaemonSets:    make([]*types.DaemonSet, 0),
 			Deployments:   make([]*types.Deployment, 0),
+			PodHealths:    make([]*types.PodHealth, 0),
 		},
 	}
 	return handler

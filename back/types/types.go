@@ -106,4 +106,13 @@ type AnalysisResult struct {
 	StatefulSets  []*StatefulSet  `json:"statefulSets"`
 	DaemonSets    []*DaemonSet    `json:"daemonSets"`
 	Deployments   []*Deployment   `json:"deployments"`
+	PodHealths    []*PodHealth    `json:"podHealths"`
+}
+
+type PodHealth struct {
+	Pod                      PodRef `json:"pod"`
+	Containers               int32  `json:"containers"`
+	ContainersRunning        int32  `json:"containersRunning"`
+	ContainersReady          int32  `json:"containersReady"`
+	ContainersWithoutRestart int32  `json:"containersWithoutRestart"`
 }

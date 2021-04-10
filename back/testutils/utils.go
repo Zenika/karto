@@ -41,16 +41,18 @@ func (namespaceBuilder *NamespaceBuilder) Build() *corev1.Namespace {
 }
 
 type PodBuilder struct {
-	name      string
-	namespace string
-	ownerUID  string
-	labels    map[string]string
+	name              string
+	namespace         string
+	ownerUID          string
+	labels            map[string]string
+	containerStatuses []corev1.ContainerStatus
 }
 
 func NewPodBuilder() *PodBuilder {
 	return &PodBuilder{
-		namespace: "default",
-		labels:    map[string]string{},
+		namespace:         "default",
+		labels:            map[string]string{},
+		containerStatuses: make([]corev1.ContainerStatus, 0),
 	}
 }
 
@@ -74,6 +76,21 @@ func (podBuilder *PodBuilder) WithOwnerUID(ownerUID string) *PodBuilder {
 	return podBuilder
 }
 
+func (podBuilder *PodBuilder) WithContainerStatus(isRunning bool, isReady bool, restartCount int32) *PodBuilder {
+	containerStatus := corev1.ContainerStatus{
+		State:        corev1.ContainerState{},
+		Ready:        isReady,
+		RestartCount: restartCount,
+	}
+	if isRunning {
+		containerStatus.State.Running = &corev1.ContainerStateRunning{}
+	} else {
+		containerStatus.State.Waiting = &corev1.ContainerStateWaiting{}
+	}
+	podBuilder.containerStatuses = append(podBuilder.containerStatuses, containerStatus)
+	return podBuilder
+}
+
 func (podBuilder *PodBuilder) Build() *corev1.Pod {
 	return &corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
@@ -83,6 +100,9 @@ func (podBuilder *PodBuilder) Build() *corev1.Pod {
 			OwnerReferences: []v1.OwnerReference{
 				{UID: types.UID(podBuilder.ownerUID)},
 			},
+		},
+		Status: corev1.PodStatus{
+			ContainerStatuses: podBuilder.containerStatuses,
 		},
 	}
 }
