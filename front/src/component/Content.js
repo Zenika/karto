@@ -22,10 +22,12 @@ import { labelSelectorOperators, maxRecommendedAllowedRoutes, maxRecommendedPods
 import StatefulSetDetails from './detail/StatefulSetDetails';
 import DaemonSetDetails from './detail/DaemonSetDetails';
 import IngressDetails from './detail/IngressDetails';
+import HealthGraph from './graph/HealthGraph';
 
 const VIEWS = {
     WORKLOADS: 'Workloads',
-    NETWORK_POLICIES: 'Network policies'
+    NETWORK_POLICIES: 'Network policies',
+    HEALTH: 'Health'
 };
 const DEFAULT_CONTROLS = {
     displayedView: VIEWS.WORKLOADS,
@@ -39,6 +41,9 @@ const DEFAULT_CONTROLS = {
     showNamespacePrefix: true,
     highlightPodsWithoutIngressIsolation: false,
     highlightPodsWithoutEgressIsolation: false,
+    highlightPodsWithContainersNotRunning: false,
+    highlightPodsWithContainersNotReady: false,
+    highlightPodsWithContainersRestarted: false,
     displayLargeDatasets: false
 };
 
@@ -264,6 +269,14 @@ const Content = ({ className }) => {
                         + `${state.analysisResult.allowedRoutes.length} allowed routes`}
                     </Typography>
                 </>}
+                {!state.isLoading && state.dataSet && state.dataSet.pods.length > 0
+                && isSafeToDisplay(state.dataSet, state.controls.displayLargeDatasets)
+                && state.controls.displayedView === VIEWS.HEALTH && <>
+                    <HealthGraph dataSet={state.dataSet} autoZoom={state.controls.autoZoom} onPodFocus={onPodFocus}/>
+                    <Typography className={classes.graphCaption} variant="caption">
+                        {`Displaying ${state.dataSet.pods.length}/${state.analysisResult.pods.length} pods`}
+                    </Typography>
+                </>}
             </main>
             <aside role="search" className={classes.controls}>
                 <Typography className={classes.controlsTitle} variant="h2">View</Typography>
@@ -327,6 +340,24 @@ const Content = ({ className }) => {
                             className={classes.controlsItem} name="Highlight non isolated pods (egress)"
                             checked={state.controls.highlightPodsWithoutEgressIsolation}
                             onChange={handleControlChange('highlightPodsWithoutEgressIsolation')}/>
+                    )}
+                    {state.controls.displayedView === VIEWS.HEALTH && (
+                        <SwitchControl
+                            className={classes.controlsItem} name="Highlight pods with containers not running"
+                            checked={state.controls.highlightPodsWithContainersNotRunning}
+                            onChange={handleControlChange('highlightPodsWithContainersNotRunning')}/>
+                    )}
+                    {state.controls.displayedView === VIEWS.HEALTH && (
+                        <SwitchControl
+                            className={classes.controlsItem} name="Highlight pods with containers not ready"
+                            checked={state.controls.highlightPodsWithContainersNotReady}
+                            onChange={handleControlChange('highlightPodsWithContainersNotReady')}/>
+                    )}
+                    {state.controls.displayedView === VIEWS.HEALTH && (
+                        <SwitchControl
+                            className={classes.controlsItem} name="Highlight pods with containers restarted"
+                            checked={state.controls.highlightPodsWithContainersRestarted}
+                            onChange={handleControlChange('highlightPodsWithContainersRestarted')}/>
                     )}
                     <SwitchControl
                         className={classes.controlsItem} name="Always display large datasets"

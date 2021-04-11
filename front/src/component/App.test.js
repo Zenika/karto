@@ -4,6 +4,7 @@ import { computeDataSet, fetchAnalysisResult } from '../service/analysisResultSe
 import { labelSelectorOperators, maxRecommendedAllowedRoutes, maxRecommendedPods } from '../constants';
 import ClusterGraph from './graph/ClusterGraph';
 import NetworkPolicyGraph from './graph/NetworkPolicyGraph';
+import HealthGraph from './graph/HealthGraph';
 import { getControls } from '../service/storageService';
 import { configureMockForPopper } from './utils/testutils';
 import App from './App';
@@ -12,6 +13,7 @@ jest.mock('../service/analysisResultService');
 jest.mock('../service/storageService');
 jest.mock('./graph/ClusterGraph', () => ({ __esModule: true, default: jest.fn() }));
 jest.mock('./graph/NetworkPolicyGraph', () => ({ __esModule: true, default: jest.fn() }));
+jest.mock('./graph/HealthGraph', () => ({ __esModule: true, default: jest.fn() }));
 
 describe('App component', () => {
 
@@ -36,6 +38,7 @@ describe('App component', () => {
             statefulSets: [],
             daemonSets: [],
             deployments: [],
+            podHealths: [],
             allNamespaces: [],
             allLabels: {}
         };
@@ -55,7 +58,8 @@ describe('App component', () => {
             replicaSets: [],
             statefulSets: [],
             daemonSets: [],
-            deployments: []
+            deployments: [],
+            podHealths: []
         };
         computeDataSet.mockImplementation(() => ({ ...defaultValue, ...value }));
     }
@@ -90,6 +94,10 @@ describe('App component', () => {
             podDetailsHandler = props.onPodFocus;
             allowedRouteDetailsHandler = props.onAllowedRouteFocus;
             return <div>Mock NetworkPolicyGraph</div>;
+        });
+        HealthGraph.mockImplementation(props => {
+            podDetailsHandler = props.onPodFocus;
+            return <div>Mock HealthGraph</div>;
         });
         mockAnalysisResult({});
         mockDataSet({});
@@ -176,7 +184,7 @@ describe('App component', () => {
             'option if you know what you are doing.')).not.toBeInTheDocument();
     });
 
-    it('displays cluster map by default', async () => {
+    it('displays cluster graph by default', async () => {
         const dataSet = {
             pods: [{}, {}],
             podIsolations: [{}, {}],
@@ -186,7 +194,8 @@ describe('App component', () => {
             replicaSets: [{}],
             statefulSets: [{}],
             daemonSets: [{}],
-            deployments: [{}]
+            deployments: [{}],
+            podHealths: [{}, {}]
         };
         mockDataSet(dataSet);
         render(<App/>);
@@ -198,7 +207,7 @@ describe('App component', () => {
         expect(screen.queryByText('Mock NetworkPolicyGraph')).not.toBeInTheDocument();
     });
 
-    it('displays network policy map when selected', async () => {
+    it('displays network policy graph when selected', async () => {
         const dataSet = {
             pods: [{}, {}],
             podIsolations: [{}, {}],
@@ -208,7 +217,8 @@ describe('App component', () => {
             replicaSets: [{}],
             statefulSets: [{}],
             daemonSets: [{}],
-            deployments: [{}]
+            deployments: [{}],
+            podHealths: [{}, {}]
         };
         mockDataSet(dataSet);
         render(<App/>);
@@ -222,7 +232,32 @@ describe('App component', () => {
         expect(screen.queryByText('Mock NetworkPolicyGraph')).toBeInTheDocument();
     });
 
-    it('displays cluster map when selected', async () => {
+    it('displays health graph when selected', async () => {
+        const dataSet = {
+            pods: [{}, {}],
+            podIsolations: [{}, {}],
+            allowedRoutes: [{}],
+            services: [{}],
+            ingresses: [{}],
+            replicaSets: [{}],
+            statefulSets: [{}],
+            daemonSets: [{}],
+            deployments: [{}],
+            podHealths: [{}, {}]
+        };
+        mockDataSet(dataSet);
+        render(<App/>);
+
+        fireEvent.click(screen.getByText('Health'));
+        await waitForComponentUpdate();
+
+        expect(screen.queryByText('Mock ClusterGraph')).not.toBeInTheDocument();
+        expect(HealthGraph).toHaveBeenCalledTimes(1);
+        expect(HealthGraph.mock.calls[0][0].dataSet).toEqual(dataSet);
+        expect(screen.queryByText('Mock HealthGraph')).toBeInTheDocument();
+    });
+
+    it('displays cluster graph when selected', async () => {
         render(<App/>);
         fireEvent.click(screen.getByText('Network policies'));
         await waitForComponentUpdate();
@@ -281,6 +316,23 @@ describe('App component', () => {
             .toBeInTheDocument();
     });
 
+    it('displays a caption for HealthGraph', async () => {
+        const analysisResult = {
+            pods: [{}, {}],
+        };
+        mockAnalysisResult(analysisResult);
+        const dataSet = {
+            pods: [{}],
+        };
+        mockDataSet(dataSet);
+        render(<App/>);
+        fireEvent.click(screen.getByText('Health'));
+        await waitForComponentUpdate();
+
+        expect(screen.queryByText('Displaying 1/2 pods'))
+            .toBeInTheDocument();
+    });
+
     it('retrieves stored controls and apply them on the analysis results', async () => {
         const analysisResult = {
             pods: [],
@@ -292,6 +344,7 @@ describe('App component', () => {
             statefulSets: [],
             daemonSets: [],
             deployments: [],
+            podHealths: [],
             allNamespaces: [],
             allLabels: {}
         };
@@ -308,6 +361,9 @@ describe('App component', () => {
             showNamespacePrefix: false,
             highlightPodsWithoutIngressIsolation: true,
             highlightPodsWithoutEgressIsolation: true,
+            highlightPodsWithContainersNotRunning: true,
+            highlightPodsWithContainersNotReady: true,
+            highlightPodsWithContainersRestarted: true,
             displayLargeDatasets: true
         };
         mockStoredControls(storedControls);
@@ -338,12 +394,15 @@ describe('App component', () => {
             showNamespacePrefix: true,
             highlightPodsWithoutIngressIsolation: false,
             highlightPodsWithoutEgressIsolation: false,
+            highlightPodsWithContainersNotRunning: false,
+            highlightPodsWithContainersNotReady: false,
+            highlightPodsWithContainersRestarted: false,
             displayLargeDatasets: false
         };
         expect(computeDataSet).toHaveBeenCalledWith(expect.anything(), expectedDefaultControls);
     });
 
-    it('displays specific controls with cluster map', async () => {
+    it('displays specific controls with cluster graph', async () => {
         render(<App/>);
         fireEvent.click(screen.getByText('Workloads'));
         await waitForComponentUpdate();
@@ -360,7 +419,7 @@ describe('App component', () => {
         expect(screen.queryByText('Always display large datasets')).toBeInTheDocument();
     });
 
-    it('displays specific controls with network policy map', async () => {
+    it('displays specific controls with network policy graph', async () => {
         render(<App/>);
         fireEvent.click(screen.getByText('Network policies'));
         await waitForComponentUpdate();
@@ -374,6 +433,23 @@ describe('App component', () => {
         expect(screen.queryByText('Show namespace prefix')).toBeInTheDocument();
         expect(screen.queryByText('Highlight non isolated pods (ingress)')).toBeInTheDocument();
         expect(screen.queryByText('Highlight non isolated pods (egress)')).toBeInTheDocument();
+        expect(screen.queryByText('Always display large datasets')).toBeInTheDocument();
+    });
+
+    it('displays specific controls with health graph', async () => {
+        render(<App/>);
+        fireEvent.click(screen.getByText('Health'));
+        await waitForComponentUpdate();
+
+        expect(screen.queryByText('All namespaces')).toBeInTheDocument();
+        expect(screen.queryByText('All pod labels')).toBeInTheDocument();
+        expect(screen.queryByText('All pod names')).toBeInTheDocument();
+        expect(screen.queryByText('Include ingress neighbors')).not.toBeInTheDocument();
+        expect(screen.queryByText('Include egress neighbors')).not.toBeInTheDocument();
+        expect(screen.queryByText('Auto refresh')).toBeInTheDocument();
+        expect(screen.queryByText('Show namespace prefix')).toBeInTheDocument();
+        expect(screen.queryByText('Highlight non isolated pods (ingress)')).not.toBeInTheDocument();
+        expect(screen.queryByText('Highlight non isolated pods (egress)')).not.toBeInTheDocument();
         expect(screen.queryByText('Always display large datasets')).toBeInTheDocument();
     });
 
@@ -503,6 +579,10 @@ describe('App component', () => {
         fireEvent.click(screen.getByText('Workloads'));
         await waitForComponentUpdate();
         expect(NetworkPolicyGraph.mock.calls[1][0].autoZoom).toEqual(true);
+
+        fireEvent.click(screen.getByText('Health'));
+        await waitForComponentUpdate();
+        expect(HealthGraph.mock.calls[0][0].autoZoom).toEqual(true);
     });
 
     it('can change namespace prefix display option', async () => {
@@ -537,7 +617,7 @@ describe('App component', () => {
             expect.objectContaining({ highlightPodsWithoutEgressIsolation: true }));
     });
 
-    it('displays pod details from cluster map', async () => {
+    it('displays pod details from cluster graph', async () => {
         render(<App/>);
         await waitForComponentUpdate();
 
@@ -547,7 +627,7 @@ describe('App component', () => {
         expect(screen.queryByText('Pod details')).toBeInTheDocument();
     });
 
-    it('displays service details from cluster map', async () => {
+    it('displays service details from cluster graph', async () => {
         render(<App/>);
         await waitForComponentUpdate();
 
@@ -561,7 +641,7 @@ describe('App component', () => {
         expect(screen.queryByText('Service details')).toBeInTheDocument();
     });
 
-    it('displays ingress details from cluster map', async () => {
+    it('displays ingress details from cluster graph', async () => {
         render(<App/>);
         await waitForComponentUpdate();
 
@@ -575,7 +655,7 @@ describe('App component', () => {
         expect(screen.queryByText('Ingress details')).toBeInTheDocument();
     });
 
-    it('displays replicaSet details from cluster map', async () => {
+    it('displays replicaSet details from cluster graph', async () => {
         render(<App/>);
         await waitForComponentUpdate();
 
@@ -589,7 +669,7 @@ describe('App component', () => {
         expect(screen.queryByText('ReplicaSet details')).toBeInTheDocument();
     });
 
-    it('displays statefulSet details from cluster map', async () => {
+    it('displays statefulSet details from cluster graph', async () => {
         render(<App/>);
         await waitForComponentUpdate();
 
@@ -603,7 +683,7 @@ describe('App component', () => {
         expect(screen.queryByText('StatefulSet details')).toBeInTheDocument();
     });
 
-    it('displays daemonSet details from cluster map', async () => {
+    it('displays daemonSet details from cluster graph', async () => {
         render(<App/>);
         await waitForComponentUpdate();
 
@@ -617,7 +697,7 @@ describe('App component', () => {
         expect(screen.queryByText('DaemonSet details')).toBeInTheDocument();
     });
 
-    it('displays deployment details from cluster map', async () => {
+    it('displays deployment details from cluster graph', async () => {
         render(<App/>);
         await waitForComponentUpdate();
 
@@ -631,7 +711,7 @@ describe('App component', () => {
         expect(screen.queryByText('Deployment details')).toBeInTheDocument();
     });
 
-    it('displays pod details from network policy map', async () => {
+    it('displays pod details from network policy graph', async () => {
         render(<App/>);
         fireEvent.click(screen.getByText('Network policies'));
         await waitForComponentUpdate();
@@ -642,7 +722,7 @@ describe('App component', () => {
         expect(screen.queryByText('Pod details')).toBeInTheDocument();
     });
 
-    it('displays allowed route details from network policy map', async () => {
+    it('displays allowed route details from network policy graph', async () => {
         render(<App/>);
         fireEvent.click(screen.getByText('Network policies'));
         await waitForComponentUpdate();
@@ -656,5 +736,16 @@ describe('App component', () => {
         await waitForComponentUpdate();
 
         expect(screen.queryByText('Allowed route details')).toBeInTheDocument();
+    });
+
+    it('displays pod details from health graph', async () => {
+        render(<App/>);
+        fireEvent.click(screen.getByText('Health'));
+        await waitForComponentUpdate();
+
+        act(() => podDetailsHandler({ namespace: 'ns', name: 'po', labels: {} }));
+        await waitForComponentUpdate();
+
+        expect(screen.queryByText('Pod details')).toBeInTheDocument();
     });
 });

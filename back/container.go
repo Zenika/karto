@@ -2,6 +2,8 @@ package main
 
 import (
 	"karto/analyzer"
+	"karto/analyzer/health"
+	"karto/analyzer/health/podhealth"
 	"karto/analyzer/pod"
 	"karto/analyzer/traffic"
 	"karto/analyzer/traffic/allowedroute"
@@ -32,7 +34,9 @@ func dependencyInjection() Container {
 	deploymentAnalyzer := deployment.NewAnalyzer()
 	workloadAnalyzer := workload.NewAnalyzer(serviceAnalyzer, ingressAnalyzer, replicaSetAnalyzer, statefulSetAnalyzer,
 		daemonSetAnalyzer, deploymentAnalyzer)
-	analysisScheduler := analyzer.NewAnalysisScheduler(podAnalyzer, trafficAnalyzer, workloadAnalyzer)
+	podHealthAnalyzer := podhealth.NewAnalyzer()
+	healthAnalyzer := health.NewAnalyzer(podHealthAnalyzer)
+	analysisScheduler := analyzer.NewAnalysisScheduler(podAnalyzer, trafficAnalyzer, workloadAnalyzer, healthAnalyzer)
 	return Container{
 		AnalysisScheduler: analysisScheduler,
 	}

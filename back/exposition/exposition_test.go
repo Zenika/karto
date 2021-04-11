@@ -47,6 +47,10 @@ func TestExpose(t *testing.T) {
 		TargetReplicaSets: []types.ReplicaSetRef{replicaSetRef1}}
 	deployment2 := &types.Deployment{Name: "deploy2", Namespace: "ns",
 		TargetReplicaSets: []types.ReplicaSetRef{replicaSetRef2}}
+	podHealth1 := &types.PodHealth{Pod: podRef1, Containers: 1, ContainersRunning: 1, ContainersReady: 0,
+		ContainersWithoutRestart: 1}
+	podHealth2 := &types.PodHealth{Pod: podRef2, Containers: 2, ContainersRunning: 1, ContainersReady: 0,
+		ContainersWithoutRestart: 2}
 	tests := []struct {
 		name         string
 		args         args
@@ -74,6 +78,7 @@ func TestExpose(t *testing.T) {
 					StatefulSets:  []*types.StatefulSet{statefulSet1, statefulSet2},
 					DaemonSets:    []*types.DaemonSet{daemonSet1, daemonSet2},
 					Deployments:   []*types.Deployment{deployment1, deployment2},
+					PodHealths:    []*types.PodHealth{podHealth1, podHealth2},
 				},
 			},
 			expectedBody: "{" +
@@ -172,6 +177,22 @@ func TestExpose(t *testing.T) {
 				"        \"name\":\"deploy2\"," +
 				"        \"namespace\":\"ns\"," +
 				"        \"targetReplicaSets\":[{\"name\":\"rs2\",\"namespace\":\"ns\"}]" +
+				"    }" +
+				"]," +
+				"\"podHealths\":[" +
+				"    {" +
+				"        \"pod\":{\"name\":\"pod1\",\"namespace\":\"ns\"}," +
+				"        \"containers\":1," +
+				"        \"containersRunning\":1," +
+				"        \"containersReady\":0," +
+				"        \"containersWithoutRestart\":1" +
+				"    }," +
+				"    {" +
+				"        \"pod\":{\"name\":\"pod2\",\"namespace\":\"ns\"}," +
+				"        \"containers\":2," +
+				"        \"containersRunning\":1," +
+				"        \"containersReady\":0," +
+				"        \"containersWithoutRestart\":2" +
 				"    }" +
 				"]" +
 				"}\n",

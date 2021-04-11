@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"karto/analyzer/health"
 	"karto/analyzer/pod"
 	"karto/analyzer/traffic"
 	"karto/analyzer/workload"
@@ -18,14 +19,16 @@ type analysisSchedulerImpl struct {
 	podAnalyzer      pod.Analyzer
 	trafficAnalyzer  traffic.Analyzer
 	workloadAnalyzer workload.Analyzer
+	healthAnalyzer   health.Analyzer
 }
 
 func NewAnalysisScheduler(podAnalyzer pod.Analyzer, trafficAnalyzer traffic.Analyzer,
-	workloadAnalyzer workload.Analyzer) AnalysisScheduler {
+	workloadAnalyzer workload.Analyzer, healthAnalyzer health.Analyzer) AnalysisScheduler {
 	return analysisSchedulerImpl{
 		podAnalyzer:      podAnalyzer,
 		trafficAnalyzer:  trafficAnalyzer,
 		workloadAnalyzer: workloadAnalyzer,
+		healthAnalyzer:   healthAnalyzer,
 	}
 }
 
@@ -57,6 +60,9 @@ func (analysisScheduler analysisSchedulerImpl) analyze(clusterState types.Cluste
 		DaemonSets:   clusterState.DaemonSets,
 		Deployments:  clusterState.Deployments,
 	})
+	healthResult := analysisScheduler.healthAnalyzer.Analyze(health.ClusterState{
+		Pods: clusterState.Pods,
+	})
 	pods := podsResult.Pods
 	podIsolations := trafficResult.Pods
 	allowedRoutes := trafficResult.AllowedRoutes
@@ -66,6 +72,7 @@ func (analysisScheduler analysisSchedulerImpl) analyze(clusterState types.Cluste
 	statefulSets := workloadResult.StatefulSets
 	daemonSets := workloadResult.DaemonSets
 	deployments := workloadResult.Deployments
+	podHealths := healthResult.Pods
 	elapsed := time.Since(start)
 	log.Printf("Finished analysis in %s, found: %d pods, %d allowed routes, %d services, %d ingresses, "+
 		"%d replicaSets, %d statefulSets, %d daemonSets and %d deployments\n", elapsed, len(pods), len(allowedRoutes),
@@ -80,5 +87,6 @@ func (analysisScheduler analysisSchedulerImpl) analyze(clusterState types.Cluste
 		StatefulSets:  statefulSets,
 		DaemonSets:    daemonSets,
 		Deployments:   deployments,
+		PodHealths:    podHealths,
 	}
 }
