@@ -21,7 +21,8 @@ describe('fetchAnalysisResult', () => {
             replicaSets: [{ name: 'replicaSet1' }],
             statefulSets: [{ name: 'statefulSet1' }],
             daemonSets: [{ name: 'daemonSet1' }],
-            deployments: [{ name: 'deployment1' }]
+            deployments: [{ name: 'deployment1' }],
+            podHealths: [{ pod: { name: 'pod1' } }]
         };
         mockGlobalFetch(analysisResult);
 
@@ -36,6 +37,7 @@ describe('fetchAnalysisResult', () => {
         expect(actual.statefulSets).toEqual(analysisResult.statefulSets);
         expect(actual.daemonSets).toEqual(analysisResult.daemonSets);
         expect(actual.deployments).toEqual(analysisResult.deployments);
+        expect(actual.podHealths).toEqual(analysisResult.podHealths);
     });
 
     it('aggregates all namespaces', async () => {
@@ -79,7 +81,8 @@ describe('computeDataSet', () => {
         replicaSets: [],
         statefulSets: [],
         daemonSets: [],
-        deployments: []
+        deployments: [],
+        podHealths: []
     };
     const defaultNamespace = 'ns';
     const defaultControls = {
@@ -590,6 +593,30 @@ describe('computeDataSet', () => {
         ]);
     });
 
+    it('filters podHealths using their pods', () => {
+        const analysisResult = {
+            ...emptyAnalysisResult,
+            pods: [
+                { namespace: defaultNamespace, name: 'pod1' },
+                { namespace: defaultNamespace, name: 'pod2' }
+            ],
+            podHealths: [
+                { pod: { namespace: defaultNamespace, name: 'pod1' } },
+                { pod: { namespace: defaultNamespace, name: 'pod2' } }
+            ]
+        };
+        const controls = {
+            ...defaultControls,
+            nameFilter: 'pod1'
+        };
+
+        const actual = computeDataSet(analysisResult, controls);
+
+        expect(actual.podHealths).toEqual([
+            { namespace: defaultNamespace, name: 'pod1', displayName: 'pod1' }
+        ]);
+    });
+
     it('includes ingress neighbors', () => {
         const analysisResult = {
             ...emptyAnalysisResult,
@@ -866,6 +893,10 @@ describe('computeDataSet', () => {
                         { namespace: namespace, name: 'replicaSet1' }
                     ]
                 }
+            ],
+            podHealths: [
+                { pod: { namespace: namespace, name: 'pod1' } },
+                { pod: { namespace: namespace, name: 'pod2' } }
             ]
         };
         const controls = {
@@ -885,5 +916,7 @@ describe('computeDataSet', () => {
         expect(actual.statefulSets.map(statefulSet => statefulSet.displayName)).toEqual([`${namespace}/statefulSet1`]);
         expect(actual.daemonSets.map(daemonSet => daemonSet.displayName)).toEqual([`${namespace}/daemonSet1`]);
         expect(actual.deployments.map(deployment => deployment.displayName)).toEqual([`${namespace}/deployment1`]);
+        expect(actual.podHealths.map(podHealth => podHealth.displayName))
+            .toEqual([`${namespace}/pod1`, `${namespace}/pod2`]);
     });
 });
