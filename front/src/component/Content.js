@@ -22,10 +22,12 @@ import { labelSelectorOperators, maxRecommendedAllowedRoutes, maxRecommendedPods
 import StatefulSetDetails from './detail/StatefulSetDetails';
 import DaemonSetDetails from './detail/DaemonSetDetails';
 import IngressDetails from './detail/IngressDetails';
+import HealthGraph from './graph/HealthGraph';
 
 const VIEWS = {
     WORKLOADS: 'Workloads',
-    NETWORK_POLICIES: 'Network policies'
+    NETWORK_POLICIES: 'Network policies',
+    HEALTH: 'Health'
 };
 const DEFAULT_CONTROLS = {
     displayedView: VIEWS.WORKLOADS,
@@ -262,6 +264,14 @@ const Content = ({ className }) => {
                         {`Displaying ${state.dataSet.pods.length}/${state.analysisResult.pods.length} pods`
                         + ` and ${state.dataSet.allowedRoutes.length}/`
                         + `${state.analysisResult.allowedRoutes.length} allowed routes`}
+                    </Typography>
+                </>}
+                {!state.isLoading && state.dataSet && state.dataSet.pods.length > 0
+                && isSafeToDisplay(state.dataSet, state.controls.displayLargeDatasets)
+                && state.controls.displayedView === VIEWS.HEALTH && <>
+                    <HealthGraph dataSet={state.dataSet} autoZoom={state.controls.autoZoom} onPodFocus={onPodFocus}/>
+                    <Typography className={classes.graphCaption} variant="caption">
+                        {`Displaying ${state.dataSet.pods.length}/${state.analysisResult.pods.length} pods`}
                     </Typography>
                 </>}
             </main>
