@@ -328,13 +328,20 @@ function makeDeploymentMapper(controls, filteredReplicaSetIds) {
 }
 
 function makePodHealthMapper(controls, podMapper, podsIndex) {
-    // const { highlightPodsWithoutIngressIsolation, highlightPodsWithoutEgressIsolation } = controls;
+    const {
+        highlightPodsWithContainersNotRunning,
+        highlightPodsWithContainersNotReady,
+        highlightPodsWithContainersRestarted
+    } = controls;
     return podHealth => ({
         ...podMapper(podsIndex.get(podId(podHealth.pod))),
         containers: podHealth.containers,
         containersRunning: podHealth.containersRunning,
         containersReady: podHealth.containersReady,
-        containersWithoutRestart: podHealth.containersWithoutRestart
+        containersWithoutRestart: podHealth.containersWithoutRestart,
+        highlighted: (highlightPodsWithContainersNotRunning && podHealth.containers > podHealth.containersRunning)
+            || (highlightPodsWithContainersNotReady && podHealth.containers > podHealth.containersReady)
+            || (highlightPodsWithContainersRestarted && podHealth.containers > podHealth.containersWithoutRestart)
     });
 }
 

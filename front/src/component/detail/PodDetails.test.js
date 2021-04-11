@@ -11,7 +11,11 @@ describe('PodDetails component', () => {
                 k1: 'v1'
             },
             isIngressIsolated: false,
-            isEgressIsolated: true
+            isEgressIsolated: true,
+            containers: 4,
+            containersRunning: 3,
+            containersReady: 2,
+            containersWithoutRestart: 1
         };
         render(<PodDetails data={podData}/>);
 
@@ -27,6 +31,13 @@ describe('PodDetails component', () => {
         expect(screen.queryByText('no')).toBeInTheDocument();
         expect(screen.queryByText('Isolated for egress:')).toBeInTheDocument();
         expect(screen.queryByText('yes')).toBeInTheDocument();
+        expect(screen.queryByText('Health:')).toBeInTheDocument();
+        expect(screen.queryByText('Containers running:')).toBeInTheDocument();
+        expect(screen.queryByText('3/4')).toBeInTheDocument();
+        expect(screen.queryByText('Containers ready:')).toBeInTheDocument();
+        expect(screen.queryByText('2/4')).toBeInTheDocument();
+        expect(screen.queryByText('Containers with no restart:')).toBeInTheDocument();
+        expect(screen.queryByText('1/4')).toBeInTheDocument();
     });
 
     it('does not display ingress info when not specified', () => {
@@ -51,5 +62,21 @@ describe('PodDetails component', () => {
         render(<PodDetails data={podData}/>);
 
         expect(screen.queryByText('Isolated for egress')).not.toBeInTheDocument();
+    });
+
+    it('does not display health info when not specified', () => {
+        const podData = {
+            namespace: 'ns',
+            name: 'pod',
+            labels: {},
+            isIngressIsolated: true
+        };
+        render(<PodDetails data={podData}/>);
+
+        expect(screen.queryByText('Health:')).not.toBeInTheDocument();
+        expect(screen.queryByText('Containers:')).not.toBeInTheDocument();
+        expect(screen.queryByText('Running:')).not.toBeInTheDocument();
+        expect(screen.queryByText('Ready')).not.toBeInTheDocument();
+        expect(screen.queryByText('With no restarts:')).not.toBeInTheDocument();
     });
 });

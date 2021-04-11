@@ -361,6 +361,9 @@ describe('App component', () => {
             showNamespacePrefix: false,
             highlightPodsWithoutIngressIsolation: true,
             highlightPodsWithoutEgressIsolation: true,
+            highlightPodsWithContainersNotRunning: true,
+            highlightPodsWithContainersNotReady: true,
+            highlightPodsWithContainersRestarted: true,
             displayLargeDatasets: true
         };
         mockStoredControls(storedControls);
@@ -391,6 +394,9 @@ describe('App component', () => {
             showNamespacePrefix: true,
             highlightPodsWithoutIngressIsolation: false,
             highlightPodsWithoutEgressIsolation: false,
+            highlightPodsWithContainersNotRunning: false,
+            highlightPodsWithContainersNotReady: false,
+            highlightPodsWithContainersRestarted: false,
             displayLargeDatasets: false
         };
         expect(computeDataSet).toHaveBeenCalledWith(expect.anything(), expectedDefaultControls);

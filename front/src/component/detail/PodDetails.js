@@ -75,6 +75,34 @@ const PodDetails = ({ data }) => {
                     </Typography>
                 </div>
             )}
+            {data.containers != null && (
+                <div>
+                    <Typography variant="body1" component="span" className={classes.detailsKey}>Health:</Typography>
+                    <div className={classes.detailsValueNested}>
+                        <div>
+                            <Typography variant="body1" component="span"
+                                        className={classes.detailsKey}>Containers running:</Typography>
+                            <Typography variant="body1" component="span" className={classes.detailsValue}>
+                                {data.containersRunning}/{data.containers}
+                            </Typography>
+                        </div>
+                        <div>
+                            <Typography variant="body1" component="span"
+                                        className={classes.detailsKey}>Containers ready:</Typography>
+                            <Typography variant="body1" component="span" className={classes.detailsValue}>
+                                {data.containersReady}/{data.containers}
+                            </Typography>
+                        </div>
+                        <div>
+                            <Typography variant="body1" component="span"
+                                        className={classes.detailsKey}>Containers with no restart:</Typography>
+                            <Typography variant="body1" component="span" className={classes.detailsValue}>
+                                {data.containersWithoutRestart}/{data.containers}
+                            </Typography>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 };

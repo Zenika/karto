@@ -93,7 +93,10 @@ describe('computeDataSet', () => {
         highlightPodsWithoutIngressIsolation: false,
         highlightPodsWithoutEgressIsolation: false,
         includeIngressNeighbors: false,
-        includeEgressNeighbors: false
+        includeEgressNeighbors: false,
+        highlightPodsWithContainersNotRunning: false,
+        highlightPodsWithContainersNotReady: false,
+        highlightPodsWithContainersRestarted: false,
     };
 
     it('filters pods by namespace', () => {
@@ -613,7 +616,7 @@ describe('computeDataSet', () => {
         const actual = computeDataSet(analysisResult, controls);
 
         expect(actual.podHealths).toEqual([
-            { namespace: defaultNamespace, name: 'pod1', displayName: 'pod1' }
+            { namespace: defaultNamespace, name: 'pod1', displayName: 'pod1', highlighted: false }
         ]);
     });
 
@@ -781,6 +784,123 @@ describe('computeDataSet', () => {
             {
                 namespace: defaultNamespace, name: 'pod2', displayName: 'pod2',
                 isIngressIsolated: false, isEgressIsolated: true, highlighted: false
+            }
+        ]);
+    });
+
+    it('highlights podHealths with containers not running', () => {
+        const analysisResult = {
+            ...emptyAnalysisResult,
+            pods: [
+                { namespace: defaultNamespace, name: 'pod1' },
+                { namespace: defaultNamespace, name: 'pod2' }
+            ],
+            podHealths: [
+                {
+                    pod: { namespace: defaultNamespace, name: 'pod1' },
+                    containers: 2, containersRunning: 1, containersReady: 2, containersWithoutRestart: 2
+                },
+                {
+                    pod: { namespace: defaultNamespace, name: 'pod2' },
+                    containers: 2, containersRunning: 2, containersReady: 2, containersWithoutRestart: 2
+                }
+            ]
+        };
+        const controls = {
+            ...defaultControls,
+            highlightPodsWithContainersNotRunning: true
+        };
+
+        const actual = computeDataSet(analysisResult, controls);
+
+        expect(actual.podHealths).toEqual([
+            {
+                namespace: defaultNamespace, name: 'pod1', displayName: 'pod1',
+                containers: 2, containersRunning: 1, containersReady: 2, containersWithoutRestart: 2,
+                highlighted: true
+            },
+            {
+                namespace: defaultNamespace, name: 'pod2', displayName: 'pod2',
+                containers: 2, containersRunning: 2, containersReady: 2, containersWithoutRestart: 2,
+                highlighted: false
+            }
+        ]);
+    });
+
+    it('highlights podHealths with containers not ready', () => {
+        const analysisResult = {
+            ...emptyAnalysisResult,
+            pods: [
+                { namespace: defaultNamespace, name: 'pod1' },
+                { namespace: defaultNamespace, name: 'pod2' }
+            ],
+            podHealths: [
+                {
+                    pod: { namespace: defaultNamespace, name: 'pod1' },
+                    containers: 2, containersRunning: 2, containersReady: 1, containersWithoutRestart: 2
+                },
+                {
+                    pod: { namespace: defaultNamespace, name: 'pod2' },
+                    containers: 2, containersRunning: 2, containersReady: 2, containersWithoutRestart: 2
+                }
+            ]
+        };
+        const controls = {
+            ...defaultControls,
+            highlightPodsWithContainersNotReady: true
+        };
+
+        const actual = computeDataSet(analysisResult, controls);
+
+        expect(actual.podHealths).toEqual([
+            {
+                namespace: defaultNamespace, name: 'pod1', displayName: 'pod1',
+                containers: 2, containersRunning: 2, containersReady: 1, containersWithoutRestart: 2,
+                highlighted: true
+            },
+            {
+                namespace: defaultNamespace, name: 'pod2', displayName: 'pod2',
+                containers: 2, containersRunning: 2, containersReady: 2, containersWithoutRestart: 2,
+                highlighted: false
+            }
+        ]);
+    });
+
+    it('highlights podHealths with containers restarted', () => {
+        const analysisResult = {
+            ...emptyAnalysisResult,
+            pods: [
+                { namespace: defaultNamespace, name: 'pod1' },
+                { namespace: defaultNamespace, name: 'pod2' }
+            ],
+            podHealths: [
+                {
+                    pod: { namespace: defaultNamespace, name: 'pod1' },
+                    containers: 2, containersRunning: 2, containersReady: 2, containersWithoutRestart: 1
+                },
+                {
+                    pod: { namespace: defaultNamespace, name: 'pod2' },
+                    containers: 2, containersRunning: 2, containersReady: 2, containersWithoutRestart: 2
+                }
+            ]
+        };
+        const controls = {
+            ...defaultControls,
+            highlightPodsWithContainersRestarted: true
+        };
+
+        const actual = computeDataSet(analysisResult, controls);
+
+        expect(actual.podHealths).toEqual([
+            {
+                namespace: defaultNamespace, name: 'pod1', displayName: 'pod1',
+                containers: 2, containersRunning: 2, containersReady: 2, containersWithoutRestart: 1,
+                highlighted: true
+            },
+            {
+                namespace: defaultNamespace, name: 'pod2', displayName: 'pod2',
+                containers: 2, containersRunning: 2, containersReady: 2, containersWithoutRestart: 2,
+                highlighted: false
             }
         ]);
     });
