@@ -1,6 +1,6 @@
 {
   "name": "karto",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "private": true,
   "dependencies": {
     "@material-ui/core": "4.12.3",
