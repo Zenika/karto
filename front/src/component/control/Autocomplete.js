@@ -6,12 +6,14 @@ import Popper from '@mui/material/Popper';
 
 const useStyles = makeStyles(theme => ({
     chip: {
-        height: 18,
-        marginRight: 0.5 * theme.spacing(1),
-        fontSize: theme.typography.body2.fontSize
+        '&&&': {
+            height: 18,
+            marginRight: theme.spacing(0.5),
+            fontSize: theme.typography.body2.fontSize
+        }
     },
     input: {
-        '&&&': {
+        '&&&&': {
             paddingRight: 26,
             '&:before': {
                 display: 'none'
@@ -30,7 +32,7 @@ const Autocomplete = ({ placeholder, ...props }) => {
     const chipClasses = { root: classes.chip, deleteIcon: classes.chipDeleteIcon };
     const textFieldClasses = { root: classes.input };
     return <MuiAutocomplete
-        size="small" autoHighlight={true} closeIcon={null}
+        size="small" autoHighlight={true} clearIcon={null}
         ChipProps={{
             color: 'primary', variant: 'outlined', classes: chipClasses
         }}
@@ -42,10 +44,10 @@ const Autocomplete = ({ placeholder, ...props }) => {
             );
         }}
         PopperComponent={(props) => (
-            <Popper {...props} style={{ minWidth: 263, width: 'auto' }} placement='bottom-start'/>
+            <Popper {...props} style={{ minWidth: 263, width: 'auto' }} placement="bottom-start"/>
         )}
-        renderOption={(option) => (
-            <Typography noWrap variant="body2">{option}</Typography>
+        renderOption={((props, option) =>
+                <Typography noWrap variant="body2" {...props}>{option}</Typography>
         )}
         {...props}
     />;

@@ -66,7 +66,7 @@ const useStyles = makeStyles(theme => ({
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'flex-start',
-        padding: `0 ${theme.spacing(2)}`,
+        padding: theme.spacing(0, 2),
         pointerEvents: 'none'
     },
     controlsTitle: {
@@ -93,7 +93,7 @@ const useStyles = makeStyles(theme => ({
         bottom: 40,
         right: 0,
         width: 320,
-        padding: `0 ${theme.spacing(2)}`,
+        padding: theme.spacing(0, 2),
         borderLeft: `1px solid ${theme.palette.primary.main}`
     },
     graphCaption: {

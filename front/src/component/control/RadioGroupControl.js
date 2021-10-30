@@ -9,7 +9,7 @@ const useCustomRadioStyles = makeStyles(theme => ({
     root: {
         '&&': {
             height: 20,
-            width: 32 + theme.spacing(1),
+            width: `calc(${theme.spacing(1)} + 32px)`,
             paddingTop: 0,
             paddingBottom: 0,
             '&:hover': {
