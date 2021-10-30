@@ -4,7 +4,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
-	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -408,26 +407,28 @@ func (ingressBuilder *IngressBuilder) WithServiceBackend(serviceName string) *In
 	return ingressBuilder
 }
 
-func (ingressBuilder *IngressBuilder) Build() *networkingv1beta1.Ingress {
-	ingressPaths := make([]networkingv1beta1.HTTPIngressPath, 0)
+func (ingressBuilder *IngressBuilder) Build() *networkingv1.Ingress {
+	ingressPaths := make([]networkingv1.HTTPIngressPath, 0)
 	for _, serviceBackend := range ingressBuilder.serviceBackends {
-		ingressPath := networkingv1beta1.HTTPIngressPath{
-			Backend: networkingv1beta1.IngressBackend{
-				ServiceName: serviceBackend,
+		ingressPath := networkingv1.HTTPIngressPath{
+			Backend: networkingv1.IngressBackend{
+				Service: &networkingv1.IngressServiceBackend{
+					Name: serviceBackend,
+				},
 			},
 		}
 		ingressPaths = append(ingressPaths, ingressPath)
 	}
-	return &networkingv1beta1.Ingress{
+	return &networkingv1.Ingress{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      ingressBuilder.name,
 			Namespace: ingressBuilder.namespace,
 		},
-		Spec: networkingv1beta1.IngressSpec{
-			Rules: []networkingv1beta1.IngressRule{
+		Spec: networkingv1.IngressSpec{
+			Rules: []networkingv1.IngressRule{
 				{
-					IngressRuleValue: networkingv1beta1.IngressRuleValue{
-						HTTP: &networkingv1beta1.HTTPIngressRuleValue{
+					IngressRuleValue: networkingv1.IngressRuleValue{
+						HTTP: &networkingv1.HTTPIngressRuleValue{
 							Paths: ingressPaths,
 						},
 					},

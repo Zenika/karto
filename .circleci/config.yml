@@ -44,7 +44,7 @@ jobs:
             - karto/front/build
   build-back:
     docker:
-      - image: cimg/go:1.16
+      - image: cimg/go:1.17
     working_directory: /home/circleci/karto
     steps:
       - attach_workspace:

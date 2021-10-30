@@ -98,7 +98,7 @@ Simply download the Karto binary from the [releases page](https://github.com/Zen
 ### Prerequisites
 
 The following tools must be available locally:
-- [Go](https://golang.org/doc/install) (tested with Go 1.16)
+- [Go](https://golang.org/doc/install) (tested with Go 1.17)
 - [NodeJS](https://nodejs.org/en/download/) (tested with NodeJS 14)
 
 ### Run the frontend in dev mode

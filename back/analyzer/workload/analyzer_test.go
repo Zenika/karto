@@ -4,7 +4,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	networkingv1beta1 "k8s.io/api/networking/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
 	"karto/analyzer/workload/daemonset"
 	"karto/analyzer/workload/deployment"
 	"karto/analyzer/workload/ingress"
@@ -185,7 +185,7 @@ func TestAnalyze(t *testing.T) {
 				clusterState: ClusterState{
 					Pods:         []*corev1.Pod{k8sPod1, k8sPod2, k8sPod3},
 					Services:     []*corev1.Service{k8sService1, k8sService2},
-					Ingresses:    []*networkingv1beta1.Ingress{k8sIngress1, k8sIngress2},
+					Ingresses:    []*networkingv1.Ingress{k8sIngress1, k8sIngress2},
 					ReplicaSets:  []*appsv1.ReplicaSet{k8sReplicaSet1, k8sReplicaSet2},
 					StatefulSets: []*appsv1.StatefulSet{k8sStatefulSet1, k8sStatefulSet2},
 					DaemonSets:   []*appsv1.DaemonSet{k8sDaemonSet1, k8sDaemonSet2},
@@ -255,7 +255,7 @@ func createMockServiceAnalyzer(t *testing.T, calls []mockServiceAnalyzerCall) se
 }
 
 type mockIngressAnalyzerCallArgs struct {
-	ingress  *networkingv1beta1.Ingress
+	ingress  *networkingv1.Ingress
 	services []*corev1.Service
 }
 
@@ -269,7 +269,7 @@ type mockIngressAnalyzer struct {
 	calls []mockIngressAnalyzerCall
 }
 
-func (mock mockIngressAnalyzer) Analyze(ingress *networkingv1beta1.Ingress, services []*corev1.Service) *types.Ingress {
+func (mock mockIngressAnalyzer) Analyze(ingress *networkingv1.Ingress, services []*corev1.Service) *types.Ingress {
 	for _, call := range mock.calls {
 		if reflect.DeepEqual(call.args.ingress, ingress) &&
 			reflect.DeepEqual(call.args.services, services) {

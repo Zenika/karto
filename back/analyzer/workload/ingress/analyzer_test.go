@@ -3,7 +3,7 @@ package ingress
 import (
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
-	networkingv1beta1 "k8s.io/api/networking/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
 	"karto/testutils"
 	"karto/types"
 	"testing"
@@ -11,7 +11,7 @@ import (
 
 func TestAnalyze(t *testing.T) {
 	type args struct {
-		ingress  *networkingv1beta1.Ingress
+		ingress  *networkingv1.Ingress
 		services []*corev1.Service
 	}
 	tests := []struct {

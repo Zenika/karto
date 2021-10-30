@@ -34,9 +34,8 @@ export default class D3HealthGraph extends D3Graph {
                     .attr('r', 2)
                     .each(d => {
                         if (d.fx == null || (dataChanged & !d.pinned)) {
-                            d.fx = d.x = 6 * SPACING *
-                                (this.podsToNamespacePositionIndex.get(d.id) - (this.allNamespaces.length - 1) / 2);
-                            d.fy = d.y = SPACING * this.podsToPositionInNamespaceIndex.get(d.id);
+                            d.fx = d.x = 6 * SPACING * (this.podsToNamespacePositionIndex.get(d.id) - 1/2);
+                            d.fy = d.y = SPACING * (this.podsToPositionInNamespaceIndex.get(d.id) - 2);
                         }
                     });
             }

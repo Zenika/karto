@@ -4,14 +4,13 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
-	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 )
 
 type ClusterState struct {
 	Namespaces      []*corev1.Namespace
 	Pods            []*corev1.Pod
 	Services        []*corev1.Service
-	Ingresses       []*networkingv1beta1.Ingress
+	Ingresses       []*networkingv1.Ingress
 	ReplicaSets     []*appsv1.ReplicaSet
 	StatefulSets    []*appsv1.StatefulSet
 	DaemonSets      []*appsv1.DaemonSet

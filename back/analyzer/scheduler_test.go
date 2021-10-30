@@ -5,7 +5,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
-	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	"karto/analyzer/health"
 	"karto/analyzer/pod"
 	"karto/analyzer/traffic"
@@ -132,7 +131,7 @@ func TestAnalyze(t *testing.T) {
 						clusterState: workload.ClusterState{
 							Pods:         []*corev1.Pod{k8sPod1, k8sPod2},
 							Services:     []*corev1.Service{k8sService1, k8sService2},
-							Ingresses:    []*networkingv1beta1.Ingress{k8sIngress1, k8sIngress2},
+							Ingresses:    []*networkingv1.Ingress{k8sIngress1, k8sIngress2},
 							ReplicaSets:  []*appsv1.ReplicaSet{k8sReplicaSet1, k8sReplicaSet2},
 							StatefulSets: []*appsv1.StatefulSet{k8sStatefulSet1, k8sStatefulSet2},
 							DaemonSets:   []*appsv1.DaemonSet{k8sDaemonSet1, k8sDaemonSet2},
@@ -164,7 +163,7 @@ func TestAnalyze(t *testing.T) {
 					Namespaces:      []*corev1.Namespace{k8sNamespace},
 					Pods:            []*corev1.Pod{k8sPod1, k8sPod2},
 					Services:        []*corev1.Service{k8sService1, k8sService2},
-					Ingresses:       []*networkingv1beta1.Ingress{k8sIngress1, k8sIngress2},
+					Ingresses:       []*networkingv1.Ingress{k8sIngress1, k8sIngress2},
 					ReplicaSets:     []*appsv1.ReplicaSet{k8sReplicaSet1, k8sReplicaSet2},
 					StatefulSets:    []*appsv1.StatefulSet{k8sStatefulSet1, k8sStatefulSet2},
 					DaemonSets:      []*appsv1.DaemonSet{k8sDaemonSet1, k8sDaemonSet2},
