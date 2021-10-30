@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 )
 
-const version = "1.6.0"
+const version = "1.7.0"
 
 func main() {
 	versionFlag, k8sConfigPath := parseCmd()

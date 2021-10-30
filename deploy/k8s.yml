@@ -4,7 +4,7 @@ kind: Namespace
 metadata:
   name: karto
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: karto
@@ -20,7 +20,6 @@ rules:
       - list
       - watch
   - apiGroups:
-      - "extensions"
       - "networking.k8s.io"
     resources:
       - networkpolicies
@@ -30,7 +29,6 @@ rules:
       - list
       - watch
   - apiGroups:
-      - "extensions"
       - "apps"
     resources:
       - replicasets
@@ -48,7 +46,7 @@ metadata:
   namespace: karto
   name: karto
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: karto

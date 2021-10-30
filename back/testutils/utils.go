@@ -4,7 +4,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
-	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -41,16 +40,18 @@ func (namespaceBuilder *NamespaceBuilder) Build() *corev1.Namespace {
 }
 
 type PodBuilder struct {
-	name      string
-	namespace string
-	ownerUID  string
-	labels    map[string]string
+	name              string
+	namespace         string
+	ownerUID          string
+	labels            map[string]string
+	containerStatuses []corev1.ContainerStatus
 }
 
 func NewPodBuilder() *PodBuilder {
 	return &PodBuilder{
-		namespace: "default",
-		labels:    map[string]string{},
+		namespace:         "default",
+		labels:            map[string]string{},
+		containerStatuses: make([]corev1.ContainerStatus, 0),
 	}
 }
 
@@ -74,6 +75,21 @@ func (podBuilder *PodBuilder) WithOwnerUID(ownerUID string) *PodBuilder {
 	return podBuilder
 }
 
+func (podBuilder *PodBuilder) WithContainerStatus(isRunning bool, isReady bool, restartCount int32) *PodBuilder {
+	containerStatus := corev1.ContainerStatus{
+		State:        corev1.ContainerState{},
+		Ready:        isReady,
+		RestartCount: restartCount,
+	}
+	if isRunning {
+		containerStatus.State.Running = &corev1.ContainerStateRunning{}
+	} else {
+		containerStatus.State.Waiting = &corev1.ContainerStateWaiting{}
+	}
+	podBuilder.containerStatuses = append(podBuilder.containerStatuses, containerStatus)
+	return podBuilder
+}
+
 func (podBuilder *PodBuilder) Build() *corev1.Pod {
 	return &corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
@@ -83,6 +99,9 @@ func (podBuilder *PodBuilder) Build() *corev1.Pod {
 			OwnerReferences: []v1.OwnerReference{
 				{UID: types.UID(podBuilder.ownerUID)},
 			},
+		},
+		Status: corev1.PodStatus{
+			ContainerStatuses: podBuilder.containerStatuses,
 		},
 	}
 }
@@ -388,26 +407,28 @@ func (ingressBuilder *IngressBuilder) WithServiceBackend(serviceName string) *In
 	return ingressBuilder
 }
 
-func (ingressBuilder *IngressBuilder) Build() *networkingv1beta1.Ingress {
-	ingressPaths := make([]networkingv1beta1.HTTPIngressPath, 0)
+func (ingressBuilder *IngressBuilder) Build() *networkingv1.Ingress {
+	ingressPaths := make([]networkingv1.HTTPIngressPath, 0)
 	for _, serviceBackend := range ingressBuilder.serviceBackends {
-		ingressPath := networkingv1beta1.HTTPIngressPath{
-			Backend: networkingv1beta1.IngressBackend{
-				ServiceName: serviceBackend,
+		ingressPath := networkingv1.HTTPIngressPath{
+			Backend: networkingv1.IngressBackend{
+				Service: &networkingv1.IngressServiceBackend{
+					Name: serviceBackend,
+				},
 			},
 		}
 		ingressPaths = append(ingressPaths, ingressPath)
 	}
-	return &networkingv1beta1.Ingress{
+	return &networkingv1.Ingress{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      ingressBuilder.name,
 			Namespace: ingressBuilder.namespace,
 		},
-		Spec: networkingv1beta1.IngressSpec{
-			Rules: []networkingv1beta1.IngressRule{
+		Spec: networkingv1.IngressSpec{
+			Rules: []networkingv1.IngressRule{
 				{
-					IngressRuleValue: networkingv1beta1.IngressRuleValue{
-						HTTP: &networkingv1beta1.HTTPIngressRuleValue{
+					IngressRuleValue: networkingv1.IngressRuleValue{
+						HTTP: &networkingv1.HTTPIngressRuleValue{
 							Paths: ingressPaths,
 						},
 					},

@@ -70,6 +70,7 @@ function filterAnalysisResult(analysisResult, podIsolationsIndex, controls) {
     const statefulSetFilter = makeStatefulSetFilter(filteredPodIds);
     const daemonSetFilter = makeDaemonSetFilter(filteredPodIds);
     const deploymentFilter = makeDeploymentFilter(filteredReplicaSetIds);
+    const podHealthFilter = makePodHealthFilter(filteredPodIds);
 
     const filteredPods = analysisResult.pods.filter(podFilter);
     filteredPods.forEach(pod => filteredPodIds.add(podId(pod)));
@@ -83,6 +84,7 @@ function filterAnalysisResult(analysisResult, podIsolationsIndex, controls) {
     const filteredStatefulSets = analysisResult.statefulSets.filter(statefulSetFilter);
     const filteredDaemonSets = analysisResult.daemonSets.filter(daemonSetFilter);
     const filteredDeployments = analysisResult.deployments.filter(deploymentFilter);
+    const filteredPodHealths = analysisResult.podHealths.filter(podHealthFilter);
     const { neighborPodIsolations, neighborAllowedRoutes } = computeNeighbors(analysisResult, filteredPodIds,
         podIsolationsIndex, controls);
 
@@ -95,7 +97,8 @@ function filterAnalysisResult(analysisResult, podIsolationsIndex, controls) {
         replicaSets: filteredReplicaSets,
         statefulSets: filteredStatefulSets,
         daemonSets: filteredDaemonSets,
-        deployments: filteredDeployments
+        deployments: filteredDeployments,
+        podHealths: filteredPodHealths
     };
 }
 
@@ -142,6 +145,7 @@ function mapAnalysisResult(filteredAnalysisResult, podsIndex, podIsolationsIndex
     const statefulSetMapper = makeStatefulSetMapper(controls, filteredPodIds);
     const daemonSetMapper = makeDaemonSetMapper(controls, filteredPodIds);
     const deploymentMapper = makeDeploymentMapper(controls, filteredReplicaSetIds);
+    const podHealthMapper = makePodHealthMapper(controls, podMapper, podsIndex);
 
     return {
         pods: filteredAnalysisResult.pods.map(podMapper),
@@ -152,7 +156,8 @@ function mapAnalysisResult(filteredAnalysisResult, podsIndex, podIsolationsIndex
         replicaSets: filteredAnalysisResult.replicaSets.map(replicaSetMapper),
         statefulSets: filteredAnalysisResult.statefulSets.map(statefulSetMapper),
         daemonSets: filteredAnalysisResult.daemonSets.map(daemonSetMapper),
-        deployments: filteredAnalysisResult.deployments.map(deploymentMapper)
+        deployments: filteredAnalysisResult.deployments.map(deploymentMapper),
+        podHealths: filteredAnalysisResult.podHealths.map(podHealthMapper)
     };
 }
 
@@ -237,6 +242,10 @@ function makeDeploymentFilter(filteredReplicaSetIds) {
         filteredReplicaSetIds.has(replicaSetId(replicaSet)));
 }
 
+function makePodHealthFilter(filteredPodIds) {
+    return podHealth => filteredPodIds.has(podId(podHealth.pod));
+}
+
 function makePodMapper(controls) {
     const { showNamespacePrefix } = controls;
     return pod => ({
@@ -315,6 +324,24 @@ function makeDeploymentMapper(controls, filteredReplicaSetIds) {
         ...deployment,
         targetReplicaSets: deployment.targetReplicaSets.filter(rs => filteredReplicaSetIds.has(replicaSetId(rs))),
         displayName: showNamespacePrefix ? `${deployment.namespace}/${deployment.name}` : deployment.name
+    });
+}
+
+function makePodHealthMapper(controls, podMapper, podsIndex) {
+    const {
+        highlightPodsWithContainersNotRunning,
+        highlightPodsWithContainersNotReady,
+        highlightPodsWithContainersRestarted
+    } = controls;
+    return podHealth => ({
+        ...podMapper(podsIndex.get(podId(podHealth.pod))),
+        containers: podHealth.containers,
+        containersRunning: podHealth.containersRunning,
+        containersReady: podHealth.containersReady,
+        containersWithoutRestart: podHealth.containersWithoutRestart,
+        highlighted: (highlightPodsWithContainersNotRunning && podHealth.containers > podHealth.containersRunning)
+            || (highlightPodsWithContainersNotReady && podHealth.containers > podHealth.containersReady)
+            || (highlightPodsWithContainersRestarted && podHealth.containers > podHealth.containersWithoutRestart)
     });
 }
 

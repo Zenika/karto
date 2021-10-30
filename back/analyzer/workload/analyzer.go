@@ -3,7 +3,7 @@ package workload
 import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	networkingv1beta1 "k8s.io/api/networking/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
 	"karto/analyzer/workload/daemonset"
 	"karto/analyzer/workload/deployment"
 	"karto/analyzer/workload/ingress"
@@ -16,7 +16,7 @@ import (
 type ClusterState struct {
 	Pods         []*corev1.Pod
 	Services     []*corev1.Service
-	Ingresses    []*networkingv1beta1.Ingress
+	Ingresses    []*networkingv1.Ingress
 	ReplicaSets  []*appsv1.ReplicaSet
 	StatefulSets []*appsv1.StatefulSet
 	DaemonSets   []*appsv1.DaemonSet
@@ -87,7 +87,7 @@ func (analyzer analyzerImpl) allServicesWithTargetPods(services []*corev1.Servic
 	return servicesWithTargetPods
 }
 
-func (analyzer analyzerImpl) allIngressesWithTargetServices(ingresses []*networkingv1beta1.Ingress,
+func (analyzer analyzerImpl) allIngressesWithTargetServices(ingresses []*networkingv1.Ingress,
 	services []*corev1.Service) []*types.Ingress {
 	ingressesWithTargetServices := make([]*types.Ingress, 0)
 	for _, ing := range ingresses {
