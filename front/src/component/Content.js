@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { makeStyles } from '@material-ui/core/styles';
-import CircularProgress from '@material-ui/core/CircularProgress';
+import makeStyles from '@mui/styles/makeStyles';
+import CircularProgress from '@mui/material/CircularProgress';
 import classNames from 'classnames';
-import Typography from '@material-ui/core/Typography';
+import Typography from '@mui/material/Typography';
 import SwitchControl from './control/SwitchControl';
 import MultiSelectControl from './control/MultiSelectControl';
 import PropTypes from 'prop-types';
@@ -66,7 +66,7 @@ const useStyles = makeStyles(theme => ({
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'flex-start',
-        padding: `0 ${theme.spacing(2)}px`,
+        padding: `0 ${theme.spacing(2)}`,
         pointerEvents: 'none'
     },
     controlsTitle: {
@@ -93,7 +93,7 @@ const useStyles = makeStyles(theme => ({
         bottom: 40,
         right: 0,
         width: 320,
-        padding: `0 ${theme.spacing(2)}px`,
+        padding: `0 ${theme.spacing(2)}`,
         borderLeft: `1px solid ${theme.palette.primary.main}`
     },
     graphCaption: {

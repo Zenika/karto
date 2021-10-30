@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
-import { makeStyles } from '@material-ui/core/styles';
-import Button from '@material-ui/core/Button';
-import FullscreenIcon from '@material-ui/icons/Fullscreen';
-import GetAppIcon from '@material-ui/icons/GetApp';
+import makeStyles from '@mui/styles/makeStyles';
+import Button from '@mui/material/Button';
+import FullscreenIcon from '@mui/icons-material/Fullscreen';
+import GetAppIcon from '@mui/icons-material/GetApp';
 import classNames from 'classnames';
 import { GRAPH_HEIGHT, GRAPH_WIDTH } from './d3/D3Constants';
 import { saveSvgAsPng } from 'save-svg-as-png';

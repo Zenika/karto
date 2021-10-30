@@ -1,7 +1,7 @@
-import withStyles from '@material-ui/core/styles/withStyles';
-import MuiSwitch from '@material-ui/core/Switch';
+import withStyles from '@mui/styles/withStyles';
+import MuiSwitch from '@mui/material/Switch';
 import PropTypes from 'prop-types';
-import FormControlLabel from '@material-ui/core/FormControlLabel';
+import FormControlLabel from '@mui/material/FormControlLabel';
 
 const CustomSwitch = withStyles((theme) => ({
     root: {
@@ -9,7 +9,7 @@ const CustomSwitch = withStyles((theme) => ({
         height: 18,
         padding: 0,
         display: 'flex',
-        margin: `0 ${theme.spacing(1)}px 0 ${theme.spacing(1) + 3}px`
+        margin: `0 ${theme.spacing(1)} 0 calc(${theme.spacing(1)} + 3px)`
     },
     switchBase: {
         padding: 2,

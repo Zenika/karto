@@ -1,9 +1,8 @@
-// https://github.com/mui-org/material-ui/issues/13394
-import { unstable_createMuiStrictModeTheme as createMuiTheme } from '@material-ui/core/styles';
+import { createTheme, adaptV4Theme } from '@mui/material/styles';
 
-export const theme = createMuiTheme({
+export const theme = createTheme(adaptV4Theme({
     palette: {
-        type: 'dark',
+        mode: 'dark',
         primary: {
             main: '#EC5E69',
             dark: '#65282d'
@@ -45,4 +44,4 @@ export const theme = createMuiTheme({
             }
         }
     }
-});
+}));

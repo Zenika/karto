@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import Typography from '@material-ui/core/Typography';
-import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
-import ExpandLessIcon from '@material-ui/icons/ExpandLess';
-import { makeStyles } from '@material-ui/core/styles';
-import Button from '@material-ui/core/Button';
-import Collapse from '@material-ui/core/Collapse';
+import Typography from '@mui/material/Typography';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import makeStyles from '@mui/styles/makeStyles';
+import Button from '@mui/material/Button';
+import Collapse from '@mui/material/Collapse';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 

@@ -1,14 +1,14 @@
 import { useEffect } from 'react';
-import { makeStyles } from '@material-ui/core/styles';
-import Button from '@material-ui/core/Button';
+import makeStyles from '@mui/styles/makeStyles';
+import Button from '@mui/material/Button';
 import Control from './Control';
 import PropTypes from 'prop-types';
-import Typography from '@material-ui/core/Typography';
-import MenuItem from '@material-ui/core/MenuItem';
+import Typography from '@mui/material/Typography';
+import MenuItem from '@mui/material/MenuItem';
 import Autocomplete from './Autocomplete';
 import Select from './Select';
-import RemoveIcon from '@material-ui/icons/Remove';
-import AddIcon from '@material-ui/icons/Add';
+import RemoveIcon from '@mui/icons-material/Remove';
+import AddIcon from '@mui/icons-material/Add';
 import classNames from 'classnames';
 
 const useStyles = makeStyles(theme => ({

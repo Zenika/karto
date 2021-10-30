@@ -1,8 +1,8 @@
-import { makeStyles } from '@material-ui/core/styles';
-import MuiAutocomplete from '@material-ui/lab/Autocomplete';
-import TextField from '@material-ui/core/TextField';
-import Typography from '@material-ui/core/Typography';
-import Popper from '@material-ui/core/Popper';
+import makeStyles from '@mui/styles/makeStyles';
+import MuiAutocomplete from '@mui/material/Autocomplete';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
+import Popper from '@mui/material/Popper';
 
 const useStyles = makeStyles(theme => ({
     chip: {

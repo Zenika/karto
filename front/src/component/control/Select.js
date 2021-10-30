@@ -1,5 +1,5 @@
-import { makeStyles } from '@material-ui/core/styles';
-import MuiSelect from '@material-ui/core/Select';
+import makeStyles from '@mui/styles/makeStyles';
+import MuiSelect from '@mui/material/Select';
 
 const useStyles = makeStyles(theme => ({
     select: {

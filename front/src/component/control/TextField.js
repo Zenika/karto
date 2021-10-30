@@ -1,5 +1,5 @@
-import { makeStyles } from '@material-ui/core/styles';
-import MuiTextField from '@material-ui/core/TextField';
+import makeStyles from '@mui/styles/makeStyles';
+import MuiTextField from '@mui/material/TextField';
 
 const useStyles = makeStyles(() => ({
     textField: {
