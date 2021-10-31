@@ -1,56 +1,53 @@
-import withStyles from '@mui/styles/withStyles';
-import MuiSwitch from '@mui/material/Switch';
+import Switch, { switchClasses } from '@mui/material/Switch';
 import PropTypes from 'prop-types';
 import FormControlLabel from '@mui/material/FormControlLabel';
 
-const CustomSwitch = withStyles((theme) => ({
-    root: {
-        width: 32,
-        height: 18,
-        padding: 0,
-        display: 'flex',
-        margin: `0 ${theme.spacing(1)} 0 calc(${theme.spacing(1)} + 3px)`
-    },
-    switchBase: {
-        padding: 2,
-        color: theme.palette.common.white,
-        '&$checked': {
-            transform: 'translateX(14px)',
-            color: theme.palette.common.white,
-            '& + $track': {
-                opacity: 1,
-                backgroundColor: theme.palette.primary.main,
-                borderColor: theme.palette.primary.main
-            }
-        }
-    },
-    thumb: {
-        width: 14,
-        height: 14,
-        boxShadow: 'none'
-    },
-    track: {
-        border: `1px solid ${theme.palette.primary.main}`,
-        borderRadius: 18 / 2,
-        opacity: 1,
-        backgroundColor: theme.palette.background.default
-    },
-    checked: {}
-}))(MuiSwitch);
-
-const SwitchControl = ({ className = '', name, checked, onChange }) => {
+const SwitchControl = ({ sx, name, checked, onChange }) => {
     const handleChange = (event) => {
         onChange(event.target.checked);
     };
     return (
-        <FormControlLabel className={className} label={name} control={
-            <CustomSwitch name={name} checked={checked} onChange={handleChange}/>
+        <FormControlLabel sx={sx} label={name} control={
+            <Switch name={name} checked={checked} onChange={handleChange} sx={{
+                [`&.${switchClasses.root}`]: {
+                    width: 32,
+                    height: 18,
+                    p: 0,
+                    display: 'flex',
+                    m: (theme) => `0 ${theme.spacing(1)} 0 calc(${theme.spacing(1)} + 3px)`
+                },
+                [`& .${switchClasses.switchBase}`]: {
+                    p: '2px',
+                    color: 'common.white',
+                    [`&.${switchClasses.checked}`]: {
+                        transform: 'translateX(14px)',
+                        color: 'common.white',
+                        [`& + .${switchClasses.track}`]: {
+                            opacity: 1,
+                            backgroundColor: 'primary.main',
+                            borderColor: 'primary.main'
+                        }
+                    }
+                },
+                [`& .${switchClasses.thumb}`]: {
+                    width: 14,
+                    height: 14,
+                    boxShadow: 'none'
+                },
+                [`& .${switchClasses.track}`]: {
+                    border: 1,
+                    borderColor: 'primary.main',
+                    borderRadius: 18 / 2,
+                    opacity: 1,
+                    backgroundColor: 'background.default'
+                }
+            }}/>
         }/>
     );
 };
 
 SwitchControl.propTypes = {
-    className: PropTypes.string,
+    sx: PropTypes.object,
     name: PropTypes.string.isRequired,
     checked: PropTypes.bool.isRequired,
     onChange: PropTypes.func.isRequired

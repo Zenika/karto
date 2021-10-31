@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import makeStyles from '@mui/styles/makeStyles';
 import Button from '@mui/material/Button';
 import Control from './Control';
 import PropTypes from 'prop-types';
@@ -9,26 +8,9 @@ import Autocomplete from './Autocomplete';
 import Select from './Select';
 import RemoveIcon from '@mui/icons-material/Remove';
 import AddIcon from '@mui/icons-material/Add';
-import classNames from 'classnames';
+import { Box } from '@mui/material';
 
-const useStyles = makeStyles(theme => ({
-    actions: {
-        display: 'flex',
-        flexDirection: 'row',
-        justifyContent: 'flex-start',
-        marginTop: theme.spacing(1)
-    },
-    entry: {
-        display: 'flex',
-        flex: 1,
-        flexDirection: 'column',
-        paddingLeft: theme.spacing(1),
-        borderLeft: `1px solid ${theme.palette.primary.main}`,
-        marginTop: theme.spacing(1),
-        '&:first-child': {
-            marginTop: 0
-        }
-    },
+const styles = {
     entryRow: {
         display: 'flex',
         flexDirection: 'row'
@@ -38,20 +20,12 @@ const useStyles = makeStyles(theme => ({
     },
     entryValue: {
         flex: 1
-    },
-    entryActions: {
-        justifyContent: 'center'
-    },
-    buttonIcon: {
-        height: 9,
-        width: 9
     }
-}));
+};
 
 const MultiKeyValueSelectControl = (
-    { className = '', name, keyPlaceholder, valuePlaceholder, checked, options, selectedOptions, operators, onChange }
+    { sx, name, keyPlaceholder, valuePlaceholder, checked, options, selectedOptions, operators, onChange }
 ) => {
-    const classes = useStyles();
     const entries = selectedOptions;
 
     useEffect(() => {
@@ -128,17 +102,33 @@ const MultiKeyValueSelectControl = (
     };
 
     return (
-        <Control className={className} name={name} checked={checked}>
-            <div className={classes.actions}>
+        <Control sx={sx} name={name} checked={checked}>
+            <Box sx={{
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'flex-start',
+                mt: 1
+            }}>
                 <Button color="primary" onClick={clearEntries}>Clear</Button>
-            </div>
+            </Box>
             <div>{
                 entries.map((entry, index) => {
                     return (
-                        <div key={index} className={classes.entry}>
-                            <div className={classes.entryRow}>
+                        <Box key={index} sx={{
+                            display: 'flex',
+                            flex: 1,
+                            flexDirection: 'column',
+                            pl: 1,
+                            borderLeft: 1,
+                            borderLeftColor: 'primary.main',
+                            mt: 1,
+                            '&:first-of-type': {
+                                mt: 0
+                            }
+                        }}>
+                            <Box sx={styles.entryRow}>
                                 <Autocomplete
-                                    className={classes.entryKey} options={Object.keys(options)}
+                                    sx={styles.entryKey} options={Object.keys(options)}
                                     value={entry.key} onChange={handleEntryKeyChange(index)}
                                     placeholder={keyPlaceholder}/>
                                 <Select
@@ -153,34 +143,34 @@ const MultiKeyValueSelectControl = (
                                         )
                                     }
                                 </Select>
-                            </div>
+                            </Box>
                             {entry.operator && entry.operator.args === 'multiple' && (
-                                <div className={classes.entryRow}>
+                                <Box sx={styles.entryRow}>
                                     <Autocomplete
-                                        className={classes.entryValue} multiple
+                                        sx={styles.entryValue} multiple
                                         options={labelOptionsForKey(entry.key)} placeholder={valuePlaceholder}
                                         onChange={handleEntryValueChange(index)} value={entry.value}/>
-                                </div>
+                                </Box>
                             )}
                             {entry.operator && entry.operator.args === 'single' && (
-                                <div className={classes.entryRow}>
+                                <Box sx={styles.entryRow}>
                                     <Autocomplete
-                                        className={classes.entryValue}
+                                        sx={styles.entryValue}
                                         options={labelOptionsForKey(entry.key)} placeholder={valuePlaceholder}
                                         onChange={handleEntryValueChange(index)} value={entry.value}/>
-                                </div>
+                                </Box>
                             )}
-                            <div className={classNames(classes.entryRow, classes.entryActions)}>
+                            <Box sx={{ ...styles.entryRow, justifyContent: 'center' }}>
                                 <Button color="primary" onClick={() => removeEntry(index)}>
-                                    <RemoveIcon aria-label="remove entry" className={classes.buttonIcon}
-                                                viewBox="5 5 14 14"/>
+                                    <RemoveIcon aria-label="remove entry" viewBox="5 5 14 14"
+                                                sx={{ height: 9, width: 9 }}/>
                                 </Button>
                                 <Button color="primary" onClick={() => addEntry(index + 1)}>
-                                    <AddIcon aria-label="add entry" className={classes.buttonIcon}
-                                             viewBox="5 5 14 14"/>
+                                    <AddIcon aria-label="add entry" viewBox="5 5 14 14"
+                                             sx={{ height: 9, width: 9 }}/>
                                 </Button>
-                            </div>
-                        </div>
+                            </Box>
+                        </Box>
                     );
                 })
             }
@@ -190,7 +180,7 @@ const MultiKeyValueSelectControl = (
 };
 
 MultiKeyValueSelectControl.propTypes = {
-    className: PropTypes.string,
+    sx: PropTypes.object,
     name: PropTypes.string.isRequired,
     keyPlaceholder: PropTypes.string.isRequired,
     valuePlaceholder: PropTypes.string.isRequired,

@@ -1,22 +1,20 @@
-import makeStyles from '@mui/styles/makeStyles';
-import MuiTextField from '@mui/material/TextField';
+import MuiTextField, { textFieldClasses } from '@mui/material/TextField';
+import { inputClasses } from '@mui/material/Input';
 
-const useStyles = makeStyles(() => ({
-    textField: {
-        width: '100%'
-    },
-    input: {
-        paddingTop: 3,
-        paddingBottom: 6
-    }
-}));
-
-const TextField = props => {
-    const classes = useStyles();
-    const textFieldClasses = { root: classes.textField };
+const TextField = (props) => {
     return (
-        <MuiTextField variant="standard" classes={textFieldClasses}
-                      InputProps={{ disableUnderline: true, classes: { input: classes.input } }} {...props}/>
+        <MuiTextField variant="standard" InputProps={{
+            disableUnderline: true, sx: {
+                [`& .${inputClasses.input}`]: {
+                    pt: '3px',
+                    pb: '6px'
+                }
+            }
+        }} {...props} sx={{
+            [`&.${textFieldClasses.root}`]: {
+                width: '100%'
+            }
+        }}/>
     );
 };
 

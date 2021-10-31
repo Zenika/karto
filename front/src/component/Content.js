@@ -1,11 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import makeStyles from '@mui/styles/makeStyles';
 import CircularProgress from '@mui/material/CircularProgress';
-import classNames from 'classnames';
 import Typography from '@mui/material/Typography';
 import SwitchControl from './control/SwitchControl';
 import MultiSelectControl from './control/MultiSelectControl';
-import PropTypes from 'prop-types';
 import { getControls, storeControls } from '../service/storageService';
 import { computeDataSet, fetchAnalysisResult } from '../service/analysisResultService';
 import InputControl from './control/InputControl';
@@ -23,6 +20,7 @@ import StatefulSetDetails from './detail/StatefulSetDetails';
 import DaemonSetDetails from './detail/DaemonSetDetails';
 import IngressDetails from './detail/IngressDetails';
 import HealthGraph from './graph/HealthGraph';
+import { Box } from '@mui/material';
 
 const VIEWS = {
     WORKLOADS: 'Workloads',
@@ -47,45 +45,24 @@ const DEFAULT_CONTROLS = {
     displayLargeDatasets: false
 };
 
-const useStyles = makeStyles(theme => ({
-    root: {
-        position: 'relative'
-    },
-    main: {
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh'
-    },
-    controls: {
-        position: 'absolute',
-        top: 80,
-        left: 0,
-        width: 320,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-start',
-        padding: theme.spacing(0, 2),
-        pointerEvents: 'none'
-    },
+const styles = {
     controlsTitle: {
-        marginBottom: theme.spacing(1),
+        mb: 1,
         cursor: 'default'
     },
     controlsItem: {
-        marginBottom: theme.spacing(1)
+        mb: 1
     },
     controlsSection: {
+        width: '100%',
+        mb: 1,
         display: 'flex',
         flexDirection: 'column',
-        marginBottom: theme.spacing(1),
-        width: '100%',
         pointerEvents: 'auto'
     },
     message: {
-        marginTop: theme.spacing(1),
         maxWidth: 500,
+        mt: 1,
         textAlign: 'center'
     },
     details: {
@@ -93,8 +70,10 @@ const useStyles = makeStyles(theme => ({
         bottom: 40,
         right: 0,
         width: 320,
-        padding: theme.spacing(0, 2),
-        borderLeft: `1px solid ${theme.palette.primary.main}`
+        py: 0,
+        px: 2,
+        borderLeft: 1,
+        borderLeftColor: 'primary.main'
     },
     graphCaption: {
         position: 'absolute',
@@ -104,10 +83,9 @@ const useStyles = makeStyles(theme => ({
         backgroundColor: 'transparent',
         cursor: 'default'
     }
-}));
+};
 
-const Content = ({ className }) => {
-    const classes = useStyles();
+const Content = () => {
     const [state, setState] = useState({
         isLoading: true,
         analysisResult: null,
@@ -218,22 +196,32 @@ const Content = ({ className }) => {
     };
 
     return (
-        <div className={classNames(classes.root, className)}>
-            <main className={classes.main}>
+        <Box sx={{
+            position: 'relative',
+            height: '100vh',
+            overflowY: 'hidden'
+        }}>
+            <Box component="main" sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100vh'
+            }}>
                 {state.isLoading && <>
                     <CircularProgress thickness={1} size={60}/>
-                    <Typography className={classes.message} variant="caption">
+                    <Typography sx={styles.message} variant="caption">
                         Analyzing your cluster...
                     </Typography>
                 </>}
                 {!state.isLoading && state.dataSet && state.dataSet.pods.length === 0 && <>
-                    <Typography className={classes.message} variant="caption">
+                    <Typography sx={styles.message} variant="caption">
                         No pod to display
                     </Typography>
                 </>}
                 {!state.isLoading && state.dataSet && state.dataSet.pods.length > 0
                 && !isSafeToDisplay(state.dataSet, state.controls.displayLargeDatasets) && <>
-                    <Typography className={classes.message} variant="caption">
+                    <Typography sx={styles.message} variant="caption">
                         {`The dataset to display is larger than recommended for an optimal experience. Apply a filter `
                         + `on the left to reduce the dataset, or enable the "Always display large datasets" display `
                         + `option if you know what you are doing.`}
@@ -247,7 +235,7 @@ const Content = ({ className }) => {
                                   onIngressFocus={onIngressFocus} onReplicaSetFocus={onReplicaSetFocus}
                                   onStatefulSetFocus={onStatefulSetFocus} onDaemonSetFocus={onDaemonSetFocus}
                                   onDeploymentFocus={onDeploymentFocus}/>
-                    <Typography className={classes.graphCaption} variant="caption">
+                    <Typography sx={styles.graphCaption} variant="caption">
                         {`Displaying ${state.dataSet.pods.length}/${state.analysisResult.pods.length} pods, `
                         + `${state.dataSet.services.length}/${state.analysisResult.services.length} services, `
                         + `${state.dataSet.ingresses.length}/${state.analysisResult.ingresses.length} ingresses, `
@@ -263,7 +251,7 @@ const Content = ({ className }) => {
                 && state.controls.displayedView === VIEWS.NETWORK_POLICIES && <>
                     <NetworkPolicyGraph dataSet={state.dataSet} autoZoom={state.controls.autoZoom}
                                         onPodFocus={onPodFocus} onAllowedRouteFocus={onAllowedRouteFocus}/>
-                    <Typography className={classes.graphCaption} variant="caption">
+                    <Typography sx={styles.graphCaption} variant="caption">
                         {`Displaying ${state.dataSet.pods.length}/${state.analysisResult.pods.length} pods`
                         + ` and ${state.dataSet.allowedRoutes.length}/`
                         + `${state.analysisResult.allowedRoutes.length} allowed routes`}
@@ -273,144 +261,152 @@ const Content = ({ className }) => {
                 && isSafeToDisplay(state.dataSet, state.controls.displayLargeDatasets)
                 && state.controls.displayedView === VIEWS.HEALTH && <>
                     <HealthGraph dataSet={state.dataSet} autoZoom={state.controls.autoZoom} onPodFocus={onPodFocus}/>
-                    <Typography className={classes.graphCaption} variant="caption">
+                    <Typography sx={styles.graphCaption} variant="caption">
                         {`Displaying ${state.dataSet.pods.length}/${state.analysisResult.pods.length} pods`}
                     </Typography>
                 </>}
-            </main>
-            <aside role="search" className={classes.controls}>
-                <Typography className={classes.controlsTitle} variant="h2">View</Typography>
-                <div className={classes.controlsSection}>
-                    <RadioGroupControl className={classes.controlsItem} options={Object.values(VIEWS)}
+            </Box>
+            <Box component="aside" role="search" sx={{
+                position: 'absolute',
+                top: 80,
+                left: 0,
+                width: 320,
+                height: '100vh',
+                px: 2,
+                py: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                pointerEvents: 'none'
+            }}>
+                <Typography sx={styles.controlsTitle} variant="h2">View</Typography>
+                <Box sx={styles.controlsSection}>
+                    <RadioGroupControl sx={styles.controlsItem} options={Object.values(VIEWS)}
                                        value={state.controls.displayedView}
                                        onChange={handleControlChange('displayedView')}>
                     </RadioGroupControl>
-                </div>
-                <Typography className={classes.controlsTitle} variant="h2">Filters</Typography>
-                <div className={classes.controlsSection}>
+                </Box>
+                <Typography sx={styles.controlsTitle} variant="h2">Filters</Typography>
+                <Box sx={styles.controlsSection}>
                     <MultiSelectControl
-                        className={classes.controlsItem} placeholder="Select a namespace"
+                        sx={styles.controlsItem} placeholder="Select a namespace"
                         name={namespaceFilterLabel()} checked={isNamespaceFilterActive()}
                         options={allNamespaces} selectedOptions={state.controls.namespaceFilters}
                         onChange={handleControlChange('namespaceFilters')}/>
                     <MultiKeyValueSelectControl
-                        className={classes.controlsItem} keyPlaceholder="Select a label key"
+                        sx={styles.controlsItem} keyPlaceholder="Select a label key"
                         valuePlaceholder="Select a label value"
                         name={labelFilterLabel()} checked={isLabelFilterActive()}
                         options={allLabels} selectedOptions={state.controls.labelFilters}
                         operators={labelSelectorOperators} onChange={handleControlChange('labelFilters')}/>
                     <InputControl
-                        className={classes.controlsItem} placeholder="Type a pod name or regex"
+                        sx={styles.controlsItem} placeholder="Type a pod name or regex"
                         name={nameFilterLabel()} checked={isNameFilterActive()} value={state.controls.nameFilter}
                         onChange={handleControlChange('nameFilter')}/>
                     {state.controls.displayedView === VIEWS.NETWORK_POLICIES && (
                         <SwitchControl
-                            className={classes.controlsItem} name="Include ingress neighbors"
+                            sx={styles.controlsItem} name="Include ingress neighbors"
                             checked={state.controls.includeIngressNeighbors}
                             onChange={handleControlChange('includeIngressNeighbors')}/>
                     )}
                     {state.controls.displayedView === VIEWS.NETWORK_POLICIES && (
                         <SwitchControl
-                            className={classes.controlsItem} name="Include egress neighbors"
+                            sx={styles.controlsItem} name="Include egress neighbors"
                             checked={state.controls.includeEgressNeighbors}
                             onChange={handleControlChange('includeEgressNeighbors')}/>
                     )}
-                </div>
-                <Typography className={classes.controlsTitle} variant="h2">Display options</Typography>
-                <div className={classes.controlsSection}>
+                </Box>
+                <Typography sx={styles.controlsTitle} variant="h2">Display options</Typography>
+                <Box sx={styles.controlsSection}>
                     <SwitchControl
-                        className={classes.controlsItem} name="Auto refresh" checked={state.controls.autoRefresh}
+                        sx={styles.controlsItem} name="Auto refresh" checked={state.controls.autoRefresh}
                         onChange={handleControlChange('autoRefresh')}/>
                     <SwitchControl
-                        className={classes.controlsItem} name="Auto zoom"
+                        sx={styles.controlsItem} name="Auto zoom"
                         checked={state.controls.autoZoom}
                         onChange={handleControlChange('autoZoom')}/>
                     <SwitchControl
-                        className={classes.controlsItem} name="Show namespace prefix"
+                        sx={styles.controlsItem} name="Show namespace prefix"
                         checked={state.controls.showNamespacePrefix}
                         onChange={handleControlChange('showNamespacePrefix')}/>
                     {state.controls.displayedView === VIEWS.NETWORK_POLICIES && (
                         <SwitchControl
-                            className={classes.controlsItem} name="Highlight non isolated pods (ingress)"
+                            sx={styles.controlsItem} name="Highlight non isolated pods (ingress)"
                             checked={state.controls.highlightPodsWithoutIngressIsolation}
                             onChange={handleControlChange('highlightPodsWithoutIngressIsolation')}/>
                     )}
                     {state.controls.displayedView === VIEWS.NETWORK_POLICIES && (
                         <SwitchControl
-                            className={classes.controlsItem} name="Highlight non isolated pods (egress)"
+                            sx={styles.controlsItem} name="Highlight non isolated pods (egress)"
                             checked={state.controls.highlightPodsWithoutEgressIsolation}
                             onChange={handleControlChange('highlightPodsWithoutEgressIsolation')}/>
                     )}
                     {state.controls.displayedView === VIEWS.HEALTH && (
                         <SwitchControl
-                            className={classes.controlsItem} name="Highlight pods with containers not running"
+                            sx={styles.controlsItem} name="Highlight pods with containers not running"
                             checked={state.controls.highlightPodsWithContainersNotRunning}
                             onChange={handleControlChange('highlightPodsWithContainersNotRunning')}/>
                     )}
                     {state.controls.displayedView === VIEWS.HEALTH && (
                         <SwitchControl
-                            className={classes.controlsItem} name="Highlight pods with containers not ready"
+                            sx={styles.controlsItem} name="Highlight pods with containers not ready"
                             checked={state.controls.highlightPodsWithContainersNotReady}
                             onChange={handleControlChange('highlightPodsWithContainersNotReady')}/>
                     )}
                     {state.controls.displayedView === VIEWS.HEALTH && (
                         <SwitchControl
-                            className={classes.controlsItem} name="Highlight pods with containers restarted"
+                            sx={styles.controlsItem} name="Highlight pods with containers restarted"
                             checked={state.controls.highlightPodsWithContainersRestarted}
                             onChange={handleControlChange('highlightPodsWithContainersRestarted')}/>
                     )}
                     <SwitchControl
-                        className={classes.controlsItem} name="Always display large datasets"
+                        sx={styles.controlsItem} name="Always display large datasets"
                         checked={state.controls.displayLargeDatasets}
                         onChange={handleControlChange('displayLargeDatasets')}/>
-                </div>
-            </aside>
+                </Box>
+            </Box>
             {state.podDetails && (
-                <aside className={classes.details}>
+                <Box component="aside" sx={styles.details}>
                     <PodDetails data={state.podDetails}/>
-                </aside>
+                </Box>
             )}
             {state.allowedRouteDetails && (
-                <aside className={classes.details}>
+                <Box component="aside" sx={styles.details}>
                     <AllowedRouteDetails data={state.allowedRouteDetails}/>
-                </aside>
+                </Box>
             )}
             {state.serviceDetails && (
-                <aside className={classes.details}>
+                <Box component="aside" sx={styles.details}>
                     <ServiceDetails data={state.serviceDetails}/>
-                </aside>
+                </Box>
             )}
             {state.ingressDetails && (
-                <aside className={classes.details}>
+                <Box component="aside" sx={styles.details}>
                     <IngressDetails data={state.ingressDetails}/>
-                </aside>
+                </Box>
             )}
             {state.replicaSetDetails && (
-                <aside className={classes.details}>
+                <Box component="aside" sx={styles.details}>
                     <ReplicaSetDetails data={state.replicaSetDetails}/>
-                </aside>
+                </Box>
             )}
             {state.statefulSetDetails && (
-                <aside className={classes.details}>
+                <Box component="aside" sx={styles.details}>
                     <StatefulSetDetails data={state.statefulSetDetails}/>
-                </aside>
+                </Box>
             )}
             {state.daemonSetDetails && (
-                <aside className={classes.details}>
+                <Box component="aside" sx={styles.details}>
                     <DaemonSetDetails data={state.daemonSetDetails}/>
-                </aside>
+                </Box>
             )}
             {state.deploymentDetails && (
-                <aside className={classes.details}>
+                <Box component="aside" sx={styles.details}>
                     <DeploymentDetails data={state.deploymentDetails}/>
-                </aside>
+                </Box>
             )}
-        </div>
+        </Box>
     );
-};
-
-Content.propTypes = {
-    className: PropTypes.string.isRequired
 };
 
 export default Content;

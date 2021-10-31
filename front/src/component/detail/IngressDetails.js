@@ -1,59 +1,35 @@
-import makeStyles from '@mui/styles/makeStyles';
 import Typography from '@mui/material/Typography';
 import PropTypes from 'prop-types';
+import detailsStyles from './detailsStyles';
+import { Box } from '@mui/material';
 
-const useStyles = makeStyles(theme => ({
-    root: {
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-start'
-    },
-    detailsTitle: {
-        marginBottom: theme.spacing(1),
-        cursor: 'default'
-    },
-    detailsKey: {
-        marginRight: theme.spacing(1)
-    },
-    detailsValue: {
-        fontWeight: 200
-    },
-    detailsValueNested: {
-        marginLeft: theme.spacing(1)
-    }
-}));
-
-const IngressDetails = ({ data }) => {
-    const classes = useStyles();
-
-    return (
-        <>
-            <Typography className={classes.detailsTitle} variant="h2">Ingress details</Typography>
-            <div>
-                <Typography variant="body1" component="span"
-                            className={classes.detailsKey}>Namespace:</Typography>
-                <Typography variant="body1" component="span"
-                            className={classes.detailsValue}>{data.namespace}</Typography>
-            </div>
-            <div>
-                <Typography variant="body1" component="span" className={classes.detailsKey}>Name:</Typography>
-                <Typography variant="body1" component="span"
-                            className={classes.detailsValue}>{data.name}</Typography>
-            </div>
-            <div>
-                <Typography variant="body1" component="span"
-                            className={classes.detailsKey}>Target services:</Typography>
-                <div className={classes.detailsValueNested}>
-                    {data.targetServices.map((targetService, i) =>
-                        <Typography key={i} variant="body1" className={classes.detailsValue}>
-                            {targetService.namespace}/{targetService.name}
-                        </Typography>
-                    )}
-                </div>
-            </div>
-        </>
-    );
-};
+const IngressDetails = ({ data }) => (
+    <>
+        <Typography sx={detailsStyles.detailsTitle} variant="h2">Ingress details</Typography>
+        <div>
+            <Typography variant="body1" component="span"
+                        sx={detailsStyles.detailsKey}>Namespace:</Typography>
+            <Typography variant="body1" component="span"
+                        sx={detailsStyles.detailsValue}>{data.namespace}</Typography>
+        </div>
+        <div>
+            <Typography variant="body1" component="span" sx={detailsStyles.detailsKey}>Name:</Typography>
+            <Typography variant="body1" component="span"
+                        sx={detailsStyles.detailsValue}>{data.name}</Typography>
+        </div>
+        <div>
+            <Typography variant="body1" component="span"
+                        sx={detailsStyles.detailsKey}>Target services:</Typography>
+            <Box sx={detailsStyles.detailsValueNested}>
+                {data.targetServices.map((targetService, i) =>
+                    <Typography key={i} variant="body1" sx={detailsStyles.detailsValue}>
+                        {targetService.namespace}/{targetService.name}
+                    </Typography>
+                )}
+            </Box>
+        </div>
+    </>
+);
 
 IngressDetails.propTypes = {
     data: PropTypes.shape({

@@ -1,6 +1,6 @@
-import { createTheme, adaptV4Theme } from '@mui/material/styles';
+import { createTheme } from '@mui/material/styles';
 
-export const theme = createTheme(adaptV4Theme({
+export const theme = createTheme({
     palette: {
         mode: 'dark',
         primary: {
@@ -37,11 +37,13 @@ export const theme = createTheme(adaptV4Theme({
             fontSize: '0.65rem'
         }
     },
-    overrides: {
+    components: {
         MuiButton: {
-            root: {
-                minWidth: 0
+            styleOverrides: {
+                root: {
+                    minWidth: 0
+                }
             }
         }
     }
-}));
+});

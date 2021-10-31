@@ -1,20 +1,10 @@
-import makeStyles from '@mui/styles/makeStyles';
 import Button from '@mui/material/Button';
 import PropTypes from 'prop-types';
 import Control from './Control';
 import TextField from './TextField';
+import { Box } from '@mui/material';
 
-const useStyles = makeStyles(theme => ({
-    actions: {
-        display: 'flex',
-        flexDirection: 'row',
-        justifyContent: 'flex-start',
-        marginTop: theme.spacing(1)
-    }
-}));
-
-const InputControl = ({ className = '', name, placeholder, checked, value, onChange }) => {
-    const classes = useStyles();
+const InputControl = ({ sx, name, placeholder, checked, value, onChange }) => {
     const handleChange = (event) => {
         onChange(event.target.value);
     };
@@ -22,17 +12,22 @@ const InputControl = ({ className = '', name, placeholder, checked, value, onCha
         onChange('');
     };
     return (
-        <Control className={className} name={name} checked={checked}>
-            <div className={classes.actions}>
+        <Control sx={sx} name={name} checked={checked}>
+            <Box sx={{
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'flex-start',
+                mt: 1
+            }}>
                 <Button color="primary" onClick={clear}>Clear</Button>
-            </div>
+            </Box>
             <TextField placeholder={placeholder} value={value} onChange={handleChange}/>
         </Control>
     );
 };
 
 InputControl.propTypes = {
-    className: PropTypes.string,
+    sx: PropTypes.object,
     name: PropTypes.string.isRequired,
     placeholder: PropTypes.string.isRequired,
     checked: PropTypes.bool.isRequired,

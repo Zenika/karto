@@ -7,8 +7,6 @@
     "@emotion/styled": "^11.3.0",
     "@mui/icons-material": "5.0.5",
     "@mui/material": "5.0.6",
-    "@mui/styles": "5.0.2",
-    "classnames": "2.3.1",
     "d3": "6.7.0",
     "local-storage": "2.0.0",
     "prop-types": "15.7.2",
@@ -31,6 +29,7 @@
     "production": [
       ">0.2%",
       "not dead",
+      "not ie <= 11",
       "not op_mini all"
     ],
     "development": [
