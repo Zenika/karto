@@ -457,7 +457,7 @@ describe('App component', () => {
         const addNamespaceToFilters = namespace => {
             const input = screen.getByPlaceholderText('Select a namespace');
             fireEvent.change(input, { target: { value: namespace } });
-            fireEvent.keyDown(input, { key: 'Enter' });
+            fireEvent.click(screen.getByText(namespace));
         };
         mockAnalysisResult({ allNamespaces: ['ns1', 'ns2', 'ns3'] });
         render(<App/>);
@@ -489,11 +489,11 @@ describe('App component', () => {
         const addPodLabelToFilters = (key, value) => {
             const keyInput = screen.getAllByPlaceholderText('Select a label key')[podFiltersCount];
             fireEvent.change(keyInput, { target: { value: key } });
-            fireEvent.keyDown(keyInput, { key: 'Enter' });
+            fireEvent.click(screen.getByText(key));
 
             const valueInput = screen.getAllByPlaceholderText('Select a label value')[podFiltersCount];
             fireEvent.change(valueInput, { target: { value: value } });
-            fireEvent.keyDown(valueInput, { key: 'Enter' });
+            fireEvent.click(screen.getByText(value));
 
             fireEvent.click(screen.getAllByLabelText('add entry')[podFiltersCount++]);
         };

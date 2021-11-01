@@ -129,7 +129,7 @@ describe('MultiKeyValueSelectControl component', () => {
 
         const input = screen.getByPlaceholderText(keyPlaceholder);
         fireEvent.change(input, { target: { value: 'k2' } });
-        fireEvent.keyDown(input, { key: 'Enter' });
+        fireEvent.click(screen.getByText('k2'));
 
         expect(changeHandler).toHaveBeenCalledTimes(1);
         expect(changeHandler).toHaveBeenCalledWith([
@@ -205,7 +205,7 @@ describe('MultiKeyValueSelectControl component', () => {
 
         const input = screen.getByPlaceholderText(valuePlaceholder);
         fireEvent.change(input, { target: { value: newValue } });
-        fireEvent.keyDown(input, { key: 'Enter' });
+        fireEvent.click(screen.getByText(newValue));
 
         expect(changeHandler).toHaveBeenCalledTimes(1);
         expect(changeHandler).toHaveBeenCalledWith([
