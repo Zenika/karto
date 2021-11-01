@@ -1,92 +1,68 @@
-import { makeStyles } from '@material-ui/core/styles';
-import Typography from '@material-ui/core/Typography';
+import Typography from '@mui/material/Typography';
 import PropTypes from 'prop-types';
+import { Box } from '@mui/material';
+import detailsStyles from './detailsStyles';
 
-const useStyles = makeStyles(theme => ({
-    root: {
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-start'
-    },
-    detailsTitle: {
-        marginBottom: theme.spacing(1),
-        cursor: 'default'
-    },
-    detailsKey: {
-        marginRight: theme.spacing(1)
-    },
-    detailsValue: {
-        fontWeight: 200
-    },
-    detailsValueNested: {
-        marginLeft: theme.spacing(1)
-    }
-}));
-
-const AllowedRouteDetails = ({ data }) => {
-    const classes = useStyles();
-
-    return (
-        <>
-            <Typography className={classes.detailsTitle} variant="h2">Allowed route details</Typography>
-            <div>
-                <Typography variant="body1" component="span" className={classes.detailsKey}>Source pod:</Typography>
-                <Typography variant="body1" component="span"
-                            className={classes.detailsValue}>{data.sourcePod.namespace}/
-                    {data.sourcePod.name}</Typography>
-            </div>
-            <div>
-                <Typography variant="body1" component="span" className={classes.detailsKey}>Target pod:</Typography>
-                <Typography variant="body1" component="span"
-                            className={classes.detailsValue}>{data.targetPod.namespace}/
-                    {data.targetPod.name}</Typography>
-            </div>
-            <div>
-                <Typography variant="body1" component="span"
-                            className={classes.detailsKey}>Ports:</Typography>
-                <Typography variant="body1" component="span"
-                            className={classes.detailsValue}>
-                    {data.ports ? data.ports.join(', ') : 'all'}
-                </Typography>
-            </div>
-            <div>
-                <Typography variant="body1" component="span" className={classes.detailsKey}>Explanation:</Typography>
-                <div className={classes.detailsValueNested}>
-                    <div>
-                        <Typography variant="body1" className={classes.detailsKey}>
-                            Policies allowing egress from source:</Typography>
-                        {
-                            data.sourcePod.isEgressIsolated ? (
-                                <Typography variant="body1" className={classes.detailsValue}>{
-                                    data.egressPolicies
-                                        .map(policy => `${policy.namespace}/${policy.name}`)
-                                        .join(', ')
-                                }</Typography>
-                            ) : (
-                                <Typography variant="body1" className={classes.detailsValue}>no isolation</Typography>
-                            )
-                        }
-                    </div>
-                    <div>
-                        <Typography variant="body1" className={classes.detailsKey}>
-                            Policies allowing ingress to target:</Typography>
-                        {
-                            data.targetPod.isIngressIsolated ? (
-                                <Typography variant="body1" className={classes.detailsValue}>{
-                                    data.ingressPolicies
-                                        .map(policy => `${policy.namespace}/${policy.name}`)
-                                        .join(', ')
-                                }</Typography>
-                            ) : (
-                                <Typography variant="body1" className={classes.detailsValue}>no isolation</Typography>
-                            )
-                        }
-                    </div>
+const AllowedRouteDetails = ({ data }) => (
+    <>
+        <Typography sx={detailsStyles.detailsTitle} variant="h2">Allowed route details</Typography>
+        <div>
+            <Typography variant="body1" component="span" sx={detailsStyles.detailsKey}>Source pod:</Typography>
+            <Typography variant="body1" component="span"
+                        sx={detailsStyles.detailsValue}>{data.sourcePod.namespace}/
+                {data.sourcePod.name}</Typography>
+        </div>
+        <div>
+            <Typography variant="body1" component="span" sx={detailsStyles.detailsKey}>Target pod:</Typography>
+            <Typography variant="body1" component="span"
+                        sx={detailsStyles.detailsValue}>{data.targetPod.namespace}/
+                {data.targetPod.name}</Typography>
+        </div>
+        <div>
+            <Typography variant="body1" component="span"
+                        sx={detailsStyles.detailsKey}>Ports:</Typography>
+            <Typography variant="body1" component="span"
+                        sx={detailsStyles.detailsValue}>
+                {data.ports ? data.ports.join(', ') : 'all'}
+            </Typography>
+        </div>
+        <div>
+            <Typography variant="body1" component="span" sx={detailsStyles.detailsKey}>Explanation:</Typography>
+            <Box sx={detailsStyles.detailsValueNested}>
+                <div>
+                    <Typography variant="body1" sx={detailsStyles.detailsKey}>
+                        Policies allowing egress from source:</Typography>
+                    {
+                        data.sourcePod.isEgressIsolated ? (
+                            <Typography variant="body1" sx={detailsStyles.detailsValue}>{
+                                data.egressPolicies
+                                    .map(policy => `${policy.namespace}/${policy.name}`)
+                                    .join(', ')
+                            }</Typography>
+                        ) : (
+                            <Typography variant="body1" sx={detailsStyles.detailsValue}>no isolation</Typography>
+                        )
+                    }
                 </div>
-            </div>
-        </>
-    );
-};
+                <div>
+                    <Typography variant="body1" sx={detailsStyles.detailsKey}>
+                        Policies allowing ingress to target:</Typography>
+                    {
+                        data.targetPod.isIngressIsolated ? (
+                            <Typography variant="body1" sx={detailsStyles.detailsValue}>{
+                                data.ingressPolicies
+                                    .map(policy => `${policy.namespace}/${policy.name}`)
+                                    .join(', ')
+                            }</Typography>
+                        ) : (
+                            <Typography variant="body1" sx={detailsStyles.detailsValue}>no isolation</Typography>
+                        )
+                    }
+                </div>
+            </Box>
+        </div>
+    </>
+);
 
 AllowedRouteDetails.propTypes = {
     data: PropTypes.shape({

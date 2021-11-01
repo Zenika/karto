@@ -1,31 +1,25 @@
-import Typography from '@material-ui/core/Typography';
-import { makeStyles } from '@material-ui/core/styles';
-import classNames from 'classnames';
-import PropTypes from 'prop-types';
+import Typography from '@mui/material/Typography';
+import { Box } from '@mui/material';
 
-const useStyles = makeStyles(theme => ({
-    root: {
-        zIndex: 1,
-        pointerEvents: 'none',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'flex-start',
-        padding: theme.spacing(2),
-        cursor: 'default'
-    }
-}));
-
-const Header = ({ className }) => {
-    const classes = useStyles();
+const Header = () => {
     return (
-        <header className={classNames(classes.root, className)}>
+        <Box component="header" sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 80,
+            p: 2,
+            zIndex: 1,
+            pointerEvents: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            cursor: 'default'
+        }}>
             <Typography variant="h1">Karto</Typography>
-        </header>
+        </Box>
     );
-};
-
-Header.propTypes = {
-    className: PropTypes.string.isRequired
 };
 
 export default Header;

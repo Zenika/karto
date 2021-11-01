@@ -1,9 +1,8 @@
-// https://github.com/mui-org/material-ui/issues/13394
-import { unstable_createMuiStrictModeTheme as createMuiTheme } from '@material-ui/core/styles';
+import { createTheme } from '@mui/material/styles';
 
-export const theme = createMuiTheme({
+export const theme = createTheme({
     palette: {
-        type: 'dark',
+        mode: 'dark',
         primary: {
             main: '#EC5E69',
             dark: '#65282d'
@@ -38,10 +37,12 @@ export const theme = createMuiTheme({
             fontSize: '0.65rem'
         }
     },
-    overrides: {
+    components: {
         MuiButton: {
-            root: {
-                minWidth: 0
+            styleOverrides: {
+                root: {
+                    minWidth: 0
+                }
             }
         }
     }

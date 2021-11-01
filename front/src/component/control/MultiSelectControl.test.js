@@ -35,7 +35,7 @@ describe('MultiSelectControl component', () => {
 
         const input = screen.getByPlaceholderText(placeholder);
         fireEvent.change(input, { target: { value: options[2] } });
-        fireEvent.keyDown(input, { key: 'Enter' });
+        fireEvent.click(screen.getByText(options[2]));
 
         expect(changeHandler).toHaveBeenCalledTimes(1);
         expect(changeHandler).toHaveBeenCalledWith([options[1], options[2]]);
