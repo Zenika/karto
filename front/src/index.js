@@ -1,12 +1,13 @@
 import { StrictMode } from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './component/App';
 import CssBaseline from '@mui/material/CssBaseline';
-import { ThemeProvider, StyledEngineProvider } from '@mui/material/styles';
+import { StyledEngineProvider, ThemeProvider } from '@mui/material/styles';
 import { theme } from './theme';
 
-ReactDOM.render(
+const root = createRoot(document.getElementById('root'));
+root.render(
     <StrictMode>
         <StyledEngineProvider injectFirst>
             <ThemeProvider theme={theme}>
@@ -14,6 +15,5 @@ ReactDOM.render(
                 <App/>
             </ThemeProvider>
         </StyledEngineProvider>
-    </StrictMode>,
-    document.getElementById('root')
+    </StrictMode>
 );
