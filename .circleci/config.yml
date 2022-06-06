@@ -13,6 +13,7 @@ jobs:
   build-front:
     docker:
       - image: cimg/node:16.15.0
+    resource_class: large
     working_directory: /home/circleci/karto
     steps:
       - attach_workspace:
@@ -33,7 +34,7 @@ jobs:
       - run:
           working_directory: front
           name: Run tests
-          command: yarn test
+          command: yarn test --maxWorkers=3
       - run:
           working_directory: front
           name: Build frontend
@@ -45,6 +46,7 @@ jobs:
   build-back:
     docker:
       - image: cimg/go:1.18
+    resource_class: large
     working_directory: /home/circleci/karto
     steps:
       - attach_workspace:
@@ -93,16 +95,16 @@ jobs:
           command: |
             docker build -t zenikalabs/karto .
             docker tag zenikalabs/karto zenikalabs/karto:v1
-            docker tag zenikalabs/karto zenikalabs/karto:v1.7
-            docker tag zenikalabs/karto zenikalabs/karto:v1.7.0
+            docker tag zenikalabs/karto zenikalabs/karto:v1.8
+            docker tag zenikalabs/karto zenikalabs/karto:v1.8.0
       - run:
           name: Push docker image
           command: |
             echo "$DOCKER_PASS" | docker login --username $DOCKER_USER --password-stdin
             docker push zenikalabs/karto
             docker push zenikalabs/karto:v1
-            docker push zenikalabs/karto:v1.7
-            docker push zenikalabs/karto:v1.7.0
+            docker push zenikalabs/karto:v1.8
+            docker push zenikalabs/karto:v1.8.0
 workflows:
   version: 2
   build-test-and-deploy:
