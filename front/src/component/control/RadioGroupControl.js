@@ -1,76 +1,63 @@
-import { makeStyles } from '@material-ui/core/styles';
-import Radio from '@material-ui/core/Radio';
-import RadioGroup from '@material-ui/core/RadioGroup';
-import FormControlLabel from '@material-ui/core/FormControlLabel';
+import Radio, { radioClasses } from '@mui/material/Radio';
+import RadioGroup from '@mui/material/RadioGroup';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import PropTypes from 'prop-types';
-import KeyboardArrowRight from '@material-ui/icons/KeyboardArrowRight';
+import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
+import { Box } from '@mui/material';
 
-const useCustomRadioStyles = makeStyles(theme => ({
-    root: {
-        '&&': {
-            height: 20,
-            width: 32 + theme.spacing(1),
-            paddingTop: 0,
-            paddingBottom: 0,
-            '&:hover': {
-                background: 'none'
+const CustomRadio = (props) => (
+    <Radio
+        sx={{
+            [`&.${radioClasses.root}`]: {
+                height: 20,
+                width: (theme) => `calc(${theme.spacing(1)} + 32px)`,
+                py: 0,
+                '&:hover': {
+                    background: 'none'
+                }
             }
+        }}
+        disableRipple
+        color="primary"
+        icon={
+            <Box component="span" sx={{
+                height: 16,
+                width: 16,
+                mr: 1
+            }}/>
         }
-    },
-    icon: {
-        height: 16,
-        width: 16,
-        marginRight: theme.spacing(1)
-    }
-}));
-
-const CustomRadio = (props) => {
-    const classes = useCustomRadioStyles();
-
-    return (
-        <Radio
-            className={classes.root}
-            disableRipple
-            color="primary"
-            icon={
-                <span className={classes.icon}/>
-            }
-            checkedIcon={
-                <KeyboardArrowRight className={classes.icon} viewBox="5 5 14 14"/>
-            }
-            {...props}
-        />
-    );
-};
-
-const useStyles = makeStyles(theme => ({
-    radio: {
-        marginLeft: 0,
-        marginBottom: theme.spacing(1),
-        '&:last-child': {
-            marginBottom: 0
+        checkedIcon={
+            <KeyboardArrowRight viewBox="5 5 14 14" sx={{
+                height: 16,
+                width: 16,
+                mr: 1
+            }}/>
         }
-    }
-}));
+        {...props}
+    />
+);
 
-const RadioGroupControl = ({ className = '', options, value, onChange }) => {
-    const classes = useStyles();
-
+const RadioGroupControl = ({ sx, options, value, onChange }) => {
     const handleChange = (event) => {
         onChange(event.target.value);
     };
     return (
-        <RadioGroup className={className} value={value} onChange={handleChange}>
+        <RadioGroup sx={sx} value={value} onChange={handleChange}>
             {options.map(option =>
-                <FormControlLabel className={classes.radio} key={option} value={option} control={<CustomRadio/>}
-                                  label={option}/>
+                <FormControlLabel key={option} value={option} control={<CustomRadio/>} label={option} sx={{
+                    ml: 0,
+                    mb: 1,
+                    '&:last-of-type': {
+                        mb: 0
+                    }
+                }}/>
             )}
         </RadioGroup>
     );
 };
 
 RadioGroupControl.propTypes = {
-    className: PropTypes.string,
+    sx: PropTypes.object,
     options: PropTypes.arrayOf(PropTypes.string).isRequired,
     value: PropTypes.string.isRequired,
     onChange: PropTypes.func.isRequired

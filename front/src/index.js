@@ -1,17 +1,19 @@
 import { StrictMode } from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './component/App';
-import CssBaseline from '@material-ui/core/CssBaseline';
-import { ThemeProvider } from '@material-ui/core/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import { StyledEngineProvider, ThemeProvider } from '@mui/material/styles';
 import { theme } from './theme';
 
-ReactDOM.render(
+const root = createRoot(document.getElementById('root'));
+root.render(
     <StrictMode>
-        <ThemeProvider theme={theme}>
-            <CssBaseline/>
-            <App/>
-        </ThemeProvider>
-    </StrictMode>,
-    document.getElementById('root')
+        <StyledEngineProvider injectFirst>
+            <ThemeProvider theme={theme}>
+                <CssBaseline/>
+                <App/>
+            </ThemeProvider>
+        </StyledEngineProvider>
+    </StrictMode>
 );

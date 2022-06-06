@@ -3,9 +3,10 @@ package traffic
 import (
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	"karto/analyzer/shared"
 	"karto/analyzer/traffic/allowedroute"
 	"karto/analyzer/traffic/podisolation"
-	"karto/analyzer/traffic/shared"
+	"karto/commons"
 	"karto/types"
 )
 
@@ -38,45 +39,32 @@ func NewAnalyzer(podIsolationAnalyzer podisolation.Analyzer, allowedRouteAnalyze
 
 func (analyzer analyzerImpl) Analyze(clusterState ClusterState) AnalysisResult {
 	podIsolations := analyzer.podIsolationsOfAllPods(clusterState.Pods, clusterState.NetworkPolicies)
-	allowedRoutes := analyzer.allowedRoutesOfAllPods(podIsolations, clusterState.Namespaces)
+	allowedRoutes := analyzer.allowedRoutesBetweenPods(podIsolations, clusterState.Namespaces)
 	return AnalysisResult{
-		Pods:          analyzer.toPodIsolations(podIsolations),
+		Pods: commons.Map(podIsolations, func(podIsolation *shared.PodIsolation) *types.PodIsolation {
+			return podIsolation.ToPodIsolation()
+		}),
 		AllowedRoutes: allowedRoutes,
 	}
 }
 
-func (analyzer analyzerImpl) podIsolationsOfAllPods(pods []*corev1.Pod,
-	policies []*networkingv1.NetworkPolicy) []*shared.PodIsolation {
-	podIsolations := make([]*shared.PodIsolation, 0)
-	for _, pod := range pods {
-		podIsolation := analyzer.podIsolationAnalyzer.Analyze(pod, policies)
-		podIsolations = append(podIsolations, podIsolation)
-	}
-	return podIsolations
+func (analyzer analyzerImpl) podIsolationsOfAllPods(
+	pods []*corev1.Pod,
+	policies []*networkingv1.NetworkPolicy,
+) []*shared.PodIsolation {
+	return commons.Map(pods, func(pod *corev1.Pod) *shared.PodIsolation {
+		return analyzer.podIsolationAnalyzer.Analyze(pod, policies)
+	})
 }
 
-func (analyzer analyzerImpl) allowedRoutesOfAllPods(podIsolations []*shared.PodIsolation,
-	namespaces []*corev1.Namespace) []*types.AllowedRoute {
-	allowedRoutes := make([]*types.AllowedRoute, 0)
-	for i, sourcePodIsolation := range podIsolations {
-		for j, targetPodIsolation := range podIsolations {
-			if i == j {
-				// Ignore traffic to itself
-				continue
-			}
-			allowedRoute := analyzer.allowedRouteAnalyzer.Analyze(sourcePodIsolation, targetPodIsolation, namespaces)
-			if allowedRoute != nil {
-				allowedRoutes = append(allowedRoutes, allowedRoute)
-			}
-		}
-	}
-	return allowedRoutes
-}
-
-func (analyzer analyzerImpl) toPodIsolations(podIsolations []*shared.PodIsolation) []*types.PodIsolation {
-	result := make([]*types.PodIsolation, 0)
-	for _, podIsolation := range podIsolations {
-		result = append(result, podIsolation.ToPodIsolation())
-	}
-	return result
+func (analyzer analyzerImpl) allowedRoutesBetweenPods(
+	podIsolations []*shared.PodIsolation,
+	namespaces []*corev1.Namespace,
+) []*types.AllowedRoute {
+	podPairs := commons.AllPairs(podIsolations)
+	return commons.MapAndKeepNotNil(podPairs,
+		func(podPair commons.Pair[*shared.PodIsolation, *shared.PodIsolation]) *types.AllowedRoute {
+			return analyzer.allowedRouteAnalyzer.Analyze(podPair.Left, podPair.Right, namespaces)
+		},
+	)
 }

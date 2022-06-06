@@ -3,8 +3,7 @@ package podisolation
 import (
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
-	"karto/analyzer/traffic/shared"
-	"karto/analyzer/utils"
+	"karto/analyzer/shared"
 )
 
 type Analyzer interface {
@@ -21,7 +20,7 @@ func (analyzer analyzerImpl) Analyze(pod *corev1.Pod, policies []*networkingv1.N
 	podIsolation := shared.NewPodIsolation(pod)
 	for _, policy := range policies {
 		namespaceMatches := analyzer.networkPolicyNamespaceMatches(pod, policy)
-		selectorMatches := utils.SelectorMatches(pod.Labels, policy.Spec.PodSelector)
+		selectorMatches := shared.SelectorMatches(pod.Labels, policy.Spec.PodSelector)
 		if namespaceMatches && selectorMatches {
 			isIngress, isEgress := analyzer.policyTypes(policy)
 			if isIngress {

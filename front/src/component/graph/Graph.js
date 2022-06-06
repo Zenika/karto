@@ -1,61 +1,12 @@
 import { useEffect, useRef } from 'react';
-import { makeStyles } from '@material-ui/core/styles';
-import Button from '@material-ui/core/Button';
-import FullscreenIcon from '@material-ui/icons/Fullscreen';
-import GetAppIcon from '@material-ui/icons/GetApp';
-import classNames from 'classnames';
+import Button from '@mui/material/Button';
+import FullscreenIcon from '@mui/icons-material/Fullscreen';
+import GetAppIcon from '@mui/icons-material/GetApp';
 import { GRAPH_HEIGHT, GRAPH_WIDTH } from './d3/D3Constants';
 import { saveSvgAsPng } from 'save-svg-as-png';
-
-const useStyles = makeStyles(theme => ({
-    graph: {
-        height: '100%',
-        width: '100%',
-        overflow: 'hidden',
-        backgroundColor: theme.palette.background.default
-    },
-    actions: {
-        position: 'absolute',
-        top: 0,
-        right: 0
-    },
-    svg: {
-        fontFamily: 'Roboto', // re-declaration here is required for PNG export
-        '& .item': {
-            fill: theme.palette.secondary.main
-        },
-        '& .item-highlight': {
-            fill: theme.palette.warning.main
-        },
-        '& .item-faded': {
-            fill: theme.palette.secondary.dark
-        },
-        '& .item-faded-highlight': {
-            fill: theme.palette.warning.dark
-        },
-        '& .label': {
-            fill: theme.palette.text.primary,
-            fontWeight: 100,
-            cursor: 'default',
-            pointerEvents: 'none'
-        },
-        '& .link': {
-            stroke: theme.palette.primary.main
-        },
-        '& .link-faded': {
-            stroke: theme.palette.primary.dark
-        },
-        '& .link-arrow': {
-            fill: theme.palette.primary.main
-        },
-        '& .link-arrow-faded': {
-            fill: theme.palette.primary.dark
-        }
-    }
-}));
+import { Box } from '@mui/material';
 
 const Graph = ({ dataSet, autoZoom, focusHandlers, d3GraphClass }) => {
-    const classes = useStyles();
     const d3Graph = useRef(new d3GraphClass());
     const fullscreenElementRef = useRef(null);
     const graphRef = useRef(null);
@@ -81,10 +32,51 @@ const Graph = ({ dataSet, autoZoom, focusHandlers, d3GraphClass }) => {
     });
 
     return <>
-        <div ref={fullscreenElementRef} aria-label="graph container" className={classNames(classes.graph)}>
-            <svg id="graph" ref={graphRef} className={classes.svg}/>
-        </div>
-        <div className={classes.actions}>
+        <Box ref={fullscreenElementRef} aria-label="graph container" sx={{
+            height: '100%',
+            width: '100%',
+            overflow: 'hidden',
+            backgroundColor: 'background.default'
+        }}>
+            <Box component="svg" id="graph" ref={graphRef} sx={{
+                fontFamily: 'Roboto', // re-declaration here is required for PNG export
+                '& .item': {
+                    fill: (theme) => theme.palette.secondary.main
+                },
+                '& .item-highlight': {
+                    fill: (theme) => theme.palette.warning.main
+                },
+                '& .item-faded': {
+                    fill: (theme) => theme.palette.secondary.dark
+                },
+                '& .item-faded-highlight': {
+                    fill: (theme) => theme.palette.warning.dark
+                },
+                '& .label': {
+                    fill: (theme) => theme.palette.text.primary,
+                    fontWeight: 100,
+                    cursor: 'default',
+                    pointerEvents: 'none'
+                },
+                '& .link': {
+                    stroke: (theme) => theme.palette.primary.main
+                },
+                '& .link-faded': {
+                    stroke: (theme) => theme.palette.primary.dark
+                },
+                '& .link-arrow': {
+                    fill: (theme) => theme.palette.primary.main
+                },
+                '& .link-arrow-faded': {
+                    fill: (theme) => theme.palette.primary.dark
+                }
+            }}/>
+        </Box>
+        <Box sx={{
+            position: 'absolute',
+            top: 0,
+            right: 0
+        }}>
             <Button color="primary" onClick={download}>
                 <GetAppIcon aria-label="download"/>
             </Button>
@@ -93,7 +85,7 @@ const Graph = ({ dataSet, autoZoom, focusHandlers, d3GraphClass }) => {
                     <FullscreenIcon aria-label="enter fullscreen" viewBox="2 3 20 20"/>
                 </Button>
             )}
-        </div>
+        </Box>
     </>;
 };
 

@@ -28,16 +28,9 @@ func (podIsolation *PodIsolation) AddEgressPolicy(egressPolicy *networkingv1.Net
 	podIsolation.EgressPolicies = append(podIsolation.EgressPolicies, egressPolicy)
 }
 
-func (podIsolation *PodIsolation) ToPodRef() types.PodRef {
-	return types.PodRef{
-		Name:      podIsolation.Pod.Name,
-		Namespace: podIsolation.Pod.Namespace,
-	}
-}
-
 func (podIsolation *PodIsolation) ToPodIsolation() *types.PodIsolation {
 	return &types.PodIsolation{
-		Pod:               podIsolation.ToPodRef(),
+		Pod:               ToPodRef(podIsolation.Pod),
 		IsIngressIsolated: podIsolation.IsIngressIsolated(),
 		IsEgressIsolated:  podIsolation.IsEgressIsolated(),
 	}
@@ -46,7 +39,7 @@ func (podIsolation *PodIsolation) ToPodIsolation() *types.PodIsolation {
 func NewPodIsolation(pod *corev1.Pod) PodIsolation {
 	return PodIsolation{
 		Pod:             pod,
-		IngressPolicies: make([]*networkingv1.NetworkPolicy, 0),
-		EgressPolicies:  make([]*networkingv1.NetworkPolicy, 0),
+		IngressPolicies: []*networkingv1.NetworkPolicy{},
+		EgressPolicies:  []*networkingv1.NetworkPolicy{},
 	}
 }

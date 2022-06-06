@@ -5,7 +5,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"karto/analyzer/traffic/shared"
+	"karto/analyzer/shared"
 	"karto/testutils"
 	"karto/types"
 	"testing"

@@ -1,20 +1,10 @@
-import { makeStyles } from '@material-ui/core/styles';
-import Button from '@material-ui/core/Button';
+import Button from '@mui/material/Button';
 import PropTypes from 'prop-types';
 import Control from './Control';
 import Autocomplete from './Autocomplete';
+import { Box } from '@mui/material';
 
-const useStyles = makeStyles(theme => ({
-    actions: {
-        display: 'flex',
-        flexDirection: 'row',
-        justifyContent: 'flex-start',
-        marginTop: theme.spacing(1)
-    }
-}));
-
-const MultiSelectControl = ({ className = '', name, placeholder, checked, options, selectedOptions, onChange }) => {
-    const classes = useStyles();
+const MultiSelectControl = ({ sx, name, placeholder, checked, options, selectedOptions, onChange }) => {
     const handleChange = (event, newValue) => {
         onChange(newValue);
     };
@@ -25,11 +15,16 @@ const MultiSelectControl = ({ className = '', name, placeholder, checked, option
         onChange(options);
     };
     return (
-        <Control className={className} name={name} checked={checked}>
-            <div className={classes.actions}>
+        <Control sx={sx} name={name} checked={checked}>
+            <Box sx={{
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'flex-start',
+                mt: 1
+            }}>
                 <Button color="primary" onClick={selectAll}>Select all</Button>
                 <Button color="primary" onClick={selectNone}>Clear</Button>
-            </div>
+            </Box>
             <Autocomplete multiple options={options} value={selectedOptions} onChange={handleChange}
                           placeholder={placeholder}/>
         </Control>
@@ -37,7 +32,7 @@ const MultiSelectControl = ({ className = '', name, placeholder, checked, option
 };
 
 MultiSelectControl.propTypes = {
-    className: PropTypes.string,
+    sx: PropTypes.object,
     name: PropTypes.string.isRequired,
     placeholder: PropTypes.string.isRequired,
     checked: PropTypes.bool.isRequired,

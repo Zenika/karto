@@ -2,6 +2,7 @@ package podhealth
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	"karto/analyzer/shared"
 	"karto/types"
 )
 
@@ -30,17 +31,10 @@ func (analyzer analyzerImpl) Analyze(pod *corev1.Pod) *types.PodHealth {
 		}
 	}
 	return &types.PodHealth{
-		Pod:                      analyzer.toPodRef(pod),
+		Pod:                      shared.ToPodRef(pod),
 		Containers:               containers,
 		ContainersRunning:        running,
 		ContainersReady:          ready,
 		ContainersWithoutRestart: withoutRestart,
-	}
-}
-
-func (analyzer analyzerImpl) toPodRef(pod *corev1.Pod) types.PodRef {
-	return types.PodRef{
-		Name:      pod.Name,
-		Namespace: pod.Namespace,
 	}
 }

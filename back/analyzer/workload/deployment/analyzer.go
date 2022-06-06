@@ -2,6 +2,8 @@ package deployment
 
 import (
 	appsv1 "k8s.io/api/apps/v1"
+	"karto/analyzer/shared"
+	"karto/commons"
 	"karto/types"
 )
 
@@ -15,30 +17,16 @@ func NewAnalyzer() Analyzer {
 	return analyzerImpl{}
 }
 
-func (analyzer analyzerImpl) Analyze(deployment *appsv1.Deployment,
-	replicaSets []*appsv1.ReplicaSet) *types.Deployment {
-	targetReplicaSets := make([]types.ReplicaSetRef, 0)
-	for _, replicaSet := range replicaSets {
-		if *replicaSet.Spec.Replicas == 0 {
-			continue
-		}
-		for _, ownerReference := range replicaSet.OwnerReferences {
-			if ownerReference.UID == deployment.UID {
-				targetReplicaSets = append(targetReplicaSets, analyzer.toReplicaSetRef(replicaSet))
-				break
-			}
-		}
-	}
+func (analyzer analyzerImpl) Analyze(
+	deployment *appsv1.Deployment,
+	replicaSets []*appsv1.ReplicaSet,
+) *types.Deployment {
+	targetReplicaSets := commons.Filter(replicaSets, func(replicaSet *appsv1.ReplicaSet) bool {
+		return *replicaSet.Spec.Replicas != 0 && shared.IsOwnedBy(replicaSet, deployment)
+	})
 	return &types.Deployment{
 		Name:              deployment.Name,
 		Namespace:         deployment.Namespace,
-		TargetReplicaSets: targetReplicaSets,
-	}
-}
-
-func (analyzer analyzerImpl) toReplicaSetRef(replicaSet *appsv1.ReplicaSet) types.ReplicaSetRef {
-	return types.ReplicaSetRef{
-		Name:      replicaSet.Name,
-		Namespace: replicaSet.Namespace,
+		TargetReplicaSets: commons.Map(targetReplicaSets, shared.ToReplicaSetRef),
 	}
 }

@@ -3,6 +3,8 @@ package statefulset
 import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"karto/analyzer/shared"
+	"karto/commons"
 	"karto/types"
 )
 
@@ -20,25 +22,12 @@ func (analyzer analyzerImpl) Analyze(statefulSet *appsv1.StatefulSet, pods []*co
 	if *statefulSet.Spec.Replicas == 0 {
 		return nil
 	}
-	targetPods := make([]types.PodRef, 0)
-	for _, pod := range pods {
-		for _, ownerReference := range pod.OwnerReferences {
-			if ownerReference.UID == statefulSet.UID {
-				targetPods = append(targetPods, analyzer.toPodRef(pod))
-				break
-			}
-		}
-	}
+	targetPods := commons.Filter(pods, func(pod *corev1.Pod) bool {
+		return shared.IsOwnedBy(pod, statefulSet)
+	})
 	return &types.StatefulSet{
 		Name:       statefulSet.Name,
 		Namespace:  statefulSet.Namespace,
-		TargetPods: targetPods,
-	}
-}
-
-func (analyzer analyzerImpl) toPodRef(pod *corev1.Pod) types.PodRef {
-	return types.PodRef{
-		Name:      pod.Name,
-		Namespace: pod.Namespace,
+		TargetPods: commons.Map(targetPods, shared.ToPodRef),
 	}
 }

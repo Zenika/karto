@@ -10,6 +10,7 @@ import (
 	"karto/analyzer/workload/replicaset"
 	"karto/analyzer/workload/service"
 	"karto/analyzer/workload/statefulset"
+	"karto/commons"
 	"karto/types"
 )
 
@@ -45,9 +46,14 @@ type analyzerImpl struct {
 	deploymentAnalyzer  deployment.Analyzer
 }
 
-func NewAnalyzer(serviceAnalyzer service.Analyzer, ingressAnalyzer ingress.Analyzer,
-	replicaSetAnalyzer replicaset.Analyzer, statefulSetAnalyzer statefulset.Analyzer,
-	daemonSetAnalyzer daemonset.Analyzer, deploymentAnalyzer deployment.Analyzer) Analyzer {
+func NewAnalyzer(
+	serviceAnalyzer service.Analyzer,
+	ingressAnalyzer ingress.Analyzer,
+	replicaSetAnalyzer replicaset.Analyzer,
+	statefulSetAnalyzer statefulset.Analyzer,
+	daemonSetAnalyzer daemonset.Analyzer,
+	deploymentAnalyzer deployment.Analyzer,
+) Analyzer {
 	return analyzerImpl{
 		serviceAnalyzer:     serviceAnalyzer,
 		ingressAnalyzer:     ingressAnalyzer,
@@ -77,72 +83,56 @@ func (analyzer analyzerImpl) Analyze(clusterState ClusterState) AnalysisResult {
 	}
 }
 
-func (analyzer analyzerImpl) allServicesWithTargetPods(services []*corev1.Service,
-	pods []*corev1.Pod) []*types.Service {
-	servicesWithTargetPods := make([]*types.Service, 0)
-	for _, svc := range services {
-		serviceWithTargetPods := analyzer.serviceAnalyzer.Analyze(svc, pods)
-		servicesWithTargetPods = append(servicesWithTargetPods, serviceWithTargetPods)
-	}
-	return servicesWithTargetPods
+func (analyzer analyzerImpl) allServicesWithTargetPods(
+	services []*corev1.Service,
+	pods []*corev1.Pod,
+) []*types.Service {
+	return commons.Map(services, func(svc *corev1.Service) *types.Service {
+		return analyzer.serviceAnalyzer.Analyze(svc, pods)
+	})
 }
 
-func (analyzer analyzerImpl) allIngressesWithTargetServices(ingresses []*networkingv1.Ingress,
-	services []*corev1.Service) []*types.Ingress {
-	ingressesWithTargetServices := make([]*types.Ingress, 0)
-	for _, ing := range ingresses {
-		ingressWithTargetServices := analyzer.ingressAnalyzer.Analyze(ing, services)
-		if ingressWithTargetServices != nil {
-			ingressesWithTargetServices = append(ingressesWithTargetServices, ingressWithTargetServices)
-		}
-	}
-	return ingressesWithTargetServices
+func (analyzer analyzerImpl) allIngressesWithTargetServices(
+	ingresses []*networkingv1.Ingress,
+	services []*corev1.Service,
+) []*types.Ingress {
+	return commons.MapAndKeepNotNil(ingresses, func(ing *networkingv1.Ingress) *types.Ingress {
+		return analyzer.ingressAnalyzer.Analyze(ing, services)
+	})
 }
 
-func (analyzer analyzerImpl) allReplicaSetsWithTargetPods(replicaSets []*appsv1.ReplicaSet,
-	pods []*corev1.Pod) []*types.ReplicaSet {
-	replicaSetsWithTargetPods := make([]*types.ReplicaSet, 0)
-	for _, rs := range replicaSets {
-		replicaSetWithTargetPods := analyzer.replicaSetAnalyzer.Analyze(rs, pods)
-		if replicaSetWithTargetPods != nil {
-			replicaSetsWithTargetPods = append(replicaSetsWithTargetPods, replicaSetWithTargetPods)
-		}
-	}
-	return replicaSetsWithTargetPods
+func (analyzer analyzerImpl) allReplicaSetsWithTargetPods(
+	replicaSets []*appsv1.ReplicaSet,
+	pods []*corev1.Pod,
+) []*types.ReplicaSet {
+	return commons.MapAndKeepNotNil(replicaSets, func(rs *appsv1.ReplicaSet) *types.ReplicaSet {
+		return analyzer.replicaSetAnalyzer.Analyze(rs, pods)
+	})
 }
 
-func (analyzer analyzerImpl) allStatefulSetsWithTargetPods(statefulSets []*appsv1.StatefulSet,
-	pods []*corev1.Pod) []*types.StatefulSet {
-	statefulSetsWithTargetPods := make([]*types.StatefulSet, 0)
-	for _, ss := range statefulSets {
-		statefulSetWithTargetPods := analyzer.statefulSetAnalyzer.Analyze(ss, pods)
-		if statefulSetWithTargetPods != nil {
-			statefulSetsWithTargetPods = append(statefulSetsWithTargetPods, statefulSetWithTargetPods)
-		}
-	}
-	return statefulSetsWithTargetPods
+func (analyzer analyzerImpl) allStatefulSetsWithTargetPods(
+	statefulSets []*appsv1.StatefulSet,
+	pods []*corev1.Pod,
+) []*types.StatefulSet {
+	return commons.MapAndKeepNotNil(statefulSets, func(ss *appsv1.StatefulSet) *types.StatefulSet {
+		return analyzer.statefulSetAnalyzer.Analyze(ss, pods)
+	})
 }
 
-func (analyzer analyzerImpl) allDaemonSetsWithTargetPods(daemonSets []*appsv1.DaemonSet,
-	pods []*corev1.Pod) []*types.DaemonSet {
-	daemonSetsWithTargetPods := make([]*types.DaemonSet, 0)
-	for _, ds := range daemonSets {
-		daemonSetWithTargetPods := analyzer.daemonSetAnalyzer.Analyze(ds, pods)
-		if daemonSetWithTargetPods != nil {
-			daemonSetsWithTargetPods = append(daemonSetsWithTargetPods, daemonSetWithTargetPods)
-		}
-	}
-	return daemonSetsWithTargetPods
+func (analyzer analyzerImpl) allDaemonSetsWithTargetPods(
+	daemonSets []*appsv1.DaemonSet,
+	pods []*corev1.Pod,
+) []*types.DaemonSet {
+	return commons.MapAndKeepNotNil(daemonSets, func(ds *appsv1.DaemonSet) *types.DaemonSet {
+		return analyzer.daemonSetAnalyzer.Analyze(ds, pods)
+	})
 }
 
-func (analyzer analyzerImpl) allDeploymentsWithTargetReplicaSets(deployments []*appsv1.Deployment,
-	replicaSets []*appsv1.ReplicaSet) []*types.Deployment {
-	deploymentsWithTargetReplicaSets := make([]*types.Deployment, 0)
-	for _, deploy := range deployments {
-		deploymentWithTargetReplicaSets := analyzer.deploymentAnalyzer.Analyze(deploy, replicaSets)
-		if deploymentWithTargetReplicaSets != nil {
-			deploymentsWithTargetReplicaSets = append(deploymentsWithTargetReplicaSets, deploymentWithTargetReplicaSets)
-		}
-	}
-	return deploymentsWithTargetReplicaSets
+func (analyzer analyzerImpl) allDeploymentsWithTargetReplicaSets(
+	deployments []*appsv1.Deployment,
+	replicaSets []*appsv1.ReplicaSet,
+) []*types.Deployment {
+	return commons.MapAndKeepNotNil(deployments, func(deploy *appsv1.Deployment) *types.Deployment {
+		return analyzer.deploymentAnalyzer.Analyze(deploy, replicaSets)
+	})
 }
