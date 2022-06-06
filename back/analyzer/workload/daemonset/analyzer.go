@@ -3,6 +3,8 @@ package daemonset
 import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"karto/analyzer/shared"
+	"karto/commons"
 	"karto/types"
 )
 
@@ -17,25 +19,12 @@ func NewAnalyzer() Analyzer {
 }
 
 func (analyzer analyzerImpl) Analyze(daemonSet *appsv1.DaemonSet, pods []*corev1.Pod) *types.DaemonSet {
-	targetPods := make([]types.PodRef, 0)
-	for _, pod := range pods {
-		for _, ownerReference := range pod.OwnerReferences {
-			if ownerReference.UID == daemonSet.UID {
-				targetPods = append(targetPods, analyzer.toPodRef(pod))
-				break
-			}
-		}
-	}
+	targetPods := commons.Filter(pods, func(pod *corev1.Pod) bool {
+		return shared.IsOwnedBy(pod, daemonSet)
+	})
 	return &types.DaemonSet{
 		Name:       daemonSet.Name,
 		Namespace:  daemonSet.Namespace,
-		TargetPods: targetPods,
-	}
-}
-
-func (analyzer analyzerImpl) toPodRef(pod *corev1.Pod) types.PodRef {
-	return types.PodRef{
-		Name:      pod.Name,
-		Namespace: pod.Namespace,
+		TargetPods: commons.Map(targetPods, shared.ToPodRef),
 	}
 }

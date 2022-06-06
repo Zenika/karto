@@ -3,6 +3,8 @@ package ingress
 import (
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	"karto/analyzer/shared"
+	"karto/commons"
 	"karto/types"
 )
 
@@ -17,33 +19,25 @@ func NewAnalyzer() Analyzer {
 }
 
 func (analyzer analyzerImpl) Analyze(ingress *networkingv1.Ingress, services []*corev1.Service) *types.Ingress {
-	targetServices := make([]types.ServiceRef, 0)
-	for _, service := range services {
-		if !analyzer.ingressNamespaceMatches(service, ingress) {
-			continue
-		}
-		for _, rule := range ingress.Spec.Rules {
-			for _, path := range rule.HTTP.Paths {
-				if path.Backend.Service.Name == service.Name {
-					targetServices = append(targetServices, analyzer.toServiceRef(service))
-				}
-			}
-		}
-	}
+	targetServices := commons.Filter(services, func(service *corev1.Service) bool {
+		return analyzer.sameNamespace(service, ingress) &&
+			analyzer.isServiceUsedInRoute(service, ingress)
+	})
 	return &types.Ingress{
 		Name:           ingress.Name,
 		Namespace:      ingress.Namespace,
-		TargetServices: targetServices,
+		TargetServices: commons.Map(targetServices, shared.ToServiceRef),
 	}
 }
 
-func (analyzer analyzerImpl) ingressNamespaceMatches(service *corev1.Service, ingress *networkingv1.Ingress) bool {
-	return service.Namespace == ingress.Namespace
+func (analyzer analyzerImpl) sameNamespace(service *corev1.Service, ingress *networkingv1.Ingress) bool {
+	return ingress.Namespace == service.Namespace
 }
 
-func (analyzer analyzerImpl) toServiceRef(service *corev1.Service) types.ServiceRef {
-	return types.ServiceRef{
-		Name:      service.Name,
-		Namespace: service.Namespace,
-	}
+func (analyzer analyzerImpl) isServiceUsedInRoute(service *corev1.Service, ingress *networkingv1.Ingress) bool {
+	return commons.AnyMatch(ingress.Spec.Rules, func(rule networkingv1.IngressRule) bool {
+		return commons.AnyMatch(rule.HTTP.Paths, func(path networkingv1.HTTPIngressPath) bool {
+			return path.Backend.Service.Name == service.Name
+		})
+	})
 }

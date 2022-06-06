@@ -4,7 +4,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
-	"karto/analyzer/traffic/shared"
+	"karto/analyzer/shared"
 	"karto/testutils"
 	"testing"
 )
