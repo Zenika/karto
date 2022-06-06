@@ -2,6 +2,7 @@ package pod
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	"karto/commons"
 	"karto/types"
 )
 
@@ -24,17 +25,10 @@ func NewAnalyzer() Analyzer {
 }
 
 func (analyzer analyzerImpl) Analyze(clusterState ClusterState) AnalysisResult {
+	Pods := commons.Map(clusterState.Pods, analyzer.toPod)
 	return AnalysisResult{
-		Pods: analyzer.toPods(clusterState.Pods),
+		Pods: Pods,
 	}
-}
-
-func (analyzer analyzerImpl) toPods(pods []*corev1.Pod) []*types.Pod {
-	result := make([]*types.Pod, 0)
-	for _, pod := range pods {
-		result = append(result, analyzer.toPod(pod))
-	}
-	return result
 }
 
 func (analyzer analyzerImpl) toPod(pod *corev1.Pod) *types.Pod {

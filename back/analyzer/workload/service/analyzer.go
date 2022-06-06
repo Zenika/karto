@@ -3,7 +3,8 @@ package service
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"karto/analyzer/utils"
+	"karto/analyzer/shared"
+	"karto/commons"
 	"karto/types"
 )
 
@@ -18,35 +19,24 @@ func NewAnalyzer() Analyzer {
 }
 
 func (analyzer analyzerImpl) Analyze(service *corev1.Service, pods []*corev1.Pod) *types.Service {
-	targetPods := make([]types.PodRef, 0)
-	for _, pod := range pods {
-		namespaceMatches := analyzer.serviceNamespaceMatches(pod, service)
-		selectorMatches := analyzer.labelsMatches(pod.Labels, service.Spec.Selector)
-		if namespaceMatches && selectorMatches {
-			targetPods = append(targetPods, analyzer.toPodRef(pod))
-		}
-	}
+	targetPods := commons.Filter(pods, func(pod *corev1.Pod) bool {
+		return analyzer.sameNamespace(pod, service) &&
+			analyzer.podLabelsMatch(pod.Labels, service.Spec.Selector)
+	})
 	return &types.Service{
 		Name:       service.Name,
 		Namespace:  service.Namespace,
-		TargetPods: targetPods,
+		TargetPods: commons.Map(targetPods, shared.ToPodRef),
 	}
 }
 
-func (analyzer analyzerImpl) serviceNamespaceMatches(pod *corev1.Pod, service *corev1.Service) bool {
+func (analyzer analyzerImpl) sameNamespace(pod *corev1.Pod, service *corev1.Service) bool {
 	return pod.Namespace == service.Namespace
 }
 
-func (analyzer analyzerImpl) labelsMatches(objectLabels map[string]string, matchLabels map[string]string) bool {
+func (analyzer analyzerImpl) podLabelsMatch(objectLabels map[string]string, matchLabels map[string]string) bool {
 	if matchLabels == nil {
 		return false
 	}
-	return utils.SelectorMatches(objectLabels, *metav1.SetAsLabelSelector(matchLabels))
-}
-
-func (analyzer analyzerImpl) toPodRef(pod *corev1.Pod) types.PodRef {
-	return types.PodRef{
-		Name:      pod.Name,
-		Namespace: pod.Namespace,
-	}
+	return shared.SelectorMatches(objectLabels, *metav1.SetAsLabelSelector(matchLabels))
 }

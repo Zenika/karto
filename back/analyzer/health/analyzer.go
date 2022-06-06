@@ -3,6 +3,7 @@ package health
 import (
 	corev1 "k8s.io/api/core/v1"
 	"karto/analyzer/health/podhealth"
+	"karto/commons"
 	"karto/types"
 )
 
@@ -29,17 +30,8 @@ func NewAnalyzer(podHealthAnalyzer podhealth.Analyzer) Analyzer {
 }
 
 func (analyzer analyzerImpl) Analyze(clusterState ClusterState) AnalysisResult {
-	podHealths := analyzer.podHealthOfAllPods(clusterState.Pods)
+	podsHealth := commons.Map(clusterState.Pods, analyzer.podHealthAnalyzer.Analyze)
 	return AnalysisResult{
-		Pods: podHealths,
+		Pods: podsHealth,
 	}
-}
-
-func (analyzer analyzerImpl) podHealthOfAllPods(pods []*corev1.Pod) []*types.PodHealth {
-	podHealths := make([]*types.PodHealth, 0)
-	for _, pod := range pods {
-		podHealth := analyzer.podHealthAnalyzer.Analyze(pod)
-		podHealths = append(podHealths, podHealth)
-	}
-	return podHealths
 }

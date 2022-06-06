@@ -51,7 +51,7 @@ func NewPodBuilder() *PodBuilder {
 	return &PodBuilder{
 		namespace:         "default",
 		labels:            map[string]string{},
-		containerStatuses: make([]corev1.ContainerStatus, 0),
+		containerStatuses: []corev1.ContainerStatus{},
 	}
 }
 
@@ -140,7 +140,8 @@ func (networkPolicyBuilder *NetworkPolicyBuilder) WithLabel(key string, value st
 }
 
 func (networkPolicyBuilder *NetworkPolicyBuilder) WithPodSelector(
-	podSelector *metav1.LabelSelector) *NetworkPolicyBuilder {
+	podSelector *metav1.LabelSelector,
+) *NetworkPolicyBuilder {
 	networkPolicyBuilder.podSelector = *podSelector
 	return networkPolicyBuilder
 }
@@ -151,13 +152,15 @@ func (networkPolicyBuilder *NetworkPolicyBuilder) WithTypes(types ...networkingv
 }
 
 func (networkPolicyBuilder *NetworkPolicyBuilder) WithIngressRule(
-	ingressRule networkingv1.NetworkPolicyIngressRule) *NetworkPolicyBuilder {
+	ingressRule networkingv1.NetworkPolicyIngressRule,
+) *NetworkPolicyBuilder {
 	networkPolicyBuilder.ingress = append(networkPolicyBuilder.ingress, ingressRule)
 	return networkPolicyBuilder
 }
 
 func (networkPolicyBuilder *NetworkPolicyBuilder) WithEgressRule(
-	egressRule networkingv1.NetworkPolicyEgressRule) *NetworkPolicyBuilder {
+	egressRule networkingv1.NetworkPolicyEgressRule,
+) *NetworkPolicyBuilder {
 	networkPolicyBuilder.egress = append(networkPolicyBuilder.egress, egressRule)
 	return networkPolicyBuilder
 }
@@ -380,15 +383,15 @@ func (daemonSetBuilder *DaemonSetBuilder) Build() *appsv1.DaemonSet {
 }
 
 type IngressBuilder struct {
-	name            string
-	namespace       string
-	serviceBackends []string
+	name         string
+	namespace    string
+	ingressPaths []networkingv1.HTTPIngressPath
 }
 
 func NewIngressBuilder() *IngressBuilder {
 	return &IngressBuilder{
-		namespace:       "default",
-		serviceBackends: make([]string, 0),
+		namespace:    "default",
+		ingressPaths: []networkingv1.HTTPIngressPath{},
 	}
 }
 
@@ -403,22 +406,18 @@ func (ingressBuilder *IngressBuilder) WithNamespace(namespace string) *IngressBu
 }
 
 func (ingressBuilder *IngressBuilder) WithServiceBackend(serviceName string) *IngressBuilder {
-	ingressBuilder.serviceBackends = append(ingressBuilder.serviceBackends, serviceName)
+	ingressPath := networkingv1.HTTPIngressPath{
+		Backend: networkingv1.IngressBackend{
+			Service: &networkingv1.IngressServiceBackend{
+				Name: serviceName,
+			},
+		},
+	}
+	ingressBuilder.ingressPaths = append(ingressBuilder.ingressPaths, ingressPath)
 	return ingressBuilder
 }
 
 func (ingressBuilder *IngressBuilder) Build() *networkingv1.Ingress {
-	ingressPaths := make([]networkingv1.HTTPIngressPath, 0)
-	for _, serviceBackend := range ingressBuilder.serviceBackends {
-		ingressPath := networkingv1.HTTPIngressPath{
-			Backend: networkingv1.IngressBackend{
-				Service: &networkingv1.IngressServiceBackend{
-					Name: serviceBackend,
-				},
-			},
-		}
-		ingressPaths = append(ingressPaths, ingressPath)
-	}
 	return &networkingv1.Ingress{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      ingressBuilder.name,
@@ -429,7 +428,7 @@ func (ingressBuilder *IngressBuilder) Build() *networkingv1.Ingress {
 				{
 					IngressRuleValue: networkingv1.IngressRuleValue{
 						HTTP: &networkingv1.HTTPIngressRuleValue{
-							Paths: ingressPaths,
+							Paths: ingressBuilder.ingressPaths,
 						},
 					},
 				},
